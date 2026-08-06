@@ -1,0 +1,22 @@
+# Environment files
+.env
+
+# Node modules
+node_modules/
+
+# Build files
+dist/
+build/
+
+# Logs
+*.log
+
+# IDE
+.vscode/
+
+# Frontend
+scfmp-frontend/node_modules/
+scfmp-frontend/dist/
+
+# Backend
+scfmp-backend/node_modules/
