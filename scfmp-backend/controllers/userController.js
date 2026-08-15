@@ -1,4 +1,7 @@
-const { User, Cooperative } = require('../models');
+const { Op } = require('sequelize');
+const { User, Cooperative, RefreshToken, AuditLog } = require('../models');
+const { recordAuditEvent } = require('../services/auditService');
+const { validatePasswordStrength } = require('../utils/passwordPolicy');
 
 /**
  * GET /api/users
@@ -15,6 +18,13 @@ const list = async (req, res) => {
       where.cooperative_id = req.query.cooperative_id;
     }
     if (req.query.role) where.role = req.query.role;
+    if (req.query.search) {
+      where[Op.or] = [
+        { first_name: { [Op.like]: `%${req.query.search}%` } },
+        { last_name: { [Op.like]: `%${req.query.search}%` } },
+        { email: { [Op.like]: `%${req.query.search}%` } },
+      ];
+    }
 
     const users = await User.findAll({
       where,
@@ -50,7 +60,19 @@ const updateStatus = async (req, res) => {
     }
 
     user.status = status;
+    if (status === 'inactive') user.token_version += 1;
     await user.save();
+    if (status === 'inactive') {
+      await RefreshToken.update({ revoked_at: new Date() }, { where: { user_id: user.id, revoked_at: null } });
+    }
+    await recordAuditEvent({
+      req,
+      actor: req.user,
+      action: 'user.status_changed',
+      entityType: 'user',
+      entityId: user.id,
+      metadata: { status },
+    });
 
     return res.status(200).json({ success: true, data: user });
   } catch (err) {
@@ -67,11 +89,8 @@ const updateStatus = async (req, res) => {
 const resetPassword = async (req, res) => {
   try {
     const { new_password } = req.body;
-    if (!new_password || new_password.length < 6) {
-      return res
-        .status(400)
-        .json({ success: false, message: 'new_password must be at least 6 characters' });
-    }
+    const passwordError = validatePasswordStrength(new_password);
+    if (passwordError) return res.status(400).json({ success: false, message: passwordError });
 
     const user = await User.findByPk(req.params.id);
     if (!user) return res.status(404).json({ success: false, message: 'User not found' });
@@ -81,7 +100,16 @@ const resetPassword = async (req, res) => {
     }
 
     user.password_hash = new_password; // re-hashed automatically by the model's beforeUpdate hook
+    user.token_version += 1;
     await user.save();
+    await RefreshToken.update({ revoked_at: new Date() }, { where: { user_id: user.id, revoked_at: null } });
+    await recordAuditEvent({
+      req,
+      actor: req.user,
+      action: 'user.password_reset_by_admin',
+      entityType: 'user',
+      entityId: user.id,
+    });
 
     return res.status(200).json({ success: true, message: 'Password reset successfully' });
   } catch (err) {
@@ -89,4 +117,70 @@ const resetPassword = async (req, res) => {
   }
 };
 
-module.exports = { list, updateStatus, resetPassword };
+const update = async (req, res) => {
+  try {
+    const user = await User.findByPk(req.params.id);
+    if (!user) return res.status(404).json({ success: false, message: 'User not found' });
+    if (req.user.role !== 'super_admin' && user.cooperative_id !== req.user.cooperative_id) {
+      return res.status(403).json({ success: false, message: 'Access denied' });
+    }
+    if (req.user.role === 'cooperative_manager' && (user.role === 'super_admin' || req.body.role === 'super_admin')) {
+      return res.status(403).json({ success: false, message: 'Managers cannot change super administrator accounts' });
+    }
+
+    const oldRole = user.role;
+    const updates = {};
+    ['first_name', 'last_name', 'phone', 'preferred_language'].forEach((field) => {
+      if (req.body[field] !== undefined) updates[field] = req.body[field];
+    });
+    if (req.body.role !== undefined) {
+      const allowed = req.user.role === 'super_admin'
+        ? ['super_admin', 'cooperative_manager', 'accountant', 'field_officer', 'farmer']
+        : ['accountant', 'field_officer', 'farmer'];
+      if (!allowed.includes(req.body.role)) {
+        return res.status(403).json({ success: false, message: 'You cannot assign that role' });
+      }
+      updates.role = req.body.role;
+      if (req.body.role === 'super_admin') updates.cooperative_id = null;
+    }
+    await user.update(updates);
+    if (oldRole !== user.role) {
+      user.token_version += 1;
+      await user.save();
+      await RefreshToken.update({ revoked_at: new Date() }, { where: { user_id: user.id, revoked_at: null } });
+      await recordAuditEvent({
+        req,
+        actor: req.user,
+        action: 'user.role_changed',
+        entityType: 'user',
+        entityId: user.id,
+        metadata: { from: oldRole, to: user.role },
+      });
+    }
+    return res.status(200).json({ success: true, data: user });
+  } catch (err) {
+    return res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+const listAuditLogs = async (req, res) => {
+  try {
+    const page = Math.max(1, Number(req.query.page) || 1);
+    const limit = Math.min(100, Math.max(1, Number(req.query.limit) || 25));
+    const where = {};
+    if (req.user.role !== 'super_admin') where.cooperative_id = req.user.cooperative_id;
+    if (req.query.action) where.action = req.query.action;
+    const { rows, count } = await AuditLog.findAndCountAll({
+      where,
+      include: [{ model: User, as: 'actor', attributes: ['id', 'first_name', 'last_name', 'email'] }],
+      order: [['created_at', 'DESC']],
+      limit,
+      offset: (page - 1) * limit,
+    });
+    return res.status(200).json({ success: true, data: rows, pagination: { total: count, page, limit } });
+  } catch (err) {
+    return res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+module.exports = { list, update, updateStatus, resetPassword, listAuditLogs };

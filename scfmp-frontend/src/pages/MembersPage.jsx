@@ -4,9 +4,11 @@ import { Plus, Search, Loader2, Sprout } from 'lucide-react';
 import DashboardLayout from '../components/DashboardLayout';
 import Modal from '../components/Modal';
 import Badge from '../components/Badge';
+import ReportActions from '../components/ReportActions';
 import { listMembers, createMember } from '../api/members';
 import { useAuth } from '../context/AuthContext';
 import { useCooperative } from '../context/CooperativeContext';
+import { useTranslation } from 'react-i18next';
 
 const emptyForm = {
   first_name: '',
@@ -18,6 +20,7 @@ const emptyForm = {
 };
 
 const MembersPage = () => {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const { cooperativeScope, activeCooperativeId } = useCooperative();
   const [members, setMembers] = useState([]);
@@ -71,7 +74,8 @@ const MembersPage = () => {
   };
 
   return (
-    <DashboardLayout title="Members" subtitle="Everyone registered in your cooperative.">
+    <DashboardLayout title={t('common.members')} subtitle={t('modules.membersSubtitle')}>
+      <ReportActions moduleName="members" filters={{ ...cooperativeScope, search }} />
       <div className="mb-5 flex items-center justify-between gap-4">
         <div className="relative w-full max-w-xs">
           <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-soft" />
@@ -92,7 +96,7 @@ const MembersPage = () => {
         </button>
       </div>
 
-      <div className="overflow-hidden rounded-xl bg-white shadow-card">
+      <div className="overflow-x-auto rounded-xl bg-white shadow-card">
         {isLoading ? (
           <div className="flex h-40 items-center justify-center text-ink-soft">
             <Loader2 className="mr-2 h-5 w-5 animate-spin" />
@@ -107,7 +111,7 @@ const MembersPage = () => {
             </p>
           </div>
         ) : (
-          <table className="w-full text-left text-sm">
+          <table className="min-w-[760px] w-full text-left text-sm">
             <thead className="border-b border-sand bg-sand/30 text-xs uppercase tracking-wide text-ink-soft">
               <tr>
                 <th className="px-5 py-3 font-medium">Name</th>

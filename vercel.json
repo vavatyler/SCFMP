@@ -1,0 +1,16 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "installCommand": "npm ci --prefix scfmp-frontend --no-audit --no-fund && npm ci --omit=dev --prefix scfmp-backend --no-audit --no-fund",
+  "buildCommand": "npm run build",
+  "outputDirectory": "scfmp-frontend/dist",
+  "rewrites": [
+    {
+      "source": "/api/:path*",
+      "destination": "/api"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ]
+}

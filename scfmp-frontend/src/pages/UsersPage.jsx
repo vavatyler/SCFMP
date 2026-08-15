@@ -5,8 +5,10 @@ import Modal from '../components/Modal';
 import Badge from '../components/Badge';
 import PasswordInput from '../components/PasswordInput';
 import { listUsers, registerUser, updateUserStatus, resetUserPassword } from '../api/users';
+import { listMembers } from '../api/members';
 import { useAuth } from '../context/AuthContext';
 import { useCooperative } from '../context/CooperativeContext';
+import { useTranslation } from 'react-i18next';
 
 const emptyForm = {
   first_name: '',
@@ -15,6 +17,7 @@ const emptyForm = {
   phone: '',
   password: '',
   role: 'cooperative_manager',
+  member_id: '',
 };
 
 const ROLE_LABELS = {
@@ -26,10 +29,12 @@ const ROLE_LABELS = {
 };
 
 const UsersPage = () => {
+  const { t } = useTranslation();
   const { user: currentUser } = useAuth();
   const { cooperativeScope, activeCooperativeId, activeCooperative, isSuperAdmin } = useCooperative();
 
   const [users, setUsers] = useState([]);
+  const [availableMembers, setAvailableMembers] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -42,8 +47,12 @@ const UsersPage = () => {
     setIsLoading(true);
     setError('');
     try {
-      const data = await listUsers(cooperativeScope);
+      const [data, memberResult] = await Promise.all([
+        listUsers(cooperativeScope),
+        listMembers({ ...cooperativeScope, limit: 100 }),
+      ]);
       setUsers(data);
+      setAvailableMembers(memberResult.data.filter((member) => !member.user_id));
     } catch (err) {
       setError('Could not load team members. Is the backend server running?');
     } finally {
@@ -58,6 +67,14 @@ const UsersPage = () => {
   const handleCreate = async (e) => {
     e.preventDefault();
     setFormError('');
+    if (form.password.length < 8 || !/[a-z]/.test(form.password) || !/[A-Z]/.test(form.password) || !/\d/.test(form.password)) {
+      setFormError('Password must be at least 8 characters and include uppercase, lowercase, and a number.');
+      return;
+    }
+    if (form.role === 'farmer' && !form.member_id) {
+      setFormError('Select the member who owns this farmer account.');
+      return;
+    }
     setIsSaving(true);
     try {
       const payload = isSuperAdmin ? { ...form, ...cooperativeScope } : form;
@@ -99,8 +116,8 @@ const UsersPage = () => {
   const handleResetPassword = async (e) => {
     e.preventDefault();
     setResetError('');
-    if (resetPasswordValue.length < 6) {
-      setResetError('Password must be at least 6 characters.');
+    if (resetPasswordValue.length < 8 || !/[a-z]/.test(resetPasswordValue) || !/[A-Z]/.test(resetPasswordValue) || !/\d/.test(resetPasswordValue)) {
+      setResetError('Password must be at least 8 characters and include uppercase, lowercase, and a number.');
       return;
     }
     setIsResetting(true);
@@ -120,17 +137,21 @@ const UsersPage = () => {
 
   return (
     <DashboardLayout
-      title="Team"
+      title={t('common.team')}
       subtitle={
         isSuperAdmin && activeCooperative
           ? `Staff accounts for ${activeCooperative.name}.`
-          : 'Staff accounts for your cooperative.'
+          : t('modules.teamSubtitle')
       }
     >
       {canManage && (
         <div className="mb-5 flex items-center justify-end">
           <button
-            onClick={() => setIsModalOpen(true)}
+            onClick={() => {
+              setForm({ ...emptyForm, role: isSuperAdmin ? 'cooperative_manager' : 'accountant' });
+              setFormError('');
+              setIsModalOpen(true);
+            }}
             disabled={isSuperAdmin && !activeCooperativeId}
             className="focus-ring flex items-center gap-2 rounded-lg bg-forest px-4 py-2 text-sm font-medium text-paper hover:bg-forest-light disabled:opacity-50"
           >
@@ -281,11 +302,26 @@ const UsersPage = () => {
               onChange={(e) => setForm({ ...form, role: e.target.value })}
               className="focus-ring w-full rounded-lg border border-sand px-3 py-2 text-sm"
             >
-              <option value="cooperative_manager">Cooperative Manager</option>
+              {isSuperAdmin && <option value="cooperative_manager">Cooperative Manager</option>}
               <option value="accountant">Accountant</option>
               <option value="field_officer">Field Officer</option>
+              <option value="farmer">Farmer</option>
             </select>
           </div>
+
+          {form.role === 'farmer' && (
+            <div className="mb-4">
+              <label className="mb-1.5 block text-xs font-medium uppercase tracking-wide text-ink-soft">Linked member</label>
+              <select required value={form.member_id} onChange={(e) => {
+                const member = availableMembers.find((item) => String(item.id) === e.target.value);
+                setForm({ ...form, member_id: e.target.value, first_name: member?.first_name || form.first_name, last_name: member?.last_name || form.last_name, phone: member?.phone || form.phone });
+              }} className="focus-ring min-h-11 w-full rounded-lg border border-sand px-3 py-2 text-sm">
+                <option value="">Select a member…</option>
+                {availableMembers.map((member) => <option key={member.id} value={member.id}>{member.first_name} {member.last_name}</option>)}
+              </select>
+              <p className="mt-1 text-xs text-ink-soft">This link enforces that the farmer can only see their own records.</p>
+            </div>
+          )}
 
           <div className="mb-6">
             <label className="mb-1.5 block text-xs font-medium uppercase tracking-wide text-ink-soft">
@@ -293,10 +329,10 @@ const UsersPage = () => {
             </label>
             <PasswordInput
               required
-              minLength={6}
+              minLength={8}
               value={form.password}
               onChange={(e) => setForm({ ...form, password: e.target.value })}
-              placeholder="At least 6 characters"
+              placeholder="At least 8 characters, with upper/lowercase and a number"
               className="focus-ring w-full rounded-lg border border-sand px-3 py-2 text-sm"
             />
             <p className="mt-1 text-xs text-ink-soft">
@@ -333,10 +369,10 @@ const UsersPage = () => {
               </label>
               <PasswordInput
                 required
-                minLength={6}
+                minLength={8}
                 value={resetPasswordValue}
                 onChange={(e) => setResetPasswordValue(e.target.value)}
-                placeholder="At least 6 characters"
+                placeholder="At least 8 characters, with upper/lowercase and a number"
                 className="focus-ring w-full rounded-lg border border-sand px-3 py-2 text-sm"
               />
               <p className="mt-1 text-xs text-ink-soft">

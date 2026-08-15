@@ -7,6 +7,11 @@ const resolveCooperativeScope = (req) => {
   return req.user.cooperative_id;
 };
 
+const getOwnMemberId = async (userId) => {
+  const member = await Member.findOne({ where: { user_id: userId }, attributes: ['id'] });
+  return member?.id || -1;
+};
+
 const list = async (req, res) => {
   try {
     const { status, member_id, page = 1, limit = 20 } = req.query;
@@ -15,7 +20,8 @@ const list = async (req, res) => {
     const where = {};
     if (cooperativeId) where.cooperative_id = cooperativeId;
     if (status) where.status = status;
-    if (member_id) where.member_id = member_id;
+    if (req.user.role === 'farmer') where.member_id = await getOwnMemberId(req.user.id);
+    else if (member_id) where.member_id = member_id;
 
     const offset = (Number(page) - 1) * Number(limit);
 
@@ -47,7 +53,11 @@ const getById = async (req, res) => {
     });
     if (!loan) return res.status(404).json({ success: false, message: 'Loan not found' });
 
-    if (req.user.role !== 'super_admin' && loan.cooperative_id !== req.user.cooperative_id) {
+    if (
+      req.user.role !== 'super_admin' &&
+      (loan.cooperative_id !== req.user.cooperative_id ||
+        (req.user.role === 'farmer' && loan.member_id !== (await getOwnMemberId(req.user.id))))
+    ) {
       return res.status(403).json({ success: false, message: 'Access denied' });
     }
 

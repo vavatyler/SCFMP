@@ -44,15 +44,22 @@ describe('Production list — cross-cooperative isolation with pagination', () =
     farmerA = await Farmer.create({ member_id: memberA.id, crop_type: 'Coffee' });
     farmerB = await Farmer.create({ member_id: memberB.id, crop_type: 'Maize' });
 
+    const productA = await models.Product.create({ cooperative_id: coopA.id, name: 'Coffee' });
+    const productB = await models.Product.create({ cooperative_id: coopB.id, name: 'Maize' });
+
     await Production.create({
+      cooperative_id: coopA.id,
       farmer_id: farmerA.id,
+      product_id: productA.id,
       product_name: 'Coffee',
       quantity: 100,
       unit_price: 500,
       production_date: '2026-01-01',
     });
     await Production.create({
+      cooperative_id: coopB.id,
       farmer_id: farmerB.id,
+      product_id: productB.id,
       product_name: 'Maize',
       quantity: 50,
       unit_price: 300,

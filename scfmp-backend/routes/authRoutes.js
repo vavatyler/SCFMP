@@ -7,7 +7,9 @@ const {
   register,
   login,
   refresh,
+  logout,
   getProfile,
+  updatePreferredLanguage,
   changePassword,
   forgotPassword,
   resetPasswordWithToken,
@@ -25,6 +27,22 @@ const forgotPasswordLimiter = rateLimit({
   legacyHeaders: false,
 });
 
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: Number(process.env.LOGIN_RATE_LIMIT_MAX) || 10,
+  message: { success: false, message: 'Too many login attempts. Please try again later.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+const strongPassword = (field, label = 'Password') =>
+  body(field).custom((value) => {
+    if (String(value || '').length < 8 || !/[a-z]/.test(value) || !/[A-Z]/.test(value) || !/\d/.test(value)) {
+      throw new Error(`${label} must be at least 8 characters and include uppercase, lowercase, and a number`);
+    }
+    return true;
+  });
+
 router.post(
   '/register',
   verifyToken,
@@ -33,7 +51,9 @@ router.post(
     body('first_name').notEmpty().withMessage('First name is required'),
     body('last_name').notEmpty().withMessage('Last name is required'),
     body('email').isEmail().withMessage('Valid email is required'),
-    body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters'),
+    strongPassword('password'),
+    body('preferred_language').optional().isIn(['en', 'rw', 'fr']),
+    body('member_id').if(body('role').equals('farmer')).isInt({ min: 1 }).withMessage('member_id is required for farmer accounts'),
     body('role')
       .isIn(['super_admin', 'cooperative_manager', 'accountant', 'field_officer', 'farmer'])
       .withMessage('Invalid role'),
@@ -44,6 +64,7 @@ router.post(
 
 router.post(
   '/login',
+  loginLimiter,
   [
     body('email').isEmail().withMessage('Valid email is required'),
     body('password').notEmpty().withMessage('Password is required'),
@@ -52,15 +73,34 @@ router.post(
   login
 );
 
-router.post('/refresh', refresh);
+router.post(
+  '/refresh',
+  [body('refreshToken').isString().notEmpty().withMessage('Refresh token is required')],
+  validate,
+  refresh
+);
 router.get('/me', verifyToken, getProfile);
+router.post(
+  '/logout',
+  verifyToken,
+  [body('refreshToken').optional().isString().withMessage('Invalid refresh token')],
+  validate,
+  logout
+);
+router.put(
+  '/preferred-language',
+  verifyToken,
+  [body('preferred_language').isIn(['en', 'rw', 'fr']).withMessage('Unsupported language')],
+  validate,
+  updatePreferredLanguage
+);
 
 router.put(
   '/change-password',
   verifyToken,
   [
     body('current_password').notEmpty().withMessage('current_password is required'),
-    body('new_password').isLength({ min: 6 }).withMessage('New password must be at least 6 characters'),
+    strongPassword('new_password', 'New password'),
   ],
   validate,
   changePassword
@@ -78,7 +118,7 @@ router.post(
   '/reset-password',
   [
     body('token').notEmpty().withMessage('token is required'),
-    body('new_password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters'),
+    strongPassword('new_password'),
   ],
   validate,
   resetPasswordWithToken

@@ -3,9 +3,17 @@ const { DataTypes, Model } = require('sequelize');
 module.exports = (sequelize) => {
   class Production extends Model {
     static associate(models) {
+      Production.belongsTo(models.Cooperative, {
+        foreignKey: 'cooperative_id',
+        as: 'cooperative',
+      });
       Production.belongsTo(models.Farmer, {
         foreignKey: 'farmer_id',
         as: 'farmer',
+      });
+      Production.belongsTo(models.Product, {
+        foreignKey: 'product_id',
+        as: 'product',
       });
       Production.belongsTo(models.User, {
         foreignKey: 'recorded_by',
@@ -21,7 +29,15 @@ module.exports = (sequelize) => {
         primaryKey: true,
         autoIncrement: true,
       },
+      cooperative_id: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+      },
       farmer_id: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+      },
+      product_id: {
         type: DataTypes.INTEGER,
         allowNull: false,
       },
@@ -49,6 +65,11 @@ module.exports = (sequelize) => {
         allowNull: false,
       },
       season: DataTypes.STRING(20),
+      status: {
+        type: DataTypes.ENUM('recorded', 'verified', 'rejected'),
+        allowNull: false,
+        defaultValue: 'recorded',
+      },
       production_date: {
         type: DataTypes.DATEONLY,
         allowNull: false,

@@ -2,8 +2,11 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Loader2, Sprout, Mail, UserCog, ArrowLeft } from 'lucide-react';
 import { forgotPassword } from '../api/auth';
+import LanguageSwitcher from '../components/LanguageSwitcher';
+import { useTranslation } from 'react-i18next';
 
 const ForgotPasswordPage = () => {
+  const { t } = useTranslation();
   const [method, setMethod] = useState(null); // null | 'email' | 'admin'
   const [email, setEmail] = useState('');
   const [message, setMessage] = useState(null); // { type: 'success' | 'error', text }
@@ -48,21 +51,22 @@ const ForgotPasswordPage = () => {
       </svg>
 
       <div className="relative z-10 w-full max-w-md px-6">
+        <div className="mb-4 flex justify-end"><LanguageSwitcher compact /></div>
         <div className="mb-8 flex flex-col items-center text-center">
           <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-gold/15">
             <Sprout className="h-6 w-6 text-gold" strokeWidth={1.75} />
           </div>
           <h1 className="font-display text-2xl font-semibold text-paper">SCFMP</h1>
-          <p className="mt-1 text-sm text-paper/60">Reset your password</p>
+          <p className="mt-1 text-sm text-paper/60">{t('auth.resetPassword')}</p>
         </div>
 
         <div className="rounded-2xl bg-paper p-8 shadow-2xl shadow-black/20">
           {!method && (
             <>
               <h2 className="mb-1 font-display text-lg font-medium text-ink">
-                How would you like to reset it?
+                {t('auth.chooseReset')}
               </h2>
-              <p className="mb-6 text-sm text-ink-soft">Choose the option that works best for you.</p>
+              <p className="mb-6 text-sm text-ink-soft">{t('auth.chooseResetHint')}</p>
 
               <button
                 onClick={() => setMethod('email')}
@@ -72,9 +76,9 @@ const ForgotPasswordPage = () => {
                   <Mail className="h-4 w-4 text-forest" />
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-ink">Reset via email</p>
+                  <p className="text-sm font-medium text-ink">{t('auth.resetViaEmail')}</p>
                   <p className="text-xs text-ink-soft">
-                    Get a secure reset link sent to your registered email address.
+                    {t('auth.resetEmailHint')}
                   </p>
                 </div>
               </button>
@@ -87,9 +91,9 @@ const ForgotPasswordPage = () => {
                   <UserCog className="h-4 w-4 text-gold-dark" />
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-ink">Ask your cooperative admin</p>
+                  <p className="text-sm font-medium text-ink">{t('auth.askAdmin')}</p>
                   <p className="text-xs text-ink-soft">
-                    Your cooperative manager or SNDS admin can reset it for you directly.
+                    {t('auth.askAdminHint')}
                   </p>
                 </div>
               </button>
@@ -106,12 +110,12 @@ const ForgotPasswordPage = () => {
                 className="focus-ring mb-4 inline-flex items-center gap-1.5 text-xs font-medium text-ink-soft hover:text-ink"
               >
                 <ArrowLeft className="h-3.5 w-3.5" />
-                Back
+                {t('auth.back')}
               </button>
 
-              <h2 className="mb-1 font-display text-lg font-medium text-ink">Reset via email</h2>
+              <h2 className="mb-1 font-display text-lg font-medium text-ink">{t('auth.resetViaEmail')}</h2>
               <p className="mb-6 text-sm text-ink-soft">
-                Enter your account email and we'll send you a secure reset link.
+                {t('auth.enterEmail')}
               </p>
 
               {message && (
@@ -137,7 +141,7 @@ const ForgotPasswordPage = () => {
               {message?.type !== 'success' && (
                 <form onSubmit={handleEmailSubmit}>
                   <label className="mb-1.5 block text-xs font-medium uppercase tracking-wide text-ink-soft">
-                    Email
+                    {t('auth.email')}
                   </label>
                   <input
                     type="email"
@@ -153,7 +157,7 @@ const ForgotPasswordPage = () => {
                     className="focus-ring flex w-full items-center justify-center gap-2 rounded-lg bg-forest px-4 py-2.5 text-sm font-medium text-paper hover:bg-forest-light disabled:opacity-60"
                   >
                     {isSubmitting && <Loader2 className="h-4 w-4 animate-spin" />}
-                    {isSubmitting ? 'Sending…' : 'Send reset link'}
+                    {isSubmitting ? t('auth.sending') : t('auth.sendReset')}
                   </button>
                 </form>
               )}
@@ -167,9 +171,9 @@ const ForgotPasswordPage = () => {
                 className="focus-ring mb-4 inline-flex items-center gap-1.5 text-xs font-medium text-ink-soft hover:text-ink"
               >
                 <ArrowLeft className="h-3.5 w-3.5" />
-                Back
+                {t('auth.back')}
               </button>
-              <h2 className="mb-1 font-display text-lg font-medium text-ink">Ask your cooperative admin</h2>
+              <h2 className="mb-1 font-display text-lg font-medium text-ink">{t('auth.askAdmin')}</h2>
               <p className="text-sm text-ink-soft">
                 Contact your cooperative manager or SNDS super admin — from the{' '}
                 <strong>Team</strong> page, they can reset your password for you and share a new
@@ -185,7 +189,7 @@ const ForgotPasswordPage = () => {
           className="focus-ring mt-6 flex items-center justify-center gap-1.5 text-sm text-paper/60 hover:text-paper"
         >
           <ArrowLeft className="h-3.5 w-3.5" />
-          Back to login
+          {t('auth.backToLogin')}
         </Link>
       </div>
     </div>

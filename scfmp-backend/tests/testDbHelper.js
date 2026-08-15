@@ -11,13 +11,14 @@ const { Sequelize } = require('sequelize');
  * new association. Loading everything, every time, sidesteps that entirely.
  */
 const buildTestDb = async () => {
-  const sequelize = new Sequelize('sqlite::memory:', { logging: false });
+  const sequelize = new Sequelize({ dialect: 'sqlite', storage: ':memory:', logging: false });
 
   const modelFiles = [
     'Cooperative',
     'User',
     'Member',
     'Farmer',
+    'Product',
     'Production',
     'Transaction',
     'Loan',
@@ -26,6 +27,8 @@ const buildTestDb = async () => {
     'Document',
     'Notification',
     'PasswordResetToken',
+    'RefreshToken',
+    'AuditLog',
   ];
 
   const models = {};

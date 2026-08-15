@@ -35,8 +35,16 @@ describe('Dashboard aggregation', () => {
       crop_type: 'Coffee',
     });
 
+    const product = await models.Product.create({
+      cooperative_id: coop.id,
+      name: 'Coffee',
+      default_unit: 'kg',
+    });
+
     await models.Production.create({
+      cooperative_id: coop.id,
       farmer_id: farmer.id,
+      product_id: product.id,
       product_name: 'Coffee',
       quantity: 200,
       unit_price: 800,

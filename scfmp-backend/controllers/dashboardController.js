@@ -20,9 +20,10 @@ const resolveCooperativeScope = (req) => {
  * Builds the same aggregate numbers used by both the JSON summary and the CSV export,
  * so the two endpoints can never drift out of sync with each other.
  */
-const buildSummary = async (cooperativeId, { from, to } = {}) => {
+const buildSummary = async (cooperativeId, { from, to, user } = {}) => {
   const memberWhere = {};
   if (cooperativeId) memberWhere.cooperative_id = cooperativeId;
+  if (user?.role === 'farmer') memberWhere.user_id = user.id;
 
   const totalMembers = await Member.count({ where: memberWhere });
   const activeMembers = await Member.count({ where: { ...memberWhere, status: 'active' } });
@@ -60,6 +61,10 @@ const buildSummary = async (cooperativeId, { from, to } = {}) => {
   // Finance: scoped directly by cooperative_id on transactions
   const transactionWhere = {};
   if (cooperativeId) transactionWhere.cooperative_id = cooperativeId;
+  if (user?.role === 'farmer') {
+    const ownMember = await Member.findOne({ where: { user_id: user.id }, attributes: ['id'] });
+    transactionWhere.member_id = ownMember?.id || -1;
+  }
   if (from || to) {
     transactionWhere.transaction_date = {};
     if (from) transactionWhere.transaction_date[Op.gte] = from;
@@ -80,6 +85,7 @@ const buildSummary = async (cooperativeId, { from, to } = {}) => {
   // Loans
   const loanWhere = {};
   if (cooperativeId) loanWhere.cooperative_id = cooperativeId;
+  if (user?.role === 'farmer') loanWhere.member_id = transactionWhere.member_id;
   const activeLoansCount = await Loan.count({ where: { ...loanWhere, status: 'active' } });
   const outstandingBalance = await Loan.sum('balance', { where: { ...loanWhere, status: 'active' } });
 
@@ -131,7 +137,7 @@ const summary = async (req, res) => {
   try {
     const cooperativeId = resolveCooperativeScope(req);
     const { from, to } = req.query;
-    const data = await buildSummary(cooperativeId, { from, to });
+    const data = await buildSummary(cooperativeId, { from, to, user: req.user });
     return res.status(200).json({ success: true, data });
   } catch (err) {
     return res.status(500).json({ success: false, message: err.message });
@@ -146,7 +152,7 @@ const exportCsv = async (req, res) => {
   try {
     const cooperativeId = resolveCooperativeScope(req);
     const { from, to } = req.query;
-    const data = await buildSummary(cooperativeId, { from, to });
+    const data = await buildSummary(cooperativeId, { from, to, user: req.user });
 
     const rows = [
       ['Metric', 'Value'],

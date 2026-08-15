@@ -2,11 +2,14 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Loader2, MapPin } from 'lucide-react';
 import DashboardLayout from '../components/DashboardLayout';
+import ReportActions from '../components/ReportActions';
 import { listFarmers } from '../api/farmers';
 import { useAuth } from '../context/AuthContext';
 import { useCooperative } from '../context/CooperativeContext';
+import { useTranslation } from 'react-i18next';
 
 const FarmersPage = () => {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const { cooperativeScope, activeCooperativeId } = useCooperative();
   const [farmers, setFarmers] = useState([]);
@@ -28,8 +31,9 @@ const FarmersPage = () => {
   }, [activeCooperativeId]);
 
   return (
-    <DashboardLayout title="Farmers" subtitle="Members with a registered farm profile.">
-      <div className="overflow-hidden rounded-xl bg-white shadow-card">
+    <DashboardLayout title={t('common.farmers')} subtitle={t('modules.farmersSubtitle')}>
+      <ReportActions moduleName="farmers" filters={cooperativeScope} />
+      <div className="overflow-x-auto rounded-xl bg-white shadow-card">
         {isLoading ? (
           <div className="flex h-40 items-center justify-center text-ink-soft">
             <Loader2 className="mr-2 h-5 w-5 animate-spin" />
@@ -42,7 +46,7 @@ const FarmersPage = () => {
             No farmer profiles yet. Add one from a member's detail page.
           </div>
         ) : (
-          <table className="w-full text-left text-sm">
+          <table className="min-w-[680px] w-full text-left text-sm">
             <thead className="border-b border-sand bg-sand/30 text-xs uppercase tracking-wide text-ink-soft">
               <tr>
                 <th className="px-5 py-3 font-medium">Name</th>

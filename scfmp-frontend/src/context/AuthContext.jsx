@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import * as authApi from '../api/auth';
+import i18n from '../i18n';
 
 const AuthContext = createContext(null);
 
@@ -19,6 +20,7 @@ export const AuthProvider = ({ children }) => {
           // Verify the token is still valid and refresh the user's details
           const freshUser = await authApi.getProfile();
           setUser(freshUser);
+          if (freshUser.preferred_language) await i18n.changeLanguage(freshUser.preferred_language);
           localStorage.setItem('scfmp_user', JSON.stringify(freshUser));
         } catch {
           // Token invalid/expired and refresh failed — clear the stale session
@@ -41,19 +43,27 @@ export const AuthProvider = ({ children }) => {
     localStorage.setItem('scfmp_refresh_token', refreshToken);
     localStorage.setItem('scfmp_user', JSON.stringify(loggedInUser));
     setUser(loggedInUser);
+    if (loggedInUser.preferred_language) await i18n.changeLanguage(loggedInUser.preferred_language);
 
     return loggedInUser;
   };
 
-  const logout = () => {
+  const logout = async () => {
+    const refreshToken = localStorage.getItem('scfmp_refresh_token');
+    if (refreshToken) authApi.logout(refreshToken).catch(() => {});
     localStorage.removeItem('scfmp_access_token');
     localStorage.removeItem('scfmp_refresh_token');
     localStorage.removeItem('scfmp_user');
     setUser(null);
   };
 
+  const updateUser = (updatedUser) => {
+    setUser(updatedUser);
+    localStorage.setItem('scfmp_user', JSON.stringify(updatedUser));
+  };
+
   return (
-    <AuthContext.Provider value={{ user, isLoading, login, logout, isAuthenticated: !!user }}>
+    <AuthContext.Provider value={{ user, isLoading, login, logout, updateUser, isAuthenticated: !!user }}>
       {children}
     </AuthContext.Provider>
   );

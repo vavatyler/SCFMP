@@ -1,0 +1,12 @@
+{
+  "name": "scfmp",
+  "version": "1.0.0",
+  "private": true,
+  "engines": {
+    "node": "24.x"
+  },
+  "scripts": {
+    "build": "npm run build --prefix scfmp-frontend",
+    "test": "npm test --prefix scfmp-backend"
+  }
+}

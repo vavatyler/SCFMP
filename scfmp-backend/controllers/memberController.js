@@ -17,6 +17,7 @@ const list = async (req, res) => {
     } else if (req.query.cooperative_id) {
       where.cooperative_id = req.query.cooperative_id;
     }
+    if (req.user.role === 'farmer') where.user_id = req.user.id;
 
     if (search) {
       where[Op.or] = [
@@ -59,7 +60,11 @@ const getById = async (req, res) => {
     });
     if (!member) return res.status(404).json({ success: false, message: 'Member not found' });
 
-    if (req.user.role !== 'super_admin' && member.cooperative_id !== req.user.cooperative_id) {
+    if (
+      req.user.role !== 'super_admin' &&
+      (member.cooperative_id !== req.user.cooperative_id ||
+        (req.user.role === 'farmer' && member.user_id !== req.user.id))
+    ) {
       return res.status(403).json({ success: false, message: 'Access denied' });
     }
 

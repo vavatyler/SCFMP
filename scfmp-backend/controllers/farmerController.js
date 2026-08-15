@@ -9,6 +9,7 @@ const assertAccessToFarmer = async (farmer, user) => {
   if (user.role !== 'super_admin' && member.cooperative_id !== user.cooperative_id) {
     return false;
   }
+  if (user.role === 'farmer' && member.user_id !== user.id) return false;
   return true;
 };
 
@@ -20,6 +21,7 @@ const list = async (req, res) => {
     } else if (req.query.cooperative_id) {
       memberWhere.cooperative_id = req.query.cooperative_id;
     }
+    if (req.user.role === 'farmer') memberWhere.user_id = req.user.id;
 
     const farmers = await Farmer.findAll({
       include: [{ model: Member, as: 'member', where: memberWhere }],

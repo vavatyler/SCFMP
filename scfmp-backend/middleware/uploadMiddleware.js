@@ -2,8 +2,12 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 const crypto = require('crypto');
+const os = require('os');
 
-const UPLOAD_DIR = path.join(__dirname, '..', 'uploads');
+const UPLOAD_DIR = process.env.UPLOAD_DIR
+  || (process.env.VERCEL
+    ? path.join(os.tmpdir(), 'scfmp-uploads')
+    : path.join(__dirname, '..', 'uploads'));
 
 // Ensure the uploads folder exists (it's gitignored, so it won't exist on a fresh clone)
 if (!fs.existsSync(UPLOAD_DIR)) {
@@ -22,6 +26,8 @@ const ALLOWED_MIME_TYPES = [
   'text/plain',
 ];
 
+const ALLOWED_EXTENSIONS = new Set(['.pdf', '.jpg', '.jpeg', '.png', '.webp', '.doc', '.docx', '.xls', '.xlsx', '.txt']);
+
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     cb(null, UPLOAD_DIR);
@@ -36,10 +42,14 @@ const storage = multer.diskStorage({
 });
 
 const fileFilter = (req, file, cb) => {
-  if (ALLOWED_MIME_TYPES.includes(file.mimetype)) {
-    cb(null, true);
+  const extension = path.extname(file.originalname).toLowerCase();
+  if (Buffer.byteLength(file.originalname, 'utf8') > 255) {
+    return cb(new Error('File name is too long'));
+  }
+  if (ALLOWED_MIME_TYPES.includes(file.mimetype) && ALLOWED_EXTENSIONS.has(extension)) {
+    return cb(null, true);
   } else {
-    cb(new Error('Unsupported file type. Allowed: PDF, JPG, PNG, WEBP, Word, Excel'));
+    return cb(new Error('Unsupported file type. Allowed: PDF, JPG, PNG, WEBP, Word, Excel, TXT'));
   }
 };
 

@@ -1,5 +1,6 @@
 import { NavLink } from 'react-router-dom';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   LayoutDashboard,
   Sprout,
@@ -19,25 +20,26 @@ import ChangePasswordModal from './ChangePasswordModal';
 
 // `roles: null` means every logged-in role can see it.
 const NAV_ITEMS = [
-  { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard, roles: null },
-  { to: '/cooperatives', label: 'Cooperatives', icon: Building2, roles: ['super_admin'] },
-  { to: '/members', label: 'Members', icon: Users, roles: null },
-  { to: '/farmers', label: 'Farmers', icon: Wheat, roles: null },
-  { to: '/production', label: 'Production', icon: TrendingUp, roles: null },
-  { to: '/finance', label: 'Finance', icon: Wallet, roles: null },
-  { to: '/inventory', label: 'Inventory', icon: Boxes, roles: null },
-  { to: '/documents', label: 'Documents', icon: FileText, roles: null },
-  { to: '/team', label: 'Team', icon: UserCog, roles: ['super_admin', 'cooperative_manager'] },
+  { to: '/dashboard', labelKey: 'common.dashboard', icon: LayoutDashboard, roles: null },
+  { to: '/cooperatives', labelKey: 'common.cooperatives', icon: Building2, roles: ['super_admin'] },
+  { to: '/members', labelKey: 'common.members', icon: Users, roles: null },
+  { to: '/farmers', labelKey: 'common.farmers', icon: Wheat, roles: null },
+  { to: '/production', labelKey: 'common.production', icon: TrendingUp, roles: null },
+  { to: '/finance', labelKey: 'common.finance', icon: Wallet, roles: null },
+  { to: '/inventory', labelKey: 'common.inventory', icon: Boxes, roles: null },
+  { to: '/documents', labelKey: 'common.documents', icon: FileText, roles: null },
+  { to: '/team', labelKey: 'common.team', icon: UserCog, roles: ['super_admin', 'cooperative_manager'] },
 ];
 
-const Sidebar = () => {
+const Sidebar = ({ isOpen = false, onClose = () => {} }) => {
   const { user, logout } = useAuth();
+  const { t } = useTranslation();
   const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
 
   const visibleItems = NAV_ITEMS.filter((item) => !item.roles || item.roles.includes(user?.role));
 
   return (
-    <aside className="flex h-screen w-60 flex-col bg-forest text-paper">
+    <aside className={`fixed inset-y-0 left-0 z-40 flex h-screen w-64 flex-col bg-forest text-paper shadow-xl transition-transform lg:sticky lg:top-0 lg:w-60 lg:translate-x-0 lg:shadow-none ${isOpen ? 'translate-x-0' : '-translate-x-full'}`}>
       <div className="flex items-center gap-2.5 px-5 py-6">
         <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gold/15">
           <Sprout className="h-4 w-4 text-gold" strokeWidth={1.75} />
@@ -46,10 +48,11 @@ const Sidebar = () => {
       </div>
 
       <nav className="flex-1 space-y-1 px-3">
-        {visibleItems.map(({ to, label, icon: Icon }) => (
+        {visibleItems.map(({ to, labelKey, icon: Icon }) => (
           <NavLink
             key={to}
             to={to}
+            onClick={onClose}
             className={({ isActive }) =>
               `flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
                 isActive
@@ -59,7 +62,7 @@ const Sidebar = () => {
             }
           >
             <Icon className="h-4 w-4" strokeWidth={1.75} />
-            {label}
+            {t(labelKey)}
           </NavLink>
         ))}
       </nav>
@@ -78,14 +81,14 @@ const Sidebar = () => {
           className="focus-ring flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-paper/65 transition-colors hover:bg-white/5 hover:text-paper"
         >
           <KeyRound className="h-4 w-4" strokeWidth={1.75} />
-          Change password
+          {t('common.changePassword')}
         </button>
         <button
           onClick={logout}
           className="focus-ring flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-paper/65 transition-colors hover:bg-white/5 hover:text-paper"
         >
           <LogOut className="h-4 w-4" strokeWidth={1.75} />
-          Log out
+          {t('common.logout')}
         </button>
       </div>
 

@@ -1,12 +1,10 @@
+require('dotenv').config();
+
 const { Sequelize } = require('sequelize');
 const env = process.env.NODE_ENV || 'development';
 const config = require('./config.js')[env];
 
-const sequelize = new Sequelize(
-  config.database,
-  config.username,
-  config.password,
-  {
+const options = {
     host: config.host,
     port: config.port,
     dialect: config.dialect,
@@ -17,12 +15,15 @@ const sequelize = new Sequelize(
       timestamps: true,
     },
     pool: {
-      max: 10,
+      max: env === 'production' ? 2 : 10,
       min: 0,
       acquire: 30000,
       idle: 10000,
     },
-  }
-);
+  };
+
+const sequelize = config.url
+  ? new Sequelize(config.url, options)
+  : new Sequelize(config.database, config.username, config.password, options);
 
 module.exports = sequelize;

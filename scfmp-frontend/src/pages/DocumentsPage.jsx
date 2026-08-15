@@ -6,6 +6,7 @@ import { listDocuments, uploadDocument, downloadDocument, deleteDocument } from 
 import { listMembers } from '../api/members';
 import { useAuth } from '../context/AuthContext';
 import { useCooperative } from '../context/CooperativeContext';
+import { useTranslation } from 'react-i18next';
 
 const formatSize = (bytes) => {
   if (!bytes) return '';
@@ -15,8 +16,11 @@ const formatSize = (bytes) => {
 };
 
 const DocumentsPage = () => {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const { cooperativeScope, activeCooperativeId } = useCooperative();
+  const canUpload = ['super_admin', 'cooperative_manager', 'field_officer', 'accountant'].includes(user?.role);
+  const canDelete = ['super_admin', 'cooperative_manager'].includes(user?.role);
 
   const [documents, setDocuments] = useState([]);
   const [members, setMembers] = useState([]);
@@ -41,7 +45,7 @@ const DocumentsPage = () => {
       setDocuments(docsRes);
       setMembers(membersRes.data);
     } catch (err) {
-      setError('Could not load documents. Is the backend server running?');
+      setError(t('documents.loadError'));
     } finally {
       setIsLoading(false);
     }
@@ -60,7 +64,7 @@ const DocumentsPage = () => {
     e.preventDefault();
     setFormError('');
     if (!file) {
-      setFormError('Choose a file to upload.');
+      setFormError(t('documents.chooseFile'));
       return;
     }
     setIsSaving(true);
@@ -72,7 +76,7 @@ const DocumentsPage = () => {
       setDescription('');
       fetchAll();
     } catch (err) {
-      setFormError(err.response?.data?.message || 'Could not upload this file.');
+      setFormError(err.response?.data?.message || t('documents.uploadError'));
     } finally {
       setIsSaving(false);
     }
@@ -81,48 +85,49 @@ const DocumentsPage = () => {
   const handleDownload = (doc) => downloadDocument(doc.id, doc.original_name);
 
   const handleDelete = async (doc) => {
-    if (!window.confirm(`Delete "${doc.original_name}"? This cannot be undone.`)) return;
+    if (!window.confirm(t('documents.deleteConfirm', { name: doc.original_name }))) return;
     try {
       await deleteDocument(doc.id);
       fetchAll();
     } catch {
-      window.alert('Could not delete this document.');
+      window.alert(t('documents.deleteError'));
     }
   };
 
   return (
-    <DashboardLayout title="Documents" subtitle="Files attached to members — ID copies, contracts, and more.">
-      <div className="mb-5 flex items-center justify-end">
+    <DashboardLayout title={t('common.documents')} subtitle={t('modules.documentsSubtitle')}>
+      {canUpload && <div className="mb-5 flex items-center justify-end">
         <button
           onClick={() => setIsModalOpen(true)}
           disabled={members.length === 0}
           className="focus-ring flex items-center gap-2 rounded-lg bg-forest px-4 py-2 text-sm font-medium text-paper hover:bg-forest-light disabled:opacity-50"
         >
           <Plus className="h-4 w-4" />
-          Upload document
+          {t('documents.upload')}
         </button>
-      </div>
+      </div>}
 
       <div className="overflow-hidden rounded-xl bg-white shadow-card">
         {isLoading ? (
           <div className="flex h-40 items-center justify-center text-ink-soft">
             <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-            Loading documents…
+            {t('common.loading')}
           </div>
         ) : error ? (
           <div className="p-6 text-sm text-clay">{error}</div>
         ) : documents.length === 0 ? (
           <div className="p-10 text-center text-sm text-ink-soft">
-            No documents uploaded yet.
+            {t('documents.empty')}
           </div>
         ) : (
-          <table className="w-full text-left text-sm">
+          <div className="overflow-x-auto">
+          <table className="w-full min-w-[720px] text-left text-sm">
             <thead className="border-b border-sand bg-sand/30 text-xs uppercase tracking-wide text-ink-soft">
               <tr>
-                <th className="px-5 py-3 font-medium">File</th>
-                <th className="px-5 py-3 font-medium">Member</th>
-                <th className="px-5 py-3 font-medium">Description</th>
-                <th className="px-5 py-3 font-medium">Size</th>
+                <th className="px-5 py-3 font-medium">{t('documents.file')}</th>
+                <th className="px-5 py-3 font-medium">{t('documents.member')}</th>
+                <th className="px-5 py-3 font-medium">{t('documents.description')}</th>
+                <th className="px-5 py-3 font-medium">{t('documents.size')}</th>
                 <th className="px-5 py-3 font-medium"></th>
               </tr>
             </thead>
@@ -142,28 +147,31 @@ const DocumentsPage = () => {
                     <div className="flex justify-end gap-2">
                       <button
                         onClick={() => handleDownload(doc)}
-                        title="Download"
+                        title={t('documents.download')}
+                        aria-label={`${t('documents.download')} ${doc.original_name}`}
                         className="focus-ring rounded-lg p-1.5 text-ink-soft hover:bg-forest/10 hover:text-forest"
                       >
                         <Download className="h-4 w-4" />
                       </button>
-                      <button
+                      {canDelete && <button
                         onClick={() => handleDelete(doc)}
-                        title="Delete"
+                        title={t('common.delete')}
+                        aria-label={`${t('common.delete')} ${doc.original_name}`}
                         className="focus-ring rounded-lg p-1.5 text-ink-soft hover:bg-clay/10 hover:text-clay"
                       >
                         <Trash2 className="h-4 w-4" />
-                      </button>
+                      </button>}
                     </div>
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
+          </div>
         )}
       </div>
 
-      <Modal title="Upload document" isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}>
+      <Modal title={t('documents.upload')} isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}>
         <form onSubmit={handleUpload}>
           {formError && (
             <div className="mb-4 rounded-lg bg-clay/10 px-3.5 py-2.5 text-sm text-clay">
@@ -173,7 +181,7 @@ const DocumentsPage = () => {
 
           <div className="mb-4">
             <label className="mb-1.5 block text-xs font-medium uppercase tracking-wide text-ink-soft">
-              Member
+              {t('documents.member')}
             </label>
             <select
               required
@@ -181,7 +189,7 @@ const DocumentsPage = () => {
               onChange={(e) => setOwnerId(e.target.value)}
               className="focus-ring w-full rounded-lg border border-sand px-3 py-2 text-sm"
             >
-              <option value="">Select a member…</option>
+              <option value="">{t('documents.selectMember')}</option>
               {members.map((m) => (
                 <option key={m.id} value={m.id}>
                   {m.first_name} {m.last_name}
@@ -192,7 +200,7 @@ const DocumentsPage = () => {
 
           <div className="mb-4">
             <label className="mb-1.5 block text-xs font-medium uppercase tracking-wide text-ink-soft">
-              File
+              {t('documents.file')}
             </label>
             <input
               required
@@ -200,17 +208,17 @@ const DocumentsPage = () => {
               onChange={(e) => setFile(e.target.files[0])}
               className="focus-ring w-full rounded-lg border border-sand px-3 py-2 text-sm file:mr-3 file:rounded-md file:border-0 file:bg-sand file:px-3 file:py-1 file:text-xs file:font-medium file:text-ink"
             />
-            <p className="mt-1 text-xs text-ink-soft">PDF, JPG, PNG, WEBP, Word, or Excel — max 10MB.</p>
+            <p className="mt-1 text-xs text-ink-soft">{t('documents.fileTypes')}</p>
           </div>
 
           <div className="mb-6">
             <label className="mb-1.5 block text-xs font-medium uppercase tracking-wide text-ink-soft">
-              Description (optional)
+              {t('documents.description')} ({t('documents.optional')})
             </label>
             <input
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              placeholder="e.g. National ID copy"
+              placeholder={t('documents.example')}
               className="focus-ring w-full rounded-lg border border-sand px-3 py-2 text-sm"
             />
           </div>
@@ -221,7 +229,7 @@ const DocumentsPage = () => {
             className="focus-ring flex w-full items-center justify-center gap-2 rounded-lg bg-forest px-4 py-2.5 text-sm font-medium text-paper hover:bg-forest-light disabled:opacity-60"
           >
             {isSaving && <Loader2 className="h-4 w-4 animate-spin" />}
-            {isSaving ? 'Uploading…' : 'Upload'}
+            {isSaving ? t('documents.uploading') : t('documents.upload')}
           </button>
         </form>
       </Modal>

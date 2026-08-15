@@ -16,6 +16,14 @@ module.exports = (sequelize) => {
         foreignKey: 'user_id',
         as: 'passwordResetTokens',
       });
+      User.hasMany(models.RefreshToken, {
+        foreignKey: 'user_id',
+        as: 'refreshTokens',
+      });
+      User.hasMany(models.AuditLog, {
+        foreignKey: 'actor_user_id',
+        as: 'auditLogs',
+      });
     }
 
     // Instance method: compare a plain password against the stored hash
@@ -76,6 +84,16 @@ module.exports = (sequelize) => {
       status: {
         type: DataTypes.ENUM('active', 'inactive'),
         defaultValue: 'active',
+      },
+      preferred_language: {
+        type: DataTypes.ENUM('en', 'rw', 'fr'),
+        allowNull: false,
+        defaultValue: 'en',
+      },
+      token_version: {
+        type: DataTypes.INTEGER.UNSIGNED,
+        allowNull: false,
+        defaultValue: 0,
       },
       last_login_at: DataTypes.DATE,
     },

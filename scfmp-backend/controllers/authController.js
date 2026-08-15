@@ -1,258 +1,366 @@
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
-const { User, Cooperative, PasswordResetToken } = require('../models');
+const { Op } = require('sequelize');
+const {
+  User,
+  Cooperative,
+  Member,
+  PasswordResetToken,
+  RefreshToken,
+  sequelize,
+} = require('../models');
 const { sendPasswordResetEmail } = require('../services/emailService');
+const { recordAuditEvent } = require('../services/auditService');
+const { validatePasswordStrength } = require('../utils/passwordPolicy');
 
 const RESET_TOKEN_EXPIRES_MINUTES = Number(process.env.RESET_TOKEN_EXPIRES_MINUTES) || 30;
+const JWT_ISSUER = process.env.JWT_ISSUER || 'scfmp-api';
+const JWT_AUDIENCE = process.env.JWT_AUDIENCE || 'scfmp-web';
 
-/** Hashes a raw token for storage — the raw value only ever exists in the emailed link. */
 const hashToken = (rawToken) => crypto.createHash('sha256').update(rawToken).digest('hex');
 
 const generateAccessToken = (user) =>
   jwt.sign(
-    { id: user.id, role: user.role, cooperative_id: user.cooperative_id },
+    {
+      id: user.id,
+      role: user.role,
+      cooperative_id: user.cooperative_id,
+      token_version: user.token_version,
+      type: 'access',
+    },
     process.env.JWT_SECRET,
-    { expiresIn: process.env.JWT_EXPIRES_IN || '8h' }
+    {
+      expiresIn: process.env.JWT_EXPIRES_IN || '15m',
+      issuer: JWT_ISSUER,
+      audience: JWT_AUDIENCE,
+    }
   );
 
-const generateRefreshToken = (user) =>
-  jwt.sign({ id: user.id }, process.env.JWT_REFRESH_SECRET, {
-    expiresIn: process.env.JWT_REFRESH_EXPIRES_IN || '7d',
-  });
+const createRefreshToken = async (user, req, options = {}) => {
+  const rawToken = jwt.sign(
+    {
+      id: user.id,
+      token_version: user.token_version,
+      type: 'refresh',
+      jti: crypto.randomUUID(),
+    },
+    process.env.JWT_REFRESH_SECRET,
+    {
+      expiresIn: process.env.JWT_REFRESH_EXPIRES_IN || '7d',
+      issuer: JWT_ISSUER,
+      audience: JWT_AUDIENCE,
+    }
+  );
+  const decoded = jwt.decode(rawToken);
+  await RefreshToken.create(
+    {
+      user_id: user.id,
+      token_hash: hashToken(rawToken),
+      expires_at: new Date(decoded.exp * 1000),
+      ip_address: req.ip || req.socket?.remoteAddress || null,
+      user_agent: req.get('user-agent')?.slice(0, 255) || null,
+    },
+    options
+  );
+  return rawToken;
+};
 
-/**
- * POST /api/auth/register
- * Only super_admin or a cooperative_manager (for their own coop staff) should
- * call this in production — that authorization check happens at the route level.
- */
+const revokeUserRefreshTokens = (userId, options = {}) =>
+  RefreshToken.update(
+    { revoked_at: new Date() },
+    { where: { user_id: userId, revoked_at: null }, ...options }
+  );
+
 const register = async (req, res) => {
   try {
-    const { first_name, last_name, email, phone, password, role } = req.body;
+    const { first_name, last_name, email, phone, password, role, preferred_language = 'en' } = req.body;
+    const passwordError = validatePasswordStrength(password);
+    if (passwordError) return res.status(400).json({ success: false, message: passwordError });
 
-    // Security: a cooperative_manager can only ever register staff into their OWN
-    // cooperative — never trust a cooperative_id passed in the request body for them.
-    // Only super_admin (who isn't tied to a cooperative) may specify one explicitly.
-    const cooperative_id =
-      req.user.role === 'super_admin' ? req.body.cooperative_id : req.user.cooperative_id;
-
-    const existing = await User.findOne({ where: { email } });
-    if (existing) {
-      return res.status(409).json({ success: false, message: 'Email is already registered' });
+    if (req.user.role === 'cooperative_manager' && !['accountant', 'field_officer', 'farmer'].includes(role)) {
+      return res.status(403).json({ success: false, message: 'Managers can only create cooperative staff or farmer accounts' });
     }
 
-    if (cooperative_id) {
-      const coop = await Cooperative.findByPk(cooperative_id);
-      if (!coop) {
-        return res.status(400).json({ success: false, message: 'Cooperative not found' });
+    const cooperative_id =
+      req.user.role === 'super_admin' ? req.body.cooperative_id : req.user.cooperative_id;
+    if (role !== 'super_admin' && !cooperative_id) {
+      return res.status(400).json({ success: false, message: 'cooperative_id is required' });
+    }
+
+    const existing = await User.findOne({ where: { email: email.toLowerCase() } });
+    if (existing) return res.status(409).json({ success: false, message: 'Email is already registered' });
+
+    if (cooperative_id && !(await Cooperative.findByPk(cooperative_id))) {
+      return res.status(400).json({ success: false, message: 'Cooperative not found' });
+    }
+
+    let targetMember = null;
+    if (role === 'farmer') {
+      targetMember = await Member.findByPk(req.body.member_id);
+      if (!targetMember || targetMember.cooperative_id !== Number(cooperative_id)) {
+        return res.status(400).json({ success: false, message: 'A member from this cooperative is required for a farmer account' });
+      }
+      if (targetMember.user_id) {
+        return res.status(409).json({ success: false, message: 'This member already has a user account' });
       }
     }
 
-    const user = await User.create({
-      first_name,
-      last_name,
-      email,
-      phone,
-      password_hash: password, // hashed automatically by the User model hook
-      role,
-      cooperative_id: role === 'super_admin' ? null : cooperative_id,
+    const transaction = await sequelize.transaction();
+    let user;
+    try {
+      user = await User.create({
+        first_name,
+        last_name,
+        email: email.toLowerCase(),
+        phone,
+        password_hash: password,
+        role,
+        preferred_language,
+        cooperative_id: role === 'super_admin' ? null : cooperative_id,
+      }, { transaction });
+      if (targetMember) {
+        targetMember.user_id = user.id;
+        await targetMember.save({ transaction });
+      }
+      await transaction.commit();
+    } catch (error) {
+      await transaction.rollback();
+      throw error;
+    }
+    await recordAuditEvent({
+      req,
+      actor: req.user,
+      action: 'user.created',
+      entityType: 'user',
+      entityId: user.id,
+      metadata: { cooperative_id: user.cooperative_id, role: user.role },
     });
-
     return res.status(201).json({ success: true, data: user });
   } catch (err) {
-    return res.status(500).json({ success: false, message: err.message });
+    console.error('User registration failed:', err.message);
+    return res.status(500).json({ success: false, message: 'Unable to create the user right now' });
   }
 };
 
-/**
- * POST /api/auth/login
- */
 const login = async (req, res) => {
+  const email = String(req.body.email || '').trim().toLowerCase();
   try {
-    const { email, password } = req.body;
-
     const user = await User.findOne({ where: { email } });
-    if (!user || user.status !== 'active') {
-      return res.status(401).json({ success: false, message: 'Invalid credentials' });
-    }
-
-    const isMatch = await user.comparePassword(password);
-    if (!isMatch) {
+    const isMatch = user?.status === 'active' ? await user.comparePassword(req.body.password) : false;
+    if (!user || user.status !== 'active' || !isMatch) {
+      await recordAuditEvent({
+        req,
+        actor: user || null,
+        action: 'auth.login',
+        entityType: 'user',
+        entityId: user?.id,
+        outcome: 'failure',
+        metadata: { email },
+      });
       return res.status(401).json({ success: false, message: 'Invalid credentials' });
     }
 
     user.last_login_at = new Date();
     await user.save();
-
     const accessToken = generateAccessToken(user);
-    const refreshToken = generateRefreshToken(user);
+    const refreshToken = await createRefreshToken(user, req);
+    await recordAuditEvent({ req, actor: user, action: 'auth.login', entityType: 'user', entityId: user.id });
 
-    return res.status(200).json({
-      success: true,
-      data: { user, accessToken, refreshToken },
-    });
+    return res.status(200).json({ success: true, data: { user, accessToken, refreshToken } });
   } catch (err) {
-    return res.status(500).json({ success: false, message: err.message });
+    console.error('Login failed:', err.message);
+    return res.status(500).json({ success: false, message: 'Unable to sign in right now' });
   }
 };
 
-/**
- * POST /api/auth/refresh
- */
 const refresh = async (req, res) => {
+  const rawToken = req.body.refreshToken;
+  if (!rawToken) return res.status(400).json({ success: false, message: 'Refresh token required' });
+
+  let transaction;
   try {
-    const { refreshToken } = req.body;
-    if (!refreshToken) {
-      return res.status(400).json({ success: false, message: 'Refresh token required' });
+    transaction = await sequelize.transaction();
+    const decoded = jwt.verify(rawToken, process.env.JWT_REFRESH_SECRET, {
+      issuer: JWT_ISSUER,
+      audience: JWT_AUDIENCE,
+    });
+    if (decoded.type !== 'refresh') throw new Error('Wrong token type');
+
+    const stored = await RefreshToken.findOne({
+      where: { token_hash: hashToken(rawToken) },
+      transaction,
+      lock: transaction.LOCK.UPDATE,
+    });
+    if (!stored || stored.used_at || stored.revoked_at || stored.expires_at <= new Date()) {
+      await transaction.rollback();
+      if (decoded.id) await revokeUserRefreshTokens(decoded.id);
+      return res.status(401).json({ success: false, message: 'Invalid or reused refresh token' });
     }
 
-    const decoded = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET);
-    const user = await User.findByPk(decoded.id);
-    if (!user || user.status !== 'active') {
+    const user = await User.findByPk(decoded.id, { transaction, lock: transaction.LOCK.UPDATE });
+    if (!user || user.status !== 'active' || decoded.token_version !== user.token_version) {
+      await transaction.rollback();
       return res.status(401).json({ success: false, message: 'Invalid refresh token' });
     }
 
+    stored.used_at = new Date();
+    await stored.save({ transaction });
+    const refreshToken = await createRefreshToken(user, req, { transaction });
     const accessToken = generateAccessToken(user);
-    return res.status(200).json({ success: true, data: { accessToken } });
+    await transaction.commit();
+    return res.status(200).json({ success: true, data: { accessToken, refreshToken } });
   } catch (err) {
+    if (transaction && !transaction.finished) await transaction.rollback();
     return res.status(401).json({ success: false, message: 'Invalid or expired refresh token' });
   }
 };
 
-/**
- * GET /api/auth/me
- */
-const getProfile = async (req, res) => {
-  return res.status(200).json({ success: true, data: req.user });
+const logout = async (req, res) => {
+  try {
+    const rawToken = req.body.refreshToken;
+    if (rawToken) {
+      await RefreshToken.update(
+        { revoked_at: new Date() },
+        { where: { token_hash: hashToken(rawToken), revoked_at: null, user_id: req.user.id } }
+      );
+    }
+    await recordAuditEvent({ req, actor: req.user, action: 'auth.logout', entityType: 'user', entityId: req.user.id });
+    return res.status(200).json({ success: true, message: 'Logged out successfully' });
+  } catch (err) {
+    console.error('Logout failed:', err.message);
+    return res.status(500).json({ success: false, message: 'Unable to log out right now' });
+  }
 };
 
-/**
- * PUT /api/auth/change-password
- * Self-service: the logged-in user changes their own password, must confirm the current one.
- */
+const getProfile = async (req, res) => res.status(200).json({ success: true, data: req.user });
+
+const updatePreferredLanguage = async (req, res) => {
+  try {
+    req.user.preferred_language = req.body.preferred_language;
+    await req.user.save();
+    return res.status(200).json({ success: true, data: req.user });
+  } catch (err) {
+    console.error('Language preference update failed:', err.message);
+    return res.status(500).json({ success: false, message: 'Unable to update language preference' });
+  }
+};
+
 const changePassword = async (req, res) => {
   try {
     const { current_password, new_password } = req.body;
-
-    if (!current_password || !new_password) {
-      return res
-        .status(400)
-        .json({ success: false, message: 'current_password and new_password are required' });
-    }
-    if (new_password.length < 6) {
-      return res
-        .status(400)
-        .json({ success: false, message: 'New password must be at least 6 characters' });
-    }
+    const passwordError = validatePasswordStrength(new_password);
+    if (passwordError) return res.status(400).json({ success: false, message: passwordError });
 
     const user = await User.findByPk(req.user.id);
-    const isMatch = await user.comparePassword(current_password);
-    if (!isMatch) {
+    if (!(await user.comparePassword(current_password))) {
+      await recordAuditEvent({
+        req,
+        actor: user,
+        action: 'auth.password_changed',
+        entityType: 'user',
+        entityId: user.id,
+        outcome: 'failure',
+      });
       return res.status(401).json({ success: false, message: 'Current password is incorrect' });
     }
 
-    user.password_hash = new_password; // re-hashed automatically by the model's beforeUpdate hook
+    user.password_hash = new_password;
+    user.token_version += 1;
     await user.save();
-
+    await revokeUserRefreshTokens(user.id);
+    await recordAuditEvent({ req, actor: user, action: 'auth.password_changed', entityType: 'user', entityId: user.id });
     return res.status(200).json({ success: true, message: 'Password updated successfully' });
   } catch (err) {
-    return res.status(500).json({ success: false, message: err.message });
+    console.error('Password change failed:', err.message);
+    return res.status(500).json({ success: false, message: 'Unable to update the password right now' });
   }
 };
 
-/**
- * POST /api/auth/forgot-password
- * Public endpoint (no auth required — the whole point is the user is locked out).
- * If the email exists, generates a single-use token, emails a reset link, and
- * invalidates any previous unused tokens for that user so only the newest link works.
- */
 const forgotPassword = async (req, res) => {
+  const email = String(req.body.email || '').trim().toLowerCase();
+  const genericResponse = {
+    success: true,
+    message: 'If an active account matches that email, a password reset link will be sent shortly.',
+  };
   try {
-    const { email } = req.body;
-    if (!email) {
-      return res.status(400).json({ success: false, message: 'Email is required' });
-    }
-
     const user = await User.findOne({ where: { email } });
-    if (!user) {
-      return res.status(404).json({
-        success: false,
-        message: 'No account found with that email address.',
+    if (!user || user.status !== 'active') {
+      await recordAuditEvent({
+        req,
+        actor: user || null,
+        action: 'auth.password_reset_requested',
+        entityType: 'user',
+        entityId: user?.id,
+        outcome: 'failure',
+        metadata: { email },
       });
-    }
-    if (user.status !== 'active') {
-      return res.status(403).json({
-        success: false,
-        message: 'This account is inactive. Contact your cooperative manager or SNDS admin.',
-      });
+      return res.status(200).json(genericResponse);
     }
 
-    // Invalidate any earlier unused tokens for this user — only the newest link should work
     await PasswordResetToken.destroy({ where: { user_id: user.id, used_at: null } });
-
     const rawToken = crypto.randomBytes(32).toString('hex');
-    const expiresAt = new Date(Date.now() + RESET_TOKEN_EXPIRES_MINUTES * 60 * 1000);
-
     await PasswordResetToken.create({
       user_id: user.id,
       token_hash: hashToken(rawToken),
-      expires_at: expiresAt,
+      expires_at: new Date(Date.now() + RESET_TOKEN_EXPIRES_MINUTES * 60 * 1000),
     });
-
     const resetLink = `${process.env.CLIENT_URL || 'http://localhost:5173'}/reset-password?token=${rawToken}`;
-    const emailResult = await sendPasswordResetEmail(user.email, resetLink, RESET_TOKEN_EXPIRES_MINUTES);
-
-    return res.status(200).json({
-      success: true,
-      message: `A password reset link has been sent to ${user.email}. It expires in ${RESET_TOKEN_EXPIRES_MINUTES} minutes.`,
-      // Only present when SMTP isn't configured, so local/dev testing can still proceed —
-      // never included once real email delivery is confirmed working.
-      ...(emailResult.delivered ? {} : { devNote: 'Email not sent — check server console for the reset link.' }),
+    await sendPasswordResetEmail(user.email, resetLink, RESET_TOKEN_EXPIRES_MINUTES);
+    await recordAuditEvent({
+      req,
+      actor: user,
+      action: 'auth.password_reset_requested',
+      entityType: 'user',
+      entityId: user.id,
     });
+    return res.status(200).json(genericResponse);
   } catch (err) {
-    return res.status(500).json({ success: false, message: err.message });
+    console.error('Password reset request failed:', err.message);
+    // Preserve the same response for existing and non-existing accounts.
+    return res.status(200).json(genericResponse);
   }
 };
 
-/**
- * POST /api/auth/reset-password
- * Public endpoint. Redeems a single-use token (from the emailed link) to set a new password.
- */
 const resetPasswordWithToken = async (req, res) => {
+  const passwordError = validatePasswordStrength(req.body.new_password);
+  if (passwordError) return res.status(400).json({ success: false, message: passwordError });
+
+  let transaction;
   try {
-    const { token, new_password } = req.body;
-    if (!token || !new_password) {
-      return res.status(400).json({ success: false, message: 'token and new_password are required' });
-    }
-    if (new_password.length < 6) {
-      return res.status(400).json({ success: false, message: 'Password must be at least 6 characters' });
+    transaction = await sequelize.transaction();
+    const resetToken = await PasswordResetToken.findOne({
+      where: { token_hash: hashToken(req.body.token) },
+      transaction,
+      lock: transaction.LOCK.UPDATE,
+    });
+    if (!resetToken || resetToken.used_at || resetToken.expires_at <= new Date()) {
+      await transaction.rollback();
+      return res.status(400).json({ success: false, message: 'This reset link is invalid, expired, or already used.' });
     }
 
-    const resetToken = await PasswordResetToken.findOne({ where: { token_hash: hashToken(token) } });
-
-    if (!resetToken) {
+    const user = await User.findByPk(resetToken.user_id, { transaction, lock: transaction.LOCK.UPDATE });
+    if (!user) {
+      await transaction.rollback();
       return res.status(400).json({ success: false, message: 'This reset link is invalid.' });
     }
-    if (resetToken.used_at) {
-      return res.status(400).json({ success: false, message: 'This reset link has already been used.' });
-    }
-    if (new Date() > resetToken.expires_at) {
-      return res.status(400).json({ success: false, message: 'This reset link has expired. Request a new one.' });
-    }
 
-    const user = await User.findByPk(resetToken.user_id);
-    if (!user) {
-      return res.status(404).json({ success: false, message: 'Account not found.' });
-    }
-
-    user.password_hash = new_password; // re-hashed automatically by the model's beforeUpdate hook
-    await user.save();
-
-    resetToken.used_at = new Date(); // single-use: this token can never be redeemed again
-    await resetToken.save();
-
+    user.password_hash = req.body.new_password;
+    user.token_version += 1;
+    resetToken.used_at = new Date();
+    await user.save({ transaction });
+    await resetToken.save({ transaction });
+    await revokeUserRefreshTokens(user.id, { transaction });
+    await PasswordResetToken.update(
+      { used_at: new Date() },
+      { where: { user_id: user.id, used_at: null, id: { [Op.ne]: resetToken.id } }, transaction }
+    );
+    await transaction.commit();
+    await recordAuditEvent({ req, actor: user, action: 'auth.password_reset', entityType: 'user', entityId: user.id });
     return res.status(200).json({ success: true, message: 'Your password has been reset. You can now log in.' });
   } catch (err) {
-    return res.status(500).json({ success: false, message: err.message });
+    if (transaction && !transaction.finished) await transaction.rollback();
+    console.error('Password reset failed:', err.message);
+    return res.status(500).json({ success: false, message: 'Unable to reset the password right now' });
   }
 };
 
@@ -260,7 +368,9 @@ module.exports = {
   register,
   login,
   refresh,
+  logout,
   getProfile,
+  updatePreferredLanguage,
   changePassword,
   forgotPassword,
   resetPasswordWithToken,

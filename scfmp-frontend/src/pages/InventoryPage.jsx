@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Plus, Loader2, AlertTriangle, Pencil, Trash2 } from 'lucide-react';
 import DashboardLayout from '../components/DashboardLayout';
 import Modal from '../components/Modal';
+import ReportActions from '../components/ReportActions';
 import {
   listInventory,
   createInventoryItem,
@@ -11,6 +12,7 @@ import {
 } from '../api/inventory';
 import { useAuth } from '../context/AuthContext';
 import { useCooperative } from '../context/CooperativeContext';
+import { useTranslation } from 'react-i18next';
 
 const emptyItemForm = {
   item_name: '',
@@ -29,6 +31,7 @@ const CATEGORY_LABELS = {
 };
 
 const InventoryPage = () => {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const { cooperativeScope, activeCooperativeId } = useCooperative();
 
@@ -158,7 +161,8 @@ const InventoryPage = () => {
   };
 
   return (
-    <DashboardLayout title="Inventory" subtitle="Seeds, fertilizers, and equipment stock.">
+    <DashboardLayout title={t('common.inventory')} subtitle={t('modules.inventorySubtitle')}>
+      <ReportActions moduleName="inventory" filters={cooperativeScope} />
       <div className="mb-5 flex items-center justify-end">
         <button
           onClick={openCreateItemModal}
@@ -169,7 +173,7 @@ const InventoryPage = () => {
         </button>
       </div>
 
-      <div className="overflow-hidden rounded-xl bg-white shadow-card">
+      <div className="overflow-x-auto rounded-xl bg-white shadow-card">
         {isLoading ? (
           <div className="flex h-40 items-center justify-center text-ink-soft">
             <Loader2 className="mr-2 h-5 w-5 animate-spin" />
@@ -182,7 +186,7 @@ const InventoryPage = () => {
             No inventory items yet — add your first one.
           </div>
         ) : (
-          <table className="w-full text-left text-sm">
+          <table className="min-w-[840px] w-full text-left text-sm">
             <thead className="border-b border-sand bg-sand/30 text-xs uppercase tracking-wide text-ink-soft">
               <tr>
                 <th className="px-5 py-3 font-medium">Item</th>

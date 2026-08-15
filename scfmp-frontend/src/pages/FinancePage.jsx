@@ -4,6 +4,7 @@ import DashboardLayout from '../components/DashboardLayout';
 import StatCard from '../components/StatCard';
 import Modal from '../components/Modal';
 import Badge from '../components/Badge';
+import ReportActions from '../components/ReportActions';
 import {
   listTransactions,
   createTransaction,
@@ -17,6 +18,7 @@ import {
 import { listMembers } from '../api/members';
 import { useAuth } from '../context/AuthContext';
 import { useCooperative } from '../context/CooperativeContext';
+import { useTranslation } from 'react-i18next';
 
 const emptyTxnForm = {
   type: 'income',
@@ -35,6 +37,7 @@ const emptyLoanForm = {
 };
 
 const FinancePage = () => {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const { cooperativeScope, activeCooperativeId } = useCooperative();
 
@@ -212,7 +215,8 @@ const FinancePage = () => {
   }
 
   return (
-    <DashboardLayout title="Finance" subtitle="Income, expenses, and loans for your cooperative.">
+    <DashboardLayout title={t('common.finance')} subtitle={t('modules.financeSubtitle')}>
+      <ReportActions moduleName="finance" filters={cooperativeScope} />
       <div className="mb-6 grid grid-cols-1 gap-5 sm:grid-cols-3">
         <StatCard label="Income" value={summary.income} accent="gold" isCurrency />
         <StatCard label="Expenses" value={summary.expense} accent="clay" isCurrency />
@@ -273,7 +277,7 @@ const FinancePage = () => {
               No transactions recorded yet.
             </div>
           ) : (
-            <table className="w-full text-left text-sm">
+            <table className="min-w-[820px] w-full text-left text-sm">
               <thead className="border-b border-sand bg-sand/30 text-xs uppercase tracking-wide text-ink-soft">
                 <tr>
                   <th className="px-5 py-3 font-medium">Type</th>
@@ -346,7 +350,7 @@ const FinancePage = () => {
                 : 'No loans issued yet.'}
             </div>
           ) : (
-            <table className="w-full text-left text-sm">
+            <table className="min-w-[820px] w-full text-left text-sm">
               <thead className="border-b border-sand bg-sand/30 text-xs uppercase tracking-wide text-ink-soft">
                 <tr>
                   <th className="px-5 py-3 font-medium">Member</th>

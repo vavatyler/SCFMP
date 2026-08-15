@@ -4,7 +4,7 @@ const defineLoan = require('../models/Loan');
 describe('Loan balance auto-initialization', () => {
   // In-memory SQLite instance to test the model's beforeValidate hook logic
   // in isolation — no MySQL connection required for this test.
-  const sequelize = new Sequelize('sqlite::memory:', { logging: false });
+  const sequelize = new Sequelize({ dialect: 'sqlite', storage: ':memory:', logging: false });
   const Loan = defineLoan(sequelize);
 
   beforeAll(async () => {

@@ -12,6 +12,11 @@ const resolveCooperativeScope = (req) => {
   return req.user.cooperative_id;
 };
 
+const getOwnMemberId = async (userId) => {
+  const member = await Member.findOne({ where: { user_id: userId }, attributes: ['id'] });
+  return member?.id || -1;
+};
+
 /**
  * GET /api/transactions
  * Optional filters: ?type=  &member_id=  &from=YYYY-MM-DD  &to=YYYY-MM-DD
@@ -24,7 +29,8 @@ const list = async (req, res) => {
     const where = {};
     if (cooperativeId) where.cooperative_id = cooperativeId;
     if (type) where.type = type;
-    if (member_id) where.member_id = member_id;
+    if (req.user.role === 'farmer') where.member_id = await getOwnMemberId(req.user.id);
+    else if (member_id) where.member_id = member_id;
     if (from || to) {
       where.transaction_date = {};
       if (from) where.transaction_date[Op.gte] = from;
@@ -64,7 +70,11 @@ const getById = async (req, res) => {
     });
     if (!record) return res.status(404).json({ success: false, message: 'Transaction not found' });
 
-    if (req.user.role !== 'super_admin' && record.cooperative_id !== req.user.cooperative_id) {
+    if (
+      req.user.role !== 'super_admin' &&
+      (record.cooperative_id !== req.user.cooperative_id ||
+        (req.user.role === 'farmer' && record.member_id !== (await getOwnMemberId(req.user.id))))
+    ) {
       return res.status(403).json({ success: false, message: 'Access denied' });
     }
 
@@ -180,6 +190,7 @@ const summary = async (req, res) => {
 
     const where = {};
     if (cooperativeId) where.cooperative_id = cooperativeId;
+    if (req.user.role === 'farmer') where.member_id = await getOwnMemberId(req.user.id);
     if (from || to) {
       where.transaction_date = {};
       if (from) where.transaction_date[Op.gte] = from;

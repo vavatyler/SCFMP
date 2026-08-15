@@ -14,10 +14,21 @@ const verifyToken = async (req, res, next) => {
     }
 
     const token = authHeader.split(' ')[1];
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const decoded = jwt.verify(token, process.env.JWT_SECRET, {
+      issuer: process.env.JWT_ISSUER || 'scfmp-api',
+      audience: process.env.JWT_AUDIENCE || 'scfmp-web',
+    });
+
+    if (decoded.type !== 'access') {
+      return res.status(401).json({ success: false, message: 'Invalid token type' });
+    }
 
     const user = await User.findByPk(decoded.id);
-    if (!user || user.status !== 'active') {
+    if (
+      !user ||
+      user.status !== 'active' ||
+      decoded.token_version !== user.token_version
+    ) {
       return res.status(401).json({ success: false, message: 'User not found or inactive' });
     }
 

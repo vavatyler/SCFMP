@@ -1,5 +1,6 @@
 import { useState, forwardRef } from 'react';
 import { Eye, EyeOff } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 /**
  * Drop-in replacement for <input type="password">. Pass the exact same
@@ -9,6 +10,7 @@ import { Eye, EyeOff } from 'lucide-react';
  */
 const PasswordInput = forwardRef(({ className = '', ...props }, ref) => {
   const [isVisible, setIsVisible] = useState(false);
+  const { t } = useTranslation();
 
   return (
     <div className="relative">
@@ -21,7 +23,7 @@ const PasswordInput = forwardRef(({ className = '', ...props }, ref) => {
       <button
         type="button"
         onClick={() => setIsVisible((v) => !v)}
-        aria-label={isVisible ? 'Hide password' : 'Show password'}
+        aria-label={isVisible ? t('auth.hidePassword') : t('auth.showPassword')}
         aria-pressed={isVisible}
         className="focus-ring absolute right-2.5 top-1/2 -translate-y-1/2 rounded p-0.5 text-ink-soft hover:text-ink"
       >

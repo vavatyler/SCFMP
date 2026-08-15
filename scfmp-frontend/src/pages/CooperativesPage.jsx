@@ -4,6 +4,7 @@ import DashboardLayout from '../components/DashboardLayout';
 import Modal from '../components/Modal';
 import { createCooperative, updateCooperative } from '../api/cooperatives';
 import { useCooperative } from '../context/CooperativeContext';
+import { useTranslation } from 'react-i18next';
 
 const emptyForm = {
   name: '',
@@ -17,6 +18,7 @@ const emptyForm = {
 };
 
 const CooperativesPage = () => {
+  const { t } = useTranslation();
   const { cooperatives, isLoading, refetchCooperatives, activeCooperativeId, setActiveCooperativeId } =
     useCooperative();
 
@@ -73,7 +75,7 @@ const CooperativesPage = () => {
   };
 
   return (
-    <DashboardLayout title="Cooperatives" subtitle="Every cooperative registered on the platform.">
+    <DashboardLayout title={t('common.cooperatives')} subtitle={t('modules.cooperativesSubtitle')}>
       <div className="mb-5 flex items-center justify-end">
         <button
           onClick={openCreateModal}

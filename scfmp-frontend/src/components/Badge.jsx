@@ -2,6 +2,9 @@ const STATUS_STYLES = {
   active: 'bg-forest/10 text-forest',
   inactive: 'bg-ink-soft/10 text-ink-soft',
   suspended: 'bg-clay/10 text-clay',
+  recorded: 'bg-gold/15 text-gold-dark',
+  verified: 'bg-forest/10 text-forest',
+  rejected: 'bg-clay/10 text-clay',
 };
 
 const Badge = ({ status, children }) => (

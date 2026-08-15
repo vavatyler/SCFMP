@@ -1,73 +1,89 @@
-const { Production, Farmer, Member } = require('../models');
-const { Op, fn, col } = require('sequelize');
+const { Op } = require('sequelize');
+const {
+  Production,
+  Farmer,
+  Member,
+  Product,
+  Cooperative,
+} = require('../models');
+const { recordAuditEvent } = require('../services/auditService');
 
-/**
- * Helper: checks the caller can access a given farmer's records
- * (same cooperative, or super_admin).
- */
-const assertAccessToFarmer = async (farmerId, user) => {
-  const farmer = await Farmer.findByPk(farmerId, {
-    include: [{ model: Member, as: 'member' }],
+const clampPagination = (query) => ({
+  page: Math.max(1, Number.parseInt(query.page, 10) || 1),
+  limit: Math.min(100, Math.max(1, Number.parseInt(query.limit, 10) || 20)),
+});
+
+const getOwnFarmer = (userId) =>
+  Farmer.findOne({
+    include: [{ model: Member, as: 'member', required: true, where: { user_id: userId } }],
   });
-  if (!farmer) return { allowed: false, farmer: null };
-  if (user.role !== 'super_admin' && farmer.member.cooperative_id !== user.cooperative_id) {
-    return { allowed: false, farmer };
+
+const resolveScope = async (req) => {
+  const scope = {};
+  if (req.user.role === 'super_admin') {
+    if (req.query.cooperative_id) scope.cooperative_id = Number(req.query.cooperative_id);
+  } else {
+    scope.cooperative_id = req.user.cooperative_id;
   }
-  return { allowed: true, farmer };
+  if (req.user.role === 'farmer') {
+    const ownFarmer = await getOwnFarmer(req.user.id);
+    scope.farmer_id = ownFarmer?.id || -1;
+  }
+  return scope;
 };
 
-/**
- * GET /api/production
- * Optional filters: ?farmer_id=  &from=YYYY-MM-DD  &to=YYYY-MM-DD  &product_name=
- * Non-super_admin users only ever see records from their own cooperative's farmers.
- */
+const buildWhere = async (req) => {
+  const scope = await resolveScope(req);
+  const where = { ...scope };
+  const { farmer_id, product_id, season, status, from, to, search } = req.query;
+  if (farmer_id && req.user.role !== 'farmer') where.farmer_id = Number(farmer_id);
+  if (product_id) where.product_id = Number(product_id);
+  if (season) where.season = season;
+  if (status) where.status = status;
+  if (from || to) {
+    where.production_date = {};
+    if (from) where.production_date[Op.gte] = from;
+    if (to) where.production_date[Op.lte] = to;
+  }
+  if (search) where.product_name = { [Op.like]: `%${search}%` };
+  return where;
+};
+
+const includeDetails = [
+  {
+    model: Farmer,
+    as: 'farmer',
+    attributes: ['id', 'crop_type', 'farm_size_ha'],
+    include: [{ model: Member, as: 'member', attributes: ['id', 'first_name', 'last_name', 'user_id'] }],
+  },
+  { model: Product, as: 'product', attributes: ['id', 'name', 'category', 'default_unit'] },
+  { model: Cooperative, as: 'cooperative', attributes: ['id', 'name'] },
+];
+
+const canAccess = async (record, user) => {
+  if (user.role === 'super_admin') return true;
+  if (record.cooperative_id !== user.cooperative_id) return false;
+  if (user.role !== 'farmer') return true;
+  const ownFarmer = await getOwnFarmer(user.id);
+  return ownFarmer?.id === record.farmer_id;
+};
+
 const list = async (req, res) => {
   try {
-    const { farmer_id, from, to, product_name, page = 1, limit = 20 } = req.query;
-
-    const where = {};
-    if (farmer_id) where.farmer_id = farmer_id;
-    if (product_name) where.product_name = { [Op.like]: `%${product_name}%` };
-    if (from || to) {
-      where.production_date = {};
-      if (from) where.production_date[Op.gte] = from;
-      if (to) where.production_date[Op.lte] = to;
-    }
-
-    const memberWhere = {};
-    if (req.user.role !== 'super_admin') {
-      memberWhere.cooperative_id = req.user.cooperative_id;
-    } else if (req.query.cooperative_id) {
-      memberWhere.cooperative_id = req.query.cooperative_id;
-    }
-
-    const offset = (Number(page) - 1) * Number(limit);
-
+    const { page, limit } = clampPagination(req.query);
+    const where = await buildWhere(req);
     const { rows, count } = await Production.findAndCountAll({
       where,
-      include: [
-        {
-          model: Farmer,
-          as: 'farmer',
-          required: true,
-          include: [{ model: Member, as: 'member', required: true, where: memberWhere }],
-        },
-      ],
-      order: [['production_date', 'DESC']],
-      limit: Number(limit),
-      offset,
-      // CRITICAL: without this, Sequelize's default subQuery:true (triggered by
-      // limit + include) selects paginated rows using ONLY the top-level `where`,
-      // completely ignoring the nested cooperative_id filter above — meaning a
-      // super_admin viewing one cooperative would see every cooperative's
-      // production records. See tests/production-cooperative-isolation.integration.test.js.
-      subQuery: false,
+      include: includeDetails,
+      order: [['production_date', 'DESC'], ['id', 'DESC']],
+      limit,
+      offset: (page - 1) * limit,
+      distinct: true,
     });
-
     return res.status(200).json({
       success: true,
       data: rows,
-      pagination: { total: count, page: Number(page), limit: Number(limit) },
+      pagination: { total: count, page, limit, pages: Math.ceil(count / limit) },
     });
   } catch (err) {
     return res.status(500).json({ success: false, message: err.message });
@@ -76,48 +92,74 @@ const list = async (req, res) => {
 
 const getById = async (req, res) => {
   try {
-    const record = await Production.findByPk(req.params.id, {
-      include: [{ model: Farmer, as: 'farmer', include: [{ model: Member, as: 'member' }] }],
-    });
-    if (!record) return res.status(404).json({ success: false, message: 'Record not found' });
-
-    if (
-      req.user.role !== 'super_admin' &&
-      record.farmer.member.cooperative_id !== req.user.cooperative_id
-    ) {
+    const record = await Production.findByPk(req.params.id, { include: includeDetails });
+    if (!record) return res.status(404).json({ success: false, message: 'Production record not found' });
+    if (!(await canAccess(record, req.user))) {
       return res.status(403).json({ success: false, message: 'Access denied' });
     }
-
     return res.status(200).json({ success: true, data: record });
   } catch (err) {
     return res.status(500).json({ success: false, message: err.message });
   }
 };
 
-/**
- * POST /api/production
- * total_amount is calculated automatically by the model hook — never accepted from the client.
- */
+const resolveProduct = async ({ product_id, product_name, unit, cooperative_id }) => {
+  if (product_id) {
+    const product = await Product.findOne({ where: { id: product_id, cooperative_id, status: 'active' } });
+    if (!product) return null;
+    return product;
+  }
+  const name = String(product_name || '').trim();
+  if (!name) return null;
+  const [product] = await Product.findOrCreate({
+    where: { cooperative_id, name },
+    defaults: { default_unit: unit || 'kg' },
+  });
+  return product;
+};
+
 const create = async (req, res) => {
   try {
-    const { farmer_id, product_name, quantity, unit, unit_price, season, production_date } =
-      req.body;
-
-    const { allowed, farmer } = await assertAccessToFarmer(farmer_id, req.user);
+    const farmer = await Farmer.findByPk(req.body.farmer_id, {
+      include: [{ model: Member, as: 'member', required: true }],
+    });
     if (!farmer) return res.status(404).json({ success: false, message: 'Farmer not found' });
-    if (!allowed) return res.status(403).json({ success: false, message: 'Access denied' });
+    const cooperative_id = farmer.member.cooperative_id;
+    if (req.user.role !== 'super_admin' && cooperative_id !== req.user.cooperative_id) {
+      return res.status(403).json({ success: false, message: 'Access denied' });
+    }
+    if (req.user.role === 'super_admin' && req.body.cooperative_id && Number(req.body.cooperative_id) !== cooperative_id) {
+      return res.status(400).json({ success: false, message: 'Farmer does not belong to the selected cooperative' });
+    }
+
+    const product = await resolveProduct({ ...req.body, cooperative_id });
+    if (!product) return res.status(400).json({ success: false, message: 'A valid product is required' });
+    const requestedStatus = req.body.status || 'recorded';
+    const status = ['super_admin', 'cooperative_manager'].includes(req.user.role)
+      ? requestedStatus
+      : 'recorded';
 
     const record = await Production.create({
-      farmer_id,
-      product_name,
-      quantity,
-      unit,
-      unit_price,
-      season,
-      production_date,
+      cooperative_id,
+      farmer_id: farmer.id,
+      product_id: product.id,
+      product_name: product.name,
+      quantity: req.body.quantity,
+      unit: req.body.unit || product.default_unit,
+      unit_price: req.body.unit_price,
+      season: req.body.season || null,
+      status,
+      production_date: req.body.production_date,
       recorded_by: req.user.id,
     });
-
+    await recordAuditEvent({
+      req,
+      actor: req.user,
+      action: 'production.created',
+      entityType: 'production',
+      entityId: record.id,
+      metadata: { cooperative_id, farmer_id: farmer.id, product_id: product.id },
+    });
     return res.status(201).json({ success: true, data: record });
   } catch (err) {
     return res.status(500).json({ success: false, message: err.message });
@@ -126,21 +168,38 @@ const create = async (req, res) => {
 
 const update = async (req, res) => {
   try {
-    const record = await Production.findByPk(req.params.id, {
-      include: [{ model: Farmer, as: 'farmer', include: [{ model: Member, as: 'member' }] }],
-    });
-    if (!record) return res.status(404).json({ success: false, message: 'Record not found' });
-
-    if (
-      req.user.role !== 'super_admin' &&
-      record.farmer.member.cooperative_id !== req.user.cooperative_id
-    ) {
+    const record = await Production.findByPk(req.params.id);
+    if (!record) return res.status(404).json({ success: false, message: 'Production record not found' });
+    if (!(await canAccess(record, req.user))) {
       return res.status(403).json({ success: false, message: 'Access denied' });
     }
 
-    const { farmer_id, total_amount, ...safeUpdates } = req.body; // farmer_id immutable, total_amount always derived
-    await record.update(safeUpdates);
+    const updates = {};
+    ['quantity', 'unit', 'unit_price', 'season', 'production_date'].forEach((field) => {
+      if (req.body[field] !== undefined) updates[field] = req.body[field];
+    });
+    if (req.body.status !== undefined) {
+      if (!['super_admin', 'cooperative_manager'].includes(req.user.role)) {
+        return res.status(403).json({ success: false, message: 'Only managers can change verification status' });
+      }
+      updates.status = req.body.status;
+    }
+    if (req.body.product_id || req.body.product_name) {
+      const product = await resolveProduct({ ...req.body, cooperative_id: record.cooperative_id });
+      if (!product) return res.status(400).json({ success: false, message: 'A valid product is required' });
+      updates.product_id = product.id;
+      updates.product_name = product.name;
+    }
 
+    await record.update(updates);
+    await recordAuditEvent({
+      req,
+      actor: req.user,
+      action: 'production.updated',
+      entityType: 'production',
+      entityId: record.id,
+      metadata: { cooperative_id: record.cooperative_id, changed_fields: Object.keys(updates) },
+    });
     return res.status(200).json({ success: true, data: record });
   } catch (err) {
     return res.status(500).json({ success: false, message: err.message });
@@ -149,62 +208,111 @@ const update = async (req, res) => {
 
 const remove = async (req, res) => {
   try {
-    const record = await Production.findByPk(req.params.id, {
-      include: [{ model: Farmer, as: 'farmer', include: [{ model: Member, as: 'member' }] }],
-    });
-    if (!record) return res.status(404).json({ success: false, message: 'Record not found' });
-
-    if (
-      req.user.role !== 'super_admin' &&
-      record.farmer.member.cooperative_id !== req.user.cooperative_id
-    ) {
+    const record = await Production.findByPk(req.params.id);
+    if (!record) return res.status(404).json({ success: false, message: 'Production record not found' });
+    if (!(await canAccess(record, req.user))) {
       return res.status(403).json({ success: false, message: 'Access denied' });
     }
-
+    const auditMetadata = {
+      cooperative_id: record.cooperative_id,
+      farmer_id: record.farmer_id,
+      product_id: record.product_id,
+    };
     await record.destroy();
+    await recordAuditEvent({
+      req,
+      actor: req.user,
+      action: 'production.deleted',
+      entityType: 'production',
+      entityId: record.id,
+      metadata: auditMetadata,
+    });
     return res.status(200).json({ success: true, message: 'Production record deleted' });
   } catch (err) {
     return res.status(500).json({ success: false, message: err.message });
   }
 };
 
-/**
- * GET /api/production/summary
- * Returns total quantity and total value, grouped by product, for the caller's cooperative.
- * Feeds directly into the dashboard from your architecture doc.
- */
-const summary = async (req, res) => {
+const listProducts = async (req, res) => {
   try {
-    const memberWhere = {};
-    if (req.user.role !== 'super_admin') {
-      memberWhere.cooperative_id = req.user.cooperative_id;
-    } else if (req.query.cooperative_id) {
-      memberWhere.cooperative_id = req.query.cooperative_id;
-    }
-
-    const rows = await Production.findAll({
-      attributes: [
-        'product_name',
-        [fn('SUM', col('quantity')), 'total_quantity'],
-        [fn('SUM', col('total_amount')), 'total_value'],
-        [fn('COUNT', col('Production.id')), 'record_count'],
-      ],
-      include: [
-        {
-          model: Farmer,
-          as: 'farmer',
-          attributes: [],
-          include: [{ model: Member, as: 'member', attributes: [], where: memberWhere }],
-        },
-      ],
-      group: ['product_name'],
-      raw: true,
+    const scope = await resolveScope(req);
+    const where = { status: 'active' };
+    if (scope.cooperative_id) where.cooperative_id = scope.cooperative_id;
+    const products = await Product.findAll({
+      where,
+      include: [{ model: Cooperative, as: 'cooperative', attributes: ['id', 'name'] }],
+      order: [['name', 'ASC']],
     });
-
-    return res.status(200).json({ success: true, data: rows });
+    return res.status(200).json({ success: true, data: products });
   } catch (err) {
     return res.status(500).json({ success: false, message: err.message });
   }
 };
 
-module.exports = { list, getById, create, update, remove, summary };
+const analytics = async (req, res) => {
+  try {
+    const where = await buildWhere(req);
+    const records = await Production.findAll({ where, include: includeDetails, order: [['production_date', 'ASC']] });
+    const totals = { record_count: records.length, total_quantity: 0, total_value: 0, farmer_ids: new Set() };
+    const monthly = new Map();
+    const products = new Map();
+    const farmers = new Map();
+    const cooperatives = new Map();
+
+    records.forEach((record) => {
+      const quantity = Number(record.quantity || 0);
+      const value = Number(record.total_amount || 0);
+      totals.total_quantity += quantity;
+      totals.total_value += value;
+      totals.farmer_ids.add(record.farmer_id);
+      const month = String(record.production_date).slice(0, 7);
+      const farmerName = record.farmer?.member
+        ? `${record.farmer.member.first_name} ${record.farmer.member.last_name}`
+        : `Farmer #${record.farmer_id}`;
+      const productName = record.product?.name || record.product_name;
+      const cooperativeName = record.cooperative?.name || `Cooperative #${record.cooperative_id}`;
+
+      const add = (map, key, label) => {
+        const item = map.get(key) || { key, label, quantity: 0, value: 0, records: 0 };
+        item.quantity += quantity;
+        item.value += value;
+        item.records += 1;
+        map.set(key, item);
+      };
+      add(monthly, month, month);
+      add(products, record.product_id, productName);
+      add(farmers, record.farmer_id, farmerName);
+      add(cooperatives, record.cooperative_id, cooperativeName);
+    });
+
+    const byValueDesc = (map) => [...map.values()].sort((a, b) => b.value - a.value);
+    return res.status(200).json({
+      success: true,
+      data: {
+        stats: {
+          record_count: totals.record_count,
+          total_quantity: totals.total_quantity,
+          total_value: totals.total_value,
+          active_farmers: totals.farmer_ids.size,
+        },
+        monthly_trend: [...monthly.values()],
+        by_product: byValueDesc(products),
+        farmer_performance: byValueDesc(farmers),
+        cooperative_comparison: byValueDesc(cooperatives),
+      },
+    });
+  } catch (err) {
+    return res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+const summary = async (req, res) => {
+  const originalJson = res.json.bind(res);
+  res.json = (payload) => {
+    if (!payload.success) return originalJson(payload);
+    return originalJson({ success: true, data: payload.data.by_product });
+  };
+  return analytics(req, res);
+};
+
+module.exports = { list, getById, create, update, remove, summary, analytics, listProducts };
