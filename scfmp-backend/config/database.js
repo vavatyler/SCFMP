@@ -1,6 +1,7 @@
 require('dotenv').config();
 
 const { Sequelize } = require('sequelize');
+const mysql2 = require('mysql2');
 const env = process.env.NODE_ENV || 'development';
 const config = require('./config.js')[env];
 
@@ -8,6 +9,8 @@ const options = {
     host: config.host,
     port: config.port,
     dialect: config.dialect,
+    // Static reference ensures Vercel includes the MySQL driver in the Function bundle.
+    dialectModule: mysql2,
     logging: config.logging,
     dialectOptions: config.dialectOptions || {},
     define: {
