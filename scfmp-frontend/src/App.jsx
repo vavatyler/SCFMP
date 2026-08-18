@@ -13,6 +13,7 @@ import DocumentsPage from './pages/DocumentsPage';
 import CooperativesPage from './pages/CooperativesPage';
 import UsersPage from './pages/UsersPage';
 import NotFoundPage from './pages/NotFoundPage';
+import ContactPage from './pages/ContactPage';
 import ProtectedRoute from './components/ProtectedRoute';
 
 function App() {
@@ -99,6 +100,14 @@ function App() {
         element={
           <ProtectedRoute>
             <UsersPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/contact"
+        element={
+          <ProtectedRoute>
+            <ContactPage />
           </ProtectedRoute>
         }
       />

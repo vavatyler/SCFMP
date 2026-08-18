@@ -9,6 +9,7 @@ const {
   openStoredFile,
   removeStoredFile,
   unlinkIfPresent,
+  STORAGE_ERROR_CODES,
 } = require('../services/documentStorageService');
 
 const resolveOwnerCooperativeId = async (ownerType, ownerId) => {
@@ -93,7 +94,13 @@ const list = async (req, res) => {
 const upload = async (req, res) => {
   let storedFile;
   try {
-    if (!req.file) return res.status(400).json({ success: false, message: 'No file was uploaded' });
+    if (!req.file) {
+      return res.status(400).json({
+        success: false,
+        code: 'DOCUMENT_FILE_REQUIRED',
+        message: 'No file was uploaded',
+      });
+    }
 
     const { owner_type, owner_id, description } = req.body;
     if (!owner_type || !owner_id) {
@@ -145,8 +152,18 @@ const upload = async (req, res) => {
     } else if (req.file) {
       await unlinkIfPresent(req.file.path);
     }
-    console.error('Document upload failed:', err.message);
-    return res.status(500).json({ success: false, message: err.message.includes('Blob is not configured') ? err.message : 'Unable to upload the document right now' });
+    console.error('Document upload failed:', err.cause?.message || err.message);
+    if (err.code === STORAGE_ERROR_CODES.unavailable) {
+      return res.status(503).json({ success: false, code: err.code, message: err.message });
+    }
+    if (err.code === STORAGE_ERROR_CODES.uploadFailed) {
+      return res.status(502).json({ success: false, code: err.code, message: err.message });
+    }
+    return res.status(500).json({
+      success: false,
+      code: 'DOCUMENT_METADATA_SAVE_FAILED',
+      message: 'Unable to upload the document right now',
+    });
   }
 };
 
@@ -165,6 +182,8 @@ const download = async (req, res) => {
       }
       res.type(document.mime_type || result.blob.contentType || 'application/octet-stream');
       res.attachment(document.original_name);
+      res.setHeader('Cache-Control', 'private, no-store');
+      res.setHeader('X-Content-Type-Options', 'nosniff');
       res.setHeader('Content-Length', String(result.blob.size));
       await pipeline(Readable.fromWeb(result.stream), res);
       return undefined;

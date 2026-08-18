@@ -54,6 +54,22 @@ module.exports = (sequelize) => {
         type: DataTypes.STRING(50),
         unique: true,
       },
+      organization_type: {
+        type: DataTypes.STRING(30),
+        allowNull: false,
+        defaultValue: 'cooperative',
+        validate: {
+          isIn: [[
+            'cooperative',
+            'farmer_group',
+            'sme',
+            'school',
+            'association',
+            'ngo',
+            'other',
+          ]],
+        },
+      },
       district: DataTypes.STRING(100),
       sector: DataTypes.STRING(100),
       cell: DataTypes.STRING(100),

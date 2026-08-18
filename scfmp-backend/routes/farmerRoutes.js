@@ -17,8 +17,17 @@ router.post(
   checkRole('super_admin', 'cooperative_manager', 'field_officer'),
   [
     body('member_id').isInt().withMessage('member_id must be a valid member ID'),
-    body('farm_size_ha').optional().isFloat({ min: 0 }),
-    body('crop_type').optional().isString(),
+    body('farm_size_ha')
+      .optional({ checkFalsy: true })
+      .isFloat({ min: 0 }).withMessage('Farm size must be a number greater than or equal to zero'),
+    body('crop_type')
+      .optional({ checkFalsy: true })
+      .trim()
+      .isLength({ max: 100 }).withMessage('Crop type must be 100 characters or fewer'),
+    body('district').optional({ checkFalsy: true }).trim().isLength({ max: 100 }),
+    body('sector').optional({ checkFalsy: true }).trim().isLength({ max: 100 }),
+    body('cell').optional({ checkFalsy: true }).trim().isLength({ max: 100 }),
+    body('village').optional({ checkFalsy: true }).trim().isLength({ max: 100 }),
   ],
   validate,
   create
@@ -27,6 +36,20 @@ router.post(
 router.put(
   '/:id',
   checkRole('super_admin', 'cooperative_manager', 'field_officer'),
+  [
+    body('farm_size_ha')
+      .optional({ checkFalsy: true })
+      .isFloat({ min: 0 }).withMessage('Farm size must be a number greater than or equal to zero'),
+    body('crop_type')
+      .optional({ checkFalsy: true })
+      .trim()
+      .isLength({ max: 100 }).withMessage('Crop type must be 100 characters or fewer'),
+    body('district').optional({ checkFalsy: true }).trim().isLength({ max: 100 }),
+    body('sector').optional({ checkFalsy: true }).trim().isLength({ max: 100 }),
+    body('cell').optional({ checkFalsy: true }).trim().isLength({ max: 100 }),
+    body('village').optional({ checkFalsy: true }).trim().isLength({ max: 100 }),
+  ],
+  validate,
   update
 );
 

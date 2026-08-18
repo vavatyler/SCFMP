@@ -16,6 +16,9 @@ This repository now contains the support-document enhancements in the existing b
 - Append-only audit events for login success/failure, user creation, status/role changes, password changes, and resets.
 - Farmer accounts are restricted to the member, farmer, production, finance, loan, dashboard, and report records linked to their own user account.
 - Hardened CORS, request-size limits, JWT issuer/audience/type checks, login/reset rate limits, SQL parameterization through Sequelize, React output escaping, bcrypt hashing, and upload MIME/extension/size restrictions.
+- Organization terminology and type support while retaining the existing cooperative models, routes, IDs, and relationships.
+- Dependent Rwanda district, sector, cell, and village selection, plus matching backend hierarchy validation.
+- Rwanda phone normalization, multilingual member/farmer/organization forms, dynamic organization greetings, and the Phase 1 contact page.
 
 ## New database migrations
 
@@ -33,8 +36,11 @@ The new migrations are:
 2. `20260811000014-enhance-production.js`
 3. `20260811000015-create-audit-logs.js`
 4. `20260811000016-create-refresh-tokens.js`
+5. `20260817000017-add-organization-types-and-farmer-locations.js`
 
 Migration 14 backfills every existing production row's cooperative through `farmer -> member`, creates a cooperative product from its legacy `product_name`, assigns `product_id`, and then applies non-null constraints.
+
+Migration 17 gives every existing cooperative the safe `cooperative` organization type and adds nullable district, sector, cell, and village fields to farmers. Existing IDs and legacy free-text farmer locations are unchanged.
 
 ## New frontend dependencies
 
@@ -42,6 +48,7 @@ Migration 14 backfills every existing production row's cooperative through `farm
 - `jspdf`, `jspdf-autotable`
 - `xlsx`
 - Backend document storage: `@vercel/blob`
+- Backend Rwanda administrative data: `@devrw/rwanda-location`
 
 ## Required production environment
 
@@ -75,7 +82,7 @@ Do not set `VITE_API_URL` for the combined Vercel project; the frontend intentio
 ## Vercel deployment
 
 1. Provision a persistent managed MySQL database. Vercel Functions do not provide a persistent local database.
-2. Create or connect a Vercel Blob store in the project Storage settings. It automatically supplies `BLOB_READ_WRITE_TOKEN` (or OIDC storage variables). SCFMP stores documents as private blobs and streams them only through the authenticated download endpoint.
+2. Create or connect a private Vercel Blob store in the same Vercel project and select the required Production, Preview, and Development environments. New connections supply `BLOB_STORE_ID` and use Vercel's automatically rotating OIDC identity; legacy token-based connections supply `BLOB_READ_WRITE_TOKEN`. SCFMP stores documents as private blobs and streams them only through the authenticated download endpoint.
 3. Set the environment variables above.
 4. Run migrations once against that production database from a trusted terminal with the same database environment variables.
 5. Import the repository in Vercel with the repository root as Root Directory. Leave the Framework Preset on Vite/Other (do not select the experimental Services preset). The checked-in `vercel.json` builds the Vite frontend and routes `/api/*` to the supported `api/index.js` Express function.

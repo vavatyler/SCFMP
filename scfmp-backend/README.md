@@ -300,7 +300,9 @@ Now 14 tests total, including a full dashboard aggregation test with seeded data
 **Tables added:** `documents`, `notifications`
 
 Highlights:
-- **Documents**: upload a file (PDF, JPG, PNG, WEBP, Word, Excel — 10MB max) and attach it to a cooperative, member, farmer, or loan. Files are saved to the `uploads/` folder on disk; the database stores the path and metadata, not the file itself.
+- **Documents**: upload a file (PDF, JPG, PNG, WEBP, Word, Excel, TXT — 4 MB max) and attach it to a cooperative, member, farmer, or loan. Local development uses the configured `uploads/` folder. Vercel deployments use a connected private Vercel Blob store and keep access behind the authenticated download route. The database continues to store the existing path/URL and metadata, not the file body.
+
+For Vercel, connect a **private** Blob store to the `scfmp` project for Production, Preview, and Development as needed, then redeploy. Current Vercel connections use `BLOB_STORE_ID` with automatic short-lived OIDC authentication; a legacy/token-based connection supplies `BLOB_READ_WRITE_TOKEN`. For local Blob testing, set `DOCUMENT_STORAGE=blob` and pull the server-only environment variables with the Vercel CLI. Never expose Blob credentials through a `VITE_` variable.
 - **Notifications**: a per-user inbox with read/unread tracking.
 - **Automatic alerts are now live**: when an inventory "out" movement drops stock to or below its reorder level, every active manager of that cooperative automatically gets a notification — you don't have to check `/low-stock` manually anymore, it comes to you. This was verified with a dedicated integration test (`tests/notification.integration.test.js`) proving it notifies the right cooperative's managers and nobody else.
 

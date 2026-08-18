@@ -1,55 +1,95 @@
-import { useEffect, useState } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
-import { ArrowLeft, Loader2, Sprout, MapPin, FileText, Upload, Download, Trash2, Pencil } from 'lucide-react';
-import DashboardLayout from '../components/DashboardLayout';
+import { useEffect, useRef, useState } from 'react';
+import { Link, useNavigate, useParams } from 'react-router-dom';
+import { ArrowLeft, Download, FileText, Loader2, MapPin, Pencil, Sprout, Trash2, Upload } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import Badge from '../components/Badge';
-import { getMember, updateMember, deleteMember } from '../api/members';
+import DashboardLayout from '../components/DashboardLayout';
+import MemberFormFields from '../components/MemberFormFields';
+import RwandaLocationFields from '../components/RwandaLocationFields';
 import { createFarmer, updateFarmer } from '../api/farmers';
-import { listDocuments, uploadDocument, downloadDocument, deleteDocument } from '../api/documents';
-
-const emptyFarmerForm = { farm_size_ha: '', location: '', crop_type: '' };
+import { deleteMember, getMember, updateMember } from '../api/members';
+import { deleteDocument, downloadDocument, listDocuments, uploadDocument } from '../api/documents';
+import { useAuth } from '../context/AuthContext';
+import {
+  hasAnyLocation,
+  hasCompleteLocation,
+  hasLocationChanged,
+} from '../utils/locationHierarchy';
+import {
+  buildFarmerPayload,
+  createEmptyFarmerForm,
+  FARMER_WRITE_ROLES,
+  farmerToForm,
+  getFarmerLocationDisplay,
+  isValidFarmSize,
+} from '../utils/farmerForm';
+import {
+  buildMemberPayload,
+  MEMBER_DELETE_ROLES,
+  MEMBER_GENDERS,
+  MEMBER_WRITE_ROLES,
+  memberToForm,
+} from '../utils/memberForm';
+import { isValidRwandaLocalPhone } from '../utils/validation';
+import {
+  DOCUMENT_DELETE_ROLES,
+  DOCUMENT_UPLOAD_ACCEPT,
+  DOCUMENT_UPLOAD_ROLES,
+  getDocumentFileValidationKey,
+  getDocumentUploadErrorKey,
+} from '../utils/documentUpload';
 
 const MemberDetailPage = () => {
+  const { t } = useTranslation();
+  const { user } = useAuth();
   const { id } = useParams();
   const navigate = useNavigate();
   const [member, setMember] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
-
+  const [feedback, setFeedback] = useState('');
   const [isEditing, setIsEditing] = useState(false);
   const [editForm, setEditForm] = useState(null);
+  const [editFieldErrors, setEditFieldErrors] = useState({});
   const [editError, setEditError] = useState('');
   const [isSavingEdit, setIsSavingEdit] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
-
   const [showFarmerForm, setShowFarmerForm] = useState(false);
   const [isEditingFarmer, setIsEditingFarmer] = useState(false);
-  const [farmerForm, setFarmerForm] = useState(emptyFarmerForm);
+  const [farmerForm, setFarmerForm] = useState(createEmptyFarmerForm);
+  const [farmerFieldErrors, setFarmerFieldErrors] = useState({});
   const [farmerError, setFarmerError] = useState('');
-  const [isSaving, setIsSaving] = useState(false);
-
+  const [isSavingFarmer, setIsSavingFarmer] = useState(false);
   const [documents, setDocuments] = useState([]);
   const [docFile, setDocFile] = useState(null);
   const [docDescription, setDocDescription] = useState('');
   const [docError, setDocError] = useState('');
   const [isUploading, setIsUploading] = useState(false);
+  const editSubmitLockRef = useRef(false);
+  const farmerSubmitLockRef = useRef(false);
+  const documentSubmitLockRef = useRef(false);
+  const documentInputRef = useRef(null);
+
+  const canEditMember = MEMBER_WRITE_ROLES.includes(user?.role);
+  const canDeleteMember = MEMBER_DELETE_ROLES.includes(user?.role);
+  const canEditFarmer = FARMER_WRITE_ROLES.includes(user?.role);
+  const canUploadDocument = DOCUMENT_UPLOAD_ROLES.includes(user?.role);
+  const canDeleteDocument = DOCUMENT_DELETE_ROLES.includes(user?.role);
 
   const fetchDocuments = async () => {
     try {
-      const data = await listDocuments({ owner_type: 'member', owner_id: id });
-      setDocuments(data);
+      setDocuments(await listDocuments({ owner_type: 'member', owner_id: id }));
     } catch {
-      // non-critical — the rest of the page still works without documents loading
+      // Documents are non-critical to loading the member profile.
     }
   };
 
   const fetchMember = async () => {
     setIsLoading(true);
     try {
-      const data = await getMember(id);
-      setMember(data);
-    } catch (err) {
-      setError('Could not load this member.');
+      setMember(await getMember(id));
+    } catch {
+      setError(t('memberDetail.loadError'));
     } finally {
       setIsLoading(false);
     }
@@ -58,497 +98,287 @@ const MemberDetailPage = () => {
   useEffect(() => {
     fetchMember();
     fetchDocuments();
-  }, [id]);
+  }, [id, t]);
 
-  const handleUploadDocument = async (e) => {
-    e.preventDefault();
+  const handleUploadDocument = async (event) => {
+    event.preventDefault();
+    if (documentSubmitLockRef.current || !canUploadDocument) return;
     setDocError('');
-    if (!docFile) {
-      setDocError('Choose a file to upload.');
+    const validationKey = getDocumentFileValidationKey(docFile);
+    if (validationKey) {
+      setDocError(t(validationKey));
       return;
     }
+    documentSubmitLockRef.current = true;
     setIsUploading(true);
     try {
-      await uploadDocument({
-        file: docFile,
-        owner_type: 'member',
-        owner_id: id,
-        description: docDescription,
-      });
+      await uploadDocument({ file: docFile, owner_type: 'member', owner_id: id, description: docDescription });
       setDocFile(null);
+      if (documentInputRef.current) documentInputRef.current.value = '';
       setDocDescription('');
-      fetchDocuments();
-    } catch (err) {
-      setDocError(err.response?.data?.message || 'Could not upload this file.');
+      await fetchDocuments();
+      setFeedback(t('documents.uploaded'));
+    } catch (uploadError) {
+      setDocError(t(getDocumentUploadErrorKey(uploadError)));
     } finally {
+      documentSubmitLockRef.current = false;
       setIsUploading(false);
     }
   };
 
-  const handleDeleteDocument = async (doc) => {
-    if (!window.confirm(`Delete "${doc.original_name}"?`)) return;
+  const handleDeleteDocument = async (document) => {
+    if (!window.confirm(t('documents.deleteConfirm', { name: document.original_name }))) return;
     try {
-      await deleteDocument(doc.id);
+      await deleteDocument(document.id);
       fetchDocuments();
     } catch {
-      window.alert('Could not delete this document.');
+      window.alert(t('documents.deleteError'));
     }
   };
 
-  const handleCreateFarmer = async (e) => {
-    e.preventDefault();
+  const handleSaveFarmer = async (event) => {
+    event.preventDefault();
+    if (farmerSubmitLockRef.current || !canEditFarmer) return;
     setFarmerError('');
-    setIsSaving(true);
+    setFarmerFieldErrors({});
+    if (!isValidFarmSize(farmerForm.farm_size_ha)) {
+      setFarmerFieldErrors({ farm_size_ha: t('farmers.validation.farmSizeInvalid') });
+      return;
+    }
+    const existingFarmer = isEditingFarmer ? member.farmerProfile : null;
+    const locationChanged = !existingFarmer || hasLocationChanged(
+      farmerForm,
+      existingFarmer,
+      { includeVillage: true }
+    );
+    const hasAnyStructuredLocation = hasAnyLocation(farmerForm, { includeVillage: true });
+    const hasCompleteStructuredLocation = hasCompleteLocation(farmerForm, { includeVillage: true });
+    if (locationChanged && hasAnyStructuredLocation && !hasCompleteStructuredLocation) {
+      setFarmerError(t('locations.farmerIncomplete'));
+      return;
+    }
+
+    farmerSubmitLockRef.current = true;
+    setIsSavingFarmer(true);
     try {
+      const payload = buildFarmerPayload(farmerForm, existingFarmer);
+
       if (isEditingFarmer && member.farmerProfile) {
-        await updateFarmer(member.farmerProfile.id, farmerForm);
+        await updateFarmer(member.farmerProfile.id, payload);
+        setFeedback(t('farmers.updated'));
       } else {
-        await createFarmer({ ...farmerForm, member_id: Number(id) });
+        await createFarmer({ ...payload, member_id: Number(id) });
+        setFeedback(t('farmers.created'));
       }
       setShowFarmerForm(false);
       setIsEditingFarmer(false);
-      setFarmerForm(emptyFarmerForm);
-      fetchMember();
-    } catch (err) {
-      setFarmerError(
-        err.response?.data?.message ||
-          `Could not ${isEditingFarmer ? 'update' : 'create'} farmer profile.`
-      );
+      setFarmerForm(createEmptyFarmerForm());
+      setFarmerFieldErrors({});
+      await fetchMember();
+    } catch (error) {
+      setFarmerError(error.response?.status === 422 ? t('farmers.validation.invalid') : t('farmers.saveError'));
     } finally {
-      setIsSaving(false);
+      farmerSubmitLockRef.current = false;
+      setIsSavingFarmer(false);
     }
   };
 
   const startEditFarmer = () => {
-    setFarmerForm({
-      crop_type: member.farmerProfile.crop_type || '',
-      farm_size_ha: member.farmerProfile.farm_size_ha || '',
-      location: member.farmerProfile.location || '',
-    });
+    if (!canEditFarmer) return;
+    setFarmerForm(farmerToForm(member.farmerProfile));
     setIsEditingFarmer(true);
     setShowFarmerForm(true);
+    setFarmerFieldErrors({});
+    setFarmerError('');
+  };
+
+  const startCreateFarmer = () => {
+    if (!canEditFarmer) return;
+    setFarmerForm(createEmptyFarmerForm());
+    setIsEditingFarmer(false);
+    setShowFarmerForm(true);
+    setFarmerFieldErrors({});
+    setFarmerError('');
+  };
+
+  const cancelFarmerForm = () => {
+    if (farmerSubmitLockRef.current) return;
+    setShowFarmerForm(false);
+    setIsEditingFarmer(false);
+    setFarmerForm(createEmptyFarmerForm());
+    setFarmerFieldErrors({});
     setFarmerError('');
   };
 
   const startEdit = () => {
-    setEditForm({
-      first_name: member.first_name || '',
-      last_name: member.last_name || '',
-      gender: member.gender || '',
-      phone: member.phone || '',
-      address: member.address || '',
-      membership_date: member.membership_date || '',
-    });
+    if (!canEditMember) return;
+    setEditForm(memberToForm(member));
+    setEditFieldErrors({});
     setEditError('');
     setIsEditing(true);
   };
 
-  const handleSaveEdit = async (e) => {
-    e.preventDefault();
+  const cancelEdit = () => {
+    if (editSubmitLockRef.current) return;
+    setIsEditing(false);
+    setEditForm(null);
+    setEditFieldErrors({});
     setEditError('');
+  };
+
+  const updateEditForm = (nextForm, field) => {
+    setEditForm(nextForm);
+    if (editFieldErrors[field]) {
+      setEditFieldErrors((current) => ({ ...current, [field]: '' }));
+    }
+  };
+
+  const handleSaveEdit = async (event) => {
+    event.preventDefault();
+    if (editSubmitLockRef.current || !canEditMember) return;
+    setEditError('');
+    const nextFieldErrors = {};
+    if (!editForm.first_name.trim()) nextFieldErrors.first_name = t('members.validation.firstNameRequired');
+    if (!editForm.last_name.trim()) nextFieldErrors.last_name = t('members.validation.lastNameRequired');
+    setEditFieldErrors(nextFieldErrors);
+    if (Object.keys(nextFieldErrors).length > 0) {
+      return;
+    }
+    if (editForm.phone && !isValidRwandaLocalPhone(editForm.phone)) {
+      setEditError(t('validation.phoneInvalid'));
+      return;
+    }
+
+    editSubmitLockRef.current = true;
     setIsSavingEdit(true);
     try {
-      const updated = await updateMember(id, editForm);
+      const updated = await updateMember(id, buildMemberPayload(editForm, member));
       setMember({ ...member, ...updated });
       setIsEditing(false);
-    } catch (err) {
-      setEditError(err.response?.data?.message || 'Could not save these changes.');
+      setEditForm(null);
+      setEditFieldErrors({});
+      setFeedback(t('memberDetail.updated'));
+    } catch {
+      setEditError(t('memberDetail.saveError'));
     } finally {
+      editSubmitLockRef.current = false;
       setIsSavingEdit(false);
     }
   };
 
   const handleDeleteMember = async () => {
-    if (
-      !window.confirm(
-        `Delete ${member.first_name} ${member.last_name}? This also removes their farmer profile if they have one, and cannot be undone.`
-      )
-    ) {
-      return;
-    }
+    if (!canDeleteMember) return;
+    if (!window.confirm(t('memberDetail.deleteConfirm', { name: `${member.first_name} ${member.last_name}` }))) return;
     setIsDeleting(true);
     try {
       await deleteMember(id);
       navigate('/members');
-    } catch (err) {
-      window.alert(err.response?.data?.message || 'Could not delete this member.');
+    } catch {
+      window.alert(t('memberDetail.deleteError'));
       setIsDeleting(false);
     }
   };
 
   if (isLoading) {
-    return (
-      <DashboardLayout>
-        <div className="flex h-64 items-center justify-center text-ink-soft">
-          <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-          Loading…
-        </div>
-      </DashboardLayout>
-    );
+    return <DashboardLayout><div className="flex h-64 items-center justify-center text-ink-soft"><Loader2 className="mr-2 h-5 w-5 animate-spin" />{t('common.loading')}</div></DashboardLayout>;
   }
 
   if (error || !member) {
-    return (
-      <DashboardLayout>
-        <div className="rounded-xl bg-clay/5 p-6 text-sm text-clay">{error || 'Member not found.'}</div>
-      </DashboardLayout>
-    );
+    return <DashboardLayout><div className="rounded-xl bg-clay/5 p-6 text-sm text-clay">{error || t('memberDetail.notFound')}</div></DashboardLayout>;
   }
 
   return (
     <DashboardLayout>
-      <Link
-        to="/members"
-        className="mb-6 inline-flex items-center gap-1.5 text-sm font-medium text-ink-soft hover:text-ink"
-      >
-        <ArrowLeft className="h-4 w-4" />
-        Back to members
-      </Link>
+      {feedback && <div className="mb-5 rounded-lg border border-forest/20 bg-forest/5 px-4 py-3 text-sm text-forest" role="status">{feedback}</div>}
+      <Link to="/members" className="mb-6 inline-flex items-center gap-1.5 text-sm font-medium text-ink-soft hover:text-ink"><ArrowLeft className="h-4 w-4" />{t('memberDetail.back')}</Link>
 
-      <div className="mb-6 flex items-start justify-between">
+      <div className="mb-6 flex flex-col items-start justify-between gap-4 sm:flex-row">
         <div>
-          <h1 className="font-display text-2xl font-semibold text-ink">
-            {member.first_name} {member.last_name}
-          </h1>
-          <div className="mt-2 flex items-center gap-3">
-            <Badge status={member.status} />
-            {member.cooperative && (
-              <span className="text-sm text-ink-soft">{member.cooperative.name}</span>
-            )}
-          </div>
+          <h1 className="font-display text-2xl font-semibold text-ink">{member.first_name} {member.last_name}</h1>
+          <div className="mt-2 flex items-center gap-3"><Badge status={member.status} />{member.cooperative && <span className="text-sm text-ink-soft">{member.cooperative.name}</span>}</div>
         </div>
         <div className="flex gap-2">
-          <button
-            onClick={startEdit}
-            className="focus-ring flex items-center gap-1.5 rounded-lg border border-sand px-3 py-1.5 text-sm font-medium text-ink hover:bg-sand/30"
-          >
-            <Pencil className="h-3.5 w-3.5" />
-            Edit
-          </button>
-          <button
-            onClick={handleDeleteMember}
-            disabled={isDeleting}
-            className="focus-ring flex items-center gap-1.5 rounded-lg border border-sand px-3 py-1.5 text-sm font-medium text-clay hover:bg-clay/5 disabled:opacity-50"
-          >
-            {isDeleting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />}
-            Delete
-          </button>
+          {canEditMember && <button type="button" onClick={startEdit} className="focus-ring flex items-center gap-1.5 rounded-lg border border-sand px-3 py-1.5 text-sm font-medium text-ink hover:bg-sand/30"><Pencil className="h-3.5 w-3.5" />{t('common.edit')}</button>}
+          {canDeleteMember && <button type="button" onClick={handleDeleteMember} disabled={isDeleting} className="focus-ring flex items-center gap-1.5 rounded-lg border border-sand px-3 py-1.5 text-sm font-medium text-clay hover:bg-clay/5 disabled:opacity-50">{isDeleting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />}{t('common.delete')}</button>}
         </div>
       </div>
 
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
-        {/* Member details card */}
         <div className="rounded-xl bg-white p-6 shadow-card">
-          <h2 className="mb-4 font-display text-base font-semibold text-ink">Member details</h2>
-
+          <h2 className="mb-4 font-display text-base font-semibold text-ink">{isEditing ? t('members.edit') : t('memberDetail.details')}</h2>
           {isEditing ? (
-            <form onSubmit={handleSaveEdit}>
-              {editError && (
-                <div className="mb-3 rounded-lg bg-clay/10 px-3 py-2 text-xs text-clay">
-                  {editError}
-                </div>
-              )}
-              <div className="mb-3 grid grid-cols-2 gap-3">
-                <div>
-                  <label className="mb-1.5 block text-xs font-medium uppercase tracking-wide text-ink-soft">
-                    First name
-                  </label>
-                  <input
-                    required
-                    value={editForm.first_name}
-                    onChange={(e) => setEditForm({ ...editForm, first_name: e.target.value })}
-                    className="focus-ring w-full rounded-lg border border-sand px-3 py-2 text-sm"
-                  />
-                </div>
-                <div>
-                  <label className="mb-1.5 block text-xs font-medium uppercase tracking-wide text-ink-soft">
-                    Last name
-                  </label>
-                  <input
-                    required
-                    value={editForm.last_name}
-                    onChange={(e) => setEditForm({ ...editForm, last_name: e.target.value })}
-                    className="focus-ring w-full rounded-lg border border-sand px-3 py-2 text-sm"
-                  />
-                </div>
-              </div>
-              <div className="mb-3">
-                <label className="mb-1.5 block text-xs font-medium uppercase tracking-wide text-ink-soft">
-                  Gender
-                </label>
-                <select
-                  value={editForm.gender}
-                  onChange={(e) => setEditForm({ ...editForm, gender: e.target.value })}
-                  className="focus-ring w-full rounded-lg border border-sand px-3 py-2 text-sm"
-                >
-                  <option value="">Not specified</option>
-                  <option value="male">Male</option>
-                  <option value="female">Female</option>
-                  <option value="other">Other</option>
-                </select>
-              </div>
-              <div className="mb-3">
-                <label className="mb-1.5 block text-xs font-medium uppercase tracking-wide text-ink-soft">
-                  Phone
-                </label>
-                <input
-                  value={editForm.phone}
-                  onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })}
-                  className="focus-ring w-full rounded-lg border border-sand px-3 py-2 text-sm"
-                />
-              </div>
-              <div className="mb-3">
-                <label className="mb-1.5 block text-xs font-medium uppercase tracking-wide text-ink-soft">
-                  Address
-                </label>
-                <input
-                  value={editForm.address}
-                  onChange={(e) => setEditForm({ ...editForm, address: e.target.value })}
-                  className="focus-ring w-full rounded-lg border border-sand px-3 py-2 text-sm"
-                />
-              </div>
-              <div className="mb-4">
-                <label className="mb-1.5 block text-xs font-medium uppercase tracking-wide text-ink-soft">
-                  Membership date
-                </label>
-                <input
-                  type="date"
-                  value={editForm.membership_date}
-                  onChange={(e) => setEditForm({ ...editForm, membership_date: e.target.value })}
-                  className="focus-ring w-full rounded-lg border border-sand px-3 py-2 text-sm"
-                />
-              </div>
-              <div className="flex gap-2">
-                <button
-                  type="submit"
-                  disabled={isSavingEdit}
-                  className="focus-ring flex flex-1 items-center justify-center gap-2 rounded-lg bg-forest px-4 py-2 text-sm font-medium text-paper hover:bg-forest-light disabled:opacity-60"
-                >
-                  {isSavingEdit && <Loader2 className="h-4 w-4 animate-spin" />}
-                  Save
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setIsEditing(false)}
-                  className="focus-ring rounded-lg border border-sand px-4 py-2 text-sm font-medium text-ink-soft hover:bg-sand/30"
-                >
-                  Cancel
-                </button>
-              </div>
+            <form onSubmit={handleSaveEdit} noValidate>
+              {editError && <div className="mb-3 rounded-lg bg-clay/10 px-3 py-2 text-xs text-clay" role="alert">{editError}</div>}
+              <MemberFormFields idPrefix="member-edit" form={editForm} onChange={updateEditForm} errors={editFieldErrors} disabled={isSavingEdit} />
+              <div className="flex gap-2"><button type="submit" disabled={isSavingEdit} className="focus-ring flex flex-1 items-center justify-center gap-2 rounded-lg bg-forest px-4 py-2 text-sm font-medium text-paper hover:bg-forest-light disabled:opacity-60">{isSavingEdit && <Loader2 className="h-4 w-4 animate-spin" />}{t('common.save')}</button><button type="button" onClick={cancelEdit} disabled={isSavingEdit} className="focus-ring rounded-lg border border-sand px-4 py-2 text-sm font-medium text-ink-soft hover:bg-sand/30 disabled:opacity-60">{t('common.cancel')}</button></div>
             </form>
           ) : (
             <dl className="space-y-3 text-sm">
-              <div className="flex justify-between border-b border-sand pb-3">
-                <dt className="text-ink-soft">Phone</dt>
-                <dd className="text-ink">{member.phone || '—'}</dd>
-              </div>
-              <div className="flex justify-between border-b border-sand pb-3">
-                <dt className="text-ink-soft">Gender</dt>
-                <dd className="capitalize text-ink">{member.gender || '—'}</dd>
-              </div>
-              <div className="flex justify-between border-b border-sand pb-3">
-                <dt className="text-ink-soft">Address</dt>
-                <dd className="text-ink">{member.address || '—'}</dd>
-              </div>
-              <div className="flex justify-between">
-                <dt className="text-ink-soft">Membership date</dt>
-                <dd className="text-ink">{member.membership_date || '—'}</dd>
-              </div>
+              {[[t('members.fields.phone'), member.phone], [t('members.fields.gender'), MEMBER_GENDERS.includes(member.gender) ? t(`members.gender.${member.gender}`) : member.gender], [t('members.fields.address'), member.address], [t('members.fields.membershipDate'), member.membership_date]].map(([label, value]) => <div key={label} className="flex justify-between border-b border-sand pb-3 last:border-0"><dt className="text-ink-soft">{label}</dt><dd className="text-right text-ink">{value || '—'}</dd></div>)}
             </dl>
           )}
         </div>
 
-        {/* Farmer profile card */}
         <div className="rounded-xl bg-white p-6 shadow-card">
           <div className="mb-4 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Sprout className="h-4 w-4 text-gold-dark" />
-              <h2 className="font-display text-base font-semibold text-ink">Farmer profile</h2>
-            </div>
-            {member.farmerProfile && !showFarmerForm && (
-              <button
-                onClick={startEditFarmer}
-                className="focus-ring flex items-center gap-1 rounded-lg border border-sand px-2.5 py-1 text-xs font-medium text-ink hover:bg-sand/30"
-              >
-                <Pencil className="h-3 w-3" />
-                Edit
-              </button>
-            )}
+            <div className="flex items-center gap-2"><Sprout className="h-4 w-4 text-gold-dark" /><h2 className="font-display text-base font-semibold text-ink">{t('farmers.profile')}</h2></div>
+            {member.farmerProfile && !showFarmerForm && canEditFarmer && <button type="button" onClick={startEditFarmer} className="focus-ring flex items-center gap-1 rounded-lg border border-sand px-2.5 py-1 text-xs font-medium text-ink hover:bg-sand/30"><Pencil className="h-3 w-3" />{t('common.edit')}</button>}
           </div>
-
           {member.farmerProfile && !showFarmerForm ? (
             <dl className="space-y-3 text-sm">
-              <div className="flex justify-between border-b border-sand pb-3">
-                <dt className="text-ink-soft">Crop type</dt>
-                <dd className="text-ink">{member.farmerProfile.crop_type || '—'}</dd>
-              </div>
-              <div className="flex justify-between border-b border-sand pb-3">
-                <dt className="text-ink-soft">Farm size</dt>
-                <dd className="figure text-ink">
-                  {member.farmerProfile.farm_size_ha
-                    ? `${member.farmerProfile.farm_size_ha} ha`
-                    : '—'}
-                </dd>
-              </div>
-              <div className="flex items-center justify-between">
-                <dt className="flex items-center gap-1 text-ink-soft">
-                  <MapPin className="h-3.5 w-3.5" /> Location
-                </dt>
-                <dd className="text-ink">{member.farmerProfile.location || '—'}</dd>
-              </div>
+              <div className="flex justify-between border-b border-sand pb-3"><dt className="text-ink-soft">{t('farmers.fields.cropType')}</dt><dd className="text-ink">{member.farmerProfile.crop_type || '—'}</dd></div>
+              <div className="flex justify-between border-b border-sand pb-3"><dt className="text-ink-soft">{t('farmers.fields.farmSize')}</dt><dd className="figure text-ink">{member.farmerProfile.farm_size_ha != null && member.farmerProfile.farm_size_ha !== '' ? `${member.farmerProfile.farm_size_ha} ha` : '—'}</dd></div>
+              <div className="flex items-center justify-between gap-4 border-b border-sand pb-3"><dt className="flex items-center gap-1 text-ink-soft"><MapPin className="h-3.5 w-3.5" />{t('farmers.fields.location')}</dt><dd className="text-right text-ink">{getFarmerLocationDisplay(member.farmerProfile) || '—'}</dd></div>
+              {[
+                [t('locations.district'), member.farmerProfile.district],
+                [t('locations.sector'), member.farmerProfile.sector],
+                [t('locations.cell'), member.farmerProfile.cell],
+                [t('locations.village'), member.farmerProfile.village],
+              ].map(([label, value]) => <div key={label} className="flex justify-between border-b border-sand pb-3 last:border-0"><dt className="text-ink-soft">{label}</dt><dd className="text-right text-ink">{value || '—'}</dd></div>)}
             </dl>
           ) : showFarmerForm ? (
-            <form onSubmit={handleCreateFarmer}>
-              {farmerError && (
-                <div className="mb-3 rounded-lg bg-clay/10 px-3 py-2 text-xs text-clay">
-                  {farmerError}
-                </div>
-              )}
+            <form onSubmit={handleSaveFarmer} noValidate>
+              {farmerError && <div className="mb-3 rounded-lg bg-clay/10 px-3 py-2 text-xs text-clay" role="alert">{farmerError}</div>}
+              <div className="mb-3"><label htmlFor="crop-type" className="mb-1.5 block text-xs font-medium uppercase tracking-wide text-ink-soft">{t('farmers.fields.cropType')}</label><input id="crop-type" maxLength={100} disabled={isSavingFarmer} value={farmerForm.crop_type} onChange={(event) => setFarmerForm({ ...farmerForm, crop_type: event.target.value })} placeholder={t('farmers.placeholders.cropType')} className="focus-ring w-full rounded-lg border border-sand px-3 py-2 text-sm disabled:cursor-not-allowed disabled:bg-sand/30" /></div>
               <div className="mb-3">
-                <label className="mb-1.5 block text-xs font-medium uppercase tracking-wide text-ink-soft">
-                  Crop type
-                </label>
+                <label htmlFor="farm-size" className="mb-1.5 block text-xs font-medium uppercase tracking-wide text-ink-soft">{t('farmers.fields.farmSizeHectares')}</label>
                 <input
-                  value={farmerForm.crop_type}
-                  onChange={(e) => setFarmerForm({ ...farmerForm, crop_type: e.target.value })}
-                  placeholder="e.g. Coffee"
-                  className="focus-ring w-full rounded-lg border border-sand px-3 py-2 text-sm"
-                />
-              </div>
-              <div className="mb-3">
-                <label className="mb-1.5 block text-xs font-medium uppercase tracking-wide text-ink-soft">
-                  Farm size (hectares)
-                </label>
-                <input
+                  id="farm-size"
                   type="number"
+                  inputMode="decimal"
+                  min="0"
                   step="0.01"
+                  disabled={isSavingFarmer}
                   value={farmerForm.farm_size_ha}
-                  onChange={(e) => setFarmerForm({ ...farmerForm, farm_size_ha: e.target.value })}
-                  className="focus-ring w-full rounded-lg border border-sand px-3 py-2 text-sm"
-                />
-              </div>
-              <div className="mb-4">
-                <label className="mb-1.5 block text-xs font-medium uppercase tracking-wide text-ink-soft">
-                  Location
-                </label>
-                <input
-                  value={farmerForm.location}
-                  onChange={(e) => setFarmerForm({ ...farmerForm, location: e.target.value })}
-                  placeholder="e.g. Nyamagabe, Gasaka"
-                  className="focus-ring w-full rounded-lg border border-sand px-3 py-2 text-sm"
-                />
-              </div>
-              <div className="flex gap-2">
-                <button
-                  type="submit"
-                  disabled={isSaving}
-                  className="focus-ring flex flex-1 items-center justify-center gap-2 rounded-lg bg-forest px-4 py-2 text-sm font-medium text-paper hover:bg-forest-light disabled:opacity-60"
-                >
-                  {isSaving && <Loader2 className="h-4 w-4 animate-spin" />}
-                  Save
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowFarmerForm(false);
-                    setIsEditingFarmer(false);
+                  onChange={(event) => {
+                    setFarmerForm({ ...farmerForm, farm_size_ha: event.target.value });
+                    if (farmerFieldErrors.farm_size_ha) setFarmerFieldErrors({});
                   }}
-                  className="focus-ring rounded-lg border border-sand px-4 py-2 text-sm font-medium text-ink-soft hover:bg-sand/30"
-                >
-                  Cancel
-                </button>
+                  aria-invalid={Boolean(farmerFieldErrors.farm_size_ha)}
+                  aria-describedby={farmerFieldErrors.farm_size_ha ? 'farm-size-error' : undefined}
+                  className={`focus-ring w-full rounded-lg border px-3 py-2 text-sm disabled:cursor-not-allowed disabled:bg-sand/30 ${farmerFieldErrors.farm_size_ha ? 'border-clay' : 'border-sand'}`}
+                />
+                {farmerFieldErrors.farm_size_ha && <p id="farm-size-error" className="mt-1 text-xs text-clay">{farmerFieldErrors.farm_size_ha}</p>}
               </div>
+              {farmerForm.legacy_location && <div className="mb-3 rounded-lg bg-sand/30 px-3 py-2 text-xs text-ink-soft">{t('locations.legacyPreserved', { location: farmerForm.legacy_location })}</div>}
+              <div className="mb-4"><RwandaLocationFields idPrefix="farmer-location" value={farmerForm} onChange={setFarmerForm} includeVillage disabled={isSavingFarmer} /></div>
+              <div className="flex gap-2"><button type="submit" disabled={isSavingFarmer} className="focus-ring flex flex-1 items-center justify-center gap-2 rounded-lg bg-forest px-4 py-2 text-sm font-medium text-paper hover:bg-forest-light disabled:opacity-60">{isSavingFarmer && <Loader2 className="h-4 w-4 animate-spin" />}{t('common.save')}</button><button type="button" onClick={cancelFarmerForm} disabled={isSavingFarmer} className="focus-ring rounded-lg border border-sand px-4 py-2 text-sm font-medium text-ink-soft hover:bg-sand/30 disabled:opacity-60">{t('common.cancel')}</button></div>
             </form>
           ) : (
-            <div className="py-4 text-center">
-              <p className="mb-3 text-sm text-ink-soft">
-                This member doesn't have a farmer profile yet.
-              </p>
-              <button
-                onClick={() => setShowFarmerForm(true)}
-                className="focus-ring rounded-lg bg-gold px-4 py-2 text-sm font-medium text-white hover:bg-gold-dark"
-              >
-                Add farmer profile
-              </button>
-            </div>
+            <div className="py-4 text-center"><p className="mb-3 text-sm text-ink-soft">{t('farmers.noProfile')}</p>{canEditFarmer && <button type="button" onClick={startCreateFarmer} className="focus-ring rounded-lg bg-gold px-4 py-2 text-sm font-medium text-white hover:bg-gold-dark">{t('farmers.addProfile')}</button>}</div>
           )}
         </div>
       </div>
 
-      {/* Documents section */}
       <div className="mt-5 rounded-xl bg-white p-6 shadow-card">
-        <div className="mb-4 flex items-center gap-2">
-          <FileText className="h-4 w-4 text-ink-soft" />
-          <h2 className="font-display text-base font-semibold text-ink">Documents</h2>
-        </div>
-
-        {documents.length > 0 && (
-          <ul className="mb-4 divide-y divide-sand">
-            {documents.map((doc) => (
-              <li key={doc.id} className="flex items-center justify-between py-2.5 text-sm">
-                <div className="min-w-0">
-                  <p className="truncate font-medium text-ink">{doc.original_name}</p>
-                  {doc.description && (
-                    <p className="truncate text-xs text-ink-soft">{doc.description}</p>
-                  )}
-                </div>
-                <div className="flex shrink-0 gap-1">
-                  <button
-                    onClick={() => downloadDocument(doc.id, doc.original_name)}
-                    title="Download"
-                    className="focus-ring rounded-lg p-1.5 text-ink-soft hover:bg-forest/10 hover:text-forest"
-                  >
-                    <Download className="h-4 w-4" />
-                  </button>
-                  <button
-                    onClick={() => handleDeleteDocument(doc)}
-                    title="Delete"
-                    className="focus-ring rounded-lg p-1.5 text-ink-soft hover:bg-clay/10 hover:text-clay"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </button>
-                </div>
-              </li>
-            ))}
-          </ul>
-        )}
-
-        <form onSubmit={handleUploadDocument} className="flex flex-wrap items-end gap-3">
-          {docError && (
-            <div className="w-full rounded-lg bg-clay/10 px-3.5 py-2.5 text-sm text-clay">
-              {docError}
-            </div>
-          )}
-          <div className="flex-1">
-            <label className="mb-1.5 block text-xs font-medium uppercase tracking-wide text-ink-soft">
-              File
-            </label>
-            <input
-              type="file"
-              onChange={(e) => setDocFile(e.target.files[0])}
-              className="focus-ring w-full rounded-lg border border-sand px-3 py-2 text-sm file:mr-3 file:rounded-md file:border-0 file:bg-sand file:px-3 file:py-1 file:text-xs file:font-medium file:text-ink"
-            />
-          </div>
-          <div className="flex-1">
-            <label className="mb-1.5 block text-xs font-medium uppercase tracking-wide text-ink-soft">
-              Description (optional)
-            </label>
-            <input
-              value={docDescription}
-              onChange={(e) => setDocDescription(e.target.value)}
-              placeholder="e.g. National ID copy"
-              className="focus-ring w-full rounded-lg border border-sand px-3 py-2 text-sm"
-            />
-          </div>
-          <button
-            type="submit"
-            disabled={isUploading}
-            className="focus-ring flex items-center gap-2 rounded-lg bg-forest px-4 py-2 text-sm font-medium text-paper hover:bg-forest-light disabled:opacity-60"
-          >
-            {isUploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
-            Upload
-          </button>
-        </form>
+        <div className="mb-4 flex items-center gap-2"><FileText className="h-4 w-4 text-ink-soft" /><h2 className="font-display text-base font-semibold text-ink">{t('common.documents')}</h2></div>
+        {documents.length > 0 && <ul className="mb-4 divide-y divide-sand">{documents.map((document) => <li key={document.id} className="flex items-center justify-between py-2.5 text-sm"><div className="min-w-0"><p className="truncate font-medium text-ink">{document.original_name}</p>{document.description && <p className="truncate text-xs text-ink-soft">{document.description}</p>}</div><div className="flex shrink-0 gap-1"><button onClick={() => downloadDocument(document.id, document.original_name)} title={t('documents.download')} className="focus-ring rounded-lg p-1.5 text-ink-soft hover:bg-forest/10 hover:text-forest"><Download className="h-4 w-4" /></button>{canDeleteDocument && <button onClick={() => handleDeleteDocument(document)} title={t('common.delete')} className="focus-ring rounded-lg p-1.5 text-ink-soft hover:bg-clay/10 hover:text-clay"><Trash2 className="h-4 w-4" /></button>}</div></li>)}</ul>}
+        {canUploadDocument && <form onSubmit={handleUploadDocument} className="flex flex-wrap items-end gap-3">
+          {docError && <div className="w-full rounded-lg bg-clay/10 px-3.5 py-2.5 text-sm text-clay" role="alert">{docError}</div>}
+          <div className="min-w-[220px] flex-1"><label htmlFor="member-document" className="mb-1.5 block text-xs font-medium uppercase tracking-wide text-ink-soft">{t('documents.file')}</label><input ref={documentInputRef} id="member-document" type="file" accept={DOCUMENT_UPLOAD_ACCEPT} disabled={isUploading} onChange={(event) => { setDocFile(event.target.files[0]); setDocError(''); }} className="focus-ring w-full rounded-lg border border-sand px-3 py-2 text-sm file:mr-3 file:rounded-md file:border-0 file:bg-sand file:px-3 file:py-1 file:text-xs file:font-medium file:text-ink" /><p className="mt-1 text-xs text-ink-soft">{t('documents.fileTypes')}</p></div>
+          <div className="min-w-[220px] flex-1"><label htmlFor="document-description" className="mb-1.5 block text-xs font-medium uppercase tracking-wide text-ink-soft">{t('documents.description')} ({t('documents.optional')})</label><input id="document-description" disabled={isUploading} value={docDescription} onChange={(event) => setDocDescription(event.target.value)} placeholder={t('documents.example')} className="focus-ring w-full rounded-lg border border-sand px-3 py-2 text-sm" /></div>
+          <button type="submit" disabled={isUploading} className="focus-ring flex items-center gap-2 rounded-lg bg-forest px-4 py-2 text-sm font-medium text-paper hover:bg-forest-light disabled:opacity-60">{isUploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}{isUploading ? t('documents.uploading') : t('documents.upload')}</button>
+        </form>}
       </div>
     </DashboardLayout>
   );

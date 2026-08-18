@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Plus, Loader2, FileText, Download, Trash2 } from 'lucide-react';
 import DashboardLayout from '../components/DashboardLayout';
 import Modal from '../components/Modal';
@@ -7,6 +7,13 @@ import { listMembers } from '../api/members';
 import { useAuth } from '../context/AuthContext';
 import { useCooperative } from '../context/CooperativeContext';
 import { useTranslation } from 'react-i18next';
+import {
+  DOCUMENT_DELETE_ROLES,
+  DOCUMENT_UPLOAD_ACCEPT,
+  DOCUMENT_UPLOAD_ROLES,
+  getDocumentFileValidationKey,
+  getDocumentUploadErrorKey,
+} from '../utils/documentUpload';
 
 const formatSize = (bytes) => {
   if (!bytes) return '';
@@ -19,13 +26,14 @@ const DocumentsPage = () => {
   const { t } = useTranslation();
   const { user } = useAuth();
   const { cooperativeScope, activeCooperativeId } = useCooperative();
-  const canUpload = ['super_admin', 'cooperative_manager', 'field_officer', 'accountant'].includes(user?.role);
-  const canDelete = ['super_admin', 'cooperative_manager'].includes(user?.role);
+  const canUpload = DOCUMENT_UPLOAD_ROLES.includes(user?.role);
+  const canDelete = DOCUMENT_DELETE_ROLES.includes(user?.role);
 
   const [documents, setDocuments] = useState([]);
   const [members, setMembers] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
+  const [feedback, setFeedback] = useState('');
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [file, setFile] = useState(null);
@@ -33,6 +41,7 @@ const DocumentsPage = () => {
   const [description, setDescription] = useState('');
   const [formError, setFormError] = useState('');
   const [isSaving, setIsSaving] = useState(false);
+  const uploadSubmitLockRef = useRef(false);
 
   const fetchAll = async () => {
     setIsLoading(true);
@@ -62,11 +71,14 @@ const DocumentsPage = () => {
 
   const handleUpload = async (e) => {
     e.preventDefault();
+    if (uploadSubmitLockRef.current || !canUpload) return;
     setFormError('');
-    if (!file) {
-      setFormError(t('documents.chooseFile'));
+    const validationKey = getDocumentFileValidationKey(file);
+    if (validationKey) {
+      setFormError(t(validationKey));
       return;
     }
+    uploadSubmitLockRef.current = true;
     setIsSaving(true);
     try {
       await uploadDocument({ file, owner_type: 'member', owner_id: ownerId, description });
@@ -74,10 +86,12 @@ const DocumentsPage = () => {
       setFile(null);
       setOwnerId('');
       setDescription('');
-      fetchAll();
+      await fetchAll();
+      setFeedback(t('documents.uploaded'));
     } catch (err) {
-      setFormError(err.response?.data?.message || t('documents.uploadError'));
+      setFormError(t(getDocumentUploadErrorKey(err)));
     } finally {
+      uploadSubmitLockRef.current = false;
       setIsSaving(false);
     }
   };
@@ -98,7 +112,11 @@ const DocumentsPage = () => {
     <DashboardLayout title={t('common.documents')} subtitle={t('modules.documentsSubtitle')}>
       {canUpload && <div className="mb-5 flex items-center justify-end">
         <button
-          onClick={() => setIsModalOpen(true)}
+          onClick={() => {
+            setFeedback('');
+            setFormError('');
+            setIsModalOpen(true);
+          }}
           disabled={members.length === 0}
           className="focus-ring flex items-center gap-2 rounded-lg bg-forest px-4 py-2 text-sm font-medium text-paper hover:bg-forest-light disabled:opacity-50"
         >
@@ -106,6 +124,12 @@ const DocumentsPage = () => {
           {t('documents.upload')}
         </button>
       </div>}
+
+      {feedback && (
+        <div className="mb-5 rounded-lg border border-forest/20 bg-forest/5 px-4 py-3 text-sm text-forest" role="status">
+          {feedback}
+        </div>
+      )}
 
       <div className="overflow-hidden rounded-xl bg-white shadow-card">
         {isLoading ? (
@@ -185,6 +209,7 @@ const DocumentsPage = () => {
             </label>
             <select
               required
+              disabled={isSaving}
               value={ownerId}
               onChange={(e) => setOwnerId(e.target.value)}
               className="focus-ring w-full rounded-lg border border-sand px-3 py-2 text-sm"
@@ -205,7 +230,12 @@ const DocumentsPage = () => {
             <input
               required
               type="file"
-              onChange={(e) => setFile(e.target.files[0])}
+              accept={DOCUMENT_UPLOAD_ACCEPT}
+              disabled={isSaving}
+              onChange={(e) => {
+                setFile(e.target.files[0]);
+                setFormError('');
+              }}
               className="focus-ring w-full rounded-lg border border-sand px-3 py-2 text-sm file:mr-3 file:rounded-md file:border-0 file:bg-sand file:px-3 file:py-1 file:text-xs file:font-medium file:text-ink"
             />
             <p className="mt-1 text-xs text-ink-soft">{t('documents.fileTypes')}</p>
@@ -216,6 +246,7 @@ const DocumentsPage = () => {
               {t('documents.description')} ({t('documents.optional')})
             </label>
             <input
+              disabled={isSaving}
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder={t('documents.example')}

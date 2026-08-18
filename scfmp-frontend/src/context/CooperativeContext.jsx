@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { useAuth } from './AuthContext';
-import { listCooperatives } from '../api/cooperatives';
+import { getCooperative, listCooperatives } from '../api/cooperatives';
 
 const CooperativeContext = createContext(null);
 
@@ -16,27 +16,38 @@ export const CooperativeProvider = ({ children }) => {
   const isSuperAdmin = user?.role === 'super_admin';
 
   const fetchCooperatives = useCallback(async () => {
-    if (!isSuperAdmin) return;
+    if (!isAuthenticated || !user) return;
     setIsLoading(true);
     try {
-      const data = await listCooperatives();
-      setCooperatives(data);
-      setActiveCooperativeId((current) => {
-        const stillValid = data.some((c) => c.id === current);
-        return stillValid ? current : data[0]?.id || null;
-      });
+      if (isSuperAdmin) {
+        const data = await listCooperatives();
+        setCooperatives(data);
+        setActiveCooperativeId((current) => {
+          const stillValid = data.some((c) => c.id === current);
+          return stillValid ? current : data[0]?.id || null;
+        });
+      } else if (user.cooperative_id) {
+        const cooperative = await getCooperative(user.cooperative_id);
+        setCooperatives([cooperative]);
+        setActiveCooperativeId(cooperative.id);
+      } else {
+        setCooperatives([]);
+        setActiveCooperativeId(null);
+      }
     } catch {
-      // If this fails, pages will simply show "no cooperative selected" state
+      // If this fails, pages will show the empty organization state.
     } finally {
       setIsLoading(false);
     }
-  }, [isSuperAdmin]);
+  }, [isAuthenticated, isSuperAdmin, user]);
 
   useEffect(() => {
-    if (isAuthenticated && isSuperAdmin) {
+    if (isAuthenticated) {
       fetchCooperatives();
+    } else {
+      setCooperatives([]);
     }
-  }, [isAuthenticated, isSuperAdmin, fetchCooperatives]);
+  }, [isAuthenticated, fetchCooperatives]);
 
   useEffect(() => {
     if (activeCooperativeId) {
@@ -45,7 +56,7 @@ export const CooperativeProvider = ({ children }) => {
   }, [activeCooperativeId]);
 
   // What every page should spread into its API params:
-  // - super_admin: whichever cooperative is currently selected (or {} if none exist yet)
+  // - super_admin: whichever organization is currently selected (or {} if none exist yet)
   // - everyone else: {} — the backend already scopes them to their own cooperative automatically
   const cooperativeScope =
     isSuperAdmin && activeCooperativeId ? { cooperative_id: activeCooperativeId } : {};

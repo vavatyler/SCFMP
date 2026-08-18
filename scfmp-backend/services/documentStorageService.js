@@ -3,7 +3,23 @@ const path = require('path');
 const { put, get, del } = require('@vercel/blob');
 const { UPLOAD_DIR } = require('../middleware/uploadMiddleware');
 
-const hasBlobCredentials = () => Boolean(
+const STORAGE_ERROR_CODES = {
+  unavailable: 'DOCUMENT_STORAGE_UNAVAILABLE',
+  uploadFailed: 'DOCUMENT_STORAGE_UPLOAD_FAILED',
+};
+
+class DocumentStorageError extends Error {
+  constructor(code, message, cause) {
+    super(message, cause ? { cause } : undefined);
+    this.name = 'DocumentStorageError';
+    this.code = code;
+  }
+}
+
+// New Vercel projects use a short-lived OIDC token supplied to the Function
+// request context. BLOB_STORE_ID is therefore sufficient evidence that a store
+// is connected; @vercel/blob resolves the rotating token at call time.
+const hasBlobConfiguration = () => Boolean(
   process.env.BLOB_READ_WRITE_TOKEN
   || process.env.BLOB_STORE_ID
 );
@@ -23,24 +39,51 @@ const unlinkIfPresent = async (filePath) => {
   }
 };
 
+const isBlobCredentialError = (error) => (
+  /blob credentials|read-write token|oidcToken.*storeId|unauthorized|forbidden/i
+    .test(error?.message || '')
+);
+
+const storageOperationError = (error) => {
+  if (isBlobCredentialError(error)) {
+    return new DocumentStorageError(
+      STORAGE_ERROR_CODES.unavailable,
+      'Document storage is unavailable. Connect a private Vercel Blob store to this project and redeploy.',
+      error
+    );
+  }
+  return new DocumentStorageError(
+    STORAGE_ERROR_CODES.uploadFailed,
+    'The document could not be stored. Please try again.',
+    error
+  );
+};
+
 const saveUploadedFile = async (file, { cooperativeId, ownerType, ownerId }) => {
   if (!shouldUseBlob()) {
     return { storedName: file.filename, filePath: file.path, provider: 'local' };
   }
-  if (!hasBlobCredentials()) {
+  if (!hasBlobConfiguration()) {
     await unlinkIfPresent(file.path);
-    throw new Error('Vercel Blob is not configured. Connect a Blob store before uploading documents.');
+    throw new DocumentStorageError(
+      STORAGE_ERROR_CODES.unavailable,
+      'Document storage is unavailable. Connect a private Vercel Blob store to this project and redeploy.'
+    );
   }
 
   const pathname = `scfmp/${cooperativeId}/${ownerType}/${ownerId}/${file.filename}`;
   try {
     const body = await fs.promises.readFile(file.path);
-    const blob = await put(pathname, body, {
-      access: 'private',
-      addRandomSuffix: false,
-      contentType: file.mimetype,
-    });
-    return { storedName: blob.pathname, filePath: blob.url, provider: 'blob' };
+    try {
+      const blob = await put(pathname, body, {
+        access: 'private',
+        addRandomSuffix: false,
+        contentType: file.mimetype,
+      });
+      return { storedName: blob.pathname, filePath: blob.url, provider: 'blob' };
+    } catch (error) {
+      throw storageOperationError(error);
+    }
   } finally {
     await unlinkIfPresent(file.path);
   }
@@ -67,6 +110,9 @@ const removeStoredFile = async ({ file_path: filePath }) => {
 };
 
 module.exports = {
+  STORAGE_ERROR_CODES,
+  DocumentStorageError,
+  hasBlobConfiguration,
   isBlobLocation,
   saveUploadedFile,
   openStoredFile,

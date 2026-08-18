@@ -56,7 +56,7 @@ const LoginPage = () => {
             {isSubmitting && <Loader2 className="h-4 w-4 animate-spin" />}{isSubmitting ? t('auth.signingIn') : t('auth.signIn')}
           </button>
         </form>
-        <p className="mt-6 text-center text-xs text-paper/50">SmartNyamagabe Digital Solutions Ltd</p>
+        <p className="mt-6 text-center text-xs text-paper/50">Smart Digital Solutions Ltd</p>
       </div>
     </div>
   );

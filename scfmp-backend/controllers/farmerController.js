@@ -1,4 +1,51 @@
 const { Farmer, Member } = require('../models');
+const { formatLocation, validateHierarchy } = require('../services/rwandaLocationService');
+
+const LOCATION_FIELDS = ['district', 'sector', 'cell', 'village'];
+const FARMER_FIELDS = [
+  'member_id',
+  'farm_size_ha',
+  'location',
+  'gps_coordinates',
+  'crop_type',
+  ...LOCATION_FIELDS,
+];
+
+const hasStructuredLocation = (value) =>
+  LOCATION_FIELDS.some((field) => String(value?.[field] || '').trim());
+
+const locationChanged = (body, farmer) =>
+  LOCATION_FIELDS.some(
+    (field) => Object.prototype.hasOwnProperty.call(body, field)
+      && String(body[field] || '') !== String(farmer?.[field] || '')
+  );
+
+const mergedLocation = (body, farmer = {}) => Object.fromEntries(
+  LOCATION_FIELDS.map((field) => [
+    field,
+    Object.prototype.hasOwnProperty.call(body, field) ? body[field] : farmer[field],
+  ])
+);
+
+const prepareFarmerPayload = (body, structuredLocation = null) => {
+  const payload = Object.fromEntries(
+    FARMER_FIELDS
+      .filter((field) => Object.prototype.hasOwnProperty.call(body, field))
+      .map((field) => [field, body[field]])
+  );
+  if (structuredLocation) {
+    const normalizedLocation = Object.fromEntries(
+      LOCATION_FIELDS.map((field) => [
+        field,
+        String(structuredLocation[field] || '').trim() || null,
+      ])
+    );
+    Object.assign(payload, normalizedLocation, {
+      location: hasStructuredLocation(normalizedLocation) ? formatLocation(normalizedLocation) : null,
+    });
+  }
+  return payload;
+};
 
 /**
  * Helper: loads the farmer's parent member and checks the caller
@@ -57,7 +104,7 @@ const getById = async (req, res) => {
  */
 const create = async (req, res) => {
   try {
-    const { member_id, farm_size_ha, location, gps_coordinates, crop_type } = req.body;
+    const { member_id } = req.body;
 
     if (!member_id) {
       return res.status(400).json({ success: false, message: 'member_id is required' });
@@ -78,13 +125,15 @@ const create = async (req, res) => {
         .json({ success: false, message: 'This member already has a farmer profile' });
     }
 
-    const farmer = await Farmer.create({
-      member_id,
-      farm_size_ha,
-      location,
-      gps_coordinates,
-      crop_type,
-    });
+    const locationValidation = validateHierarchy(req.body, { requireVillage: hasStructuredLocation(req.body) });
+    if (!locationValidation.valid) {
+      return res.status(422).json({ success: false, message: locationValidation.error });
+    }
+
+    const farmer = await Farmer.create(prepareFarmerPayload(
+      req.body,
+      hasStructuredLocation(req.body) ? req.body : null
+    ));
 
     return res.status(201).json({ success: true, data: farmer });
   } catch (err) {
@@ -104,7 +153,18 @@ const update = async (req, res) => {
     }
 
     const { member_id, ...safeUpdates } = req.body; // member_id is immutable after creation
-    await farmer.update(safeUpdates);
+    let structuredLocation = null;
+    if (locationChanged(safeUpdates, farmer)) {
+      structuredLocation = mergedLocation(safeUpdates, farmer);
+      const locationValidation = validateHierarchy(
+        structuredLocation,
+        { requireVillage: hasStructuredLocation(structuredLocation) }
+      );
+      if (!locationValidation.valid) {
+        return res.status(422).json({ success: false, message: locationValidation.error });
+      }
+    }
+    await farmer.update(prepareFarmerPayload(safeUpdates, structuredLocation));
 
     return res.status(200).json({ success: true, data: farmer });
   } catch (err) {

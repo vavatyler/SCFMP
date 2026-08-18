@@ -4,11 +4,13 @@ import DashboardLayout from '../components/DashboardLayout';
 import Modal from '../components/Modal';
 import Badge from '../components/Badge';
 import PasswordInput from '../components/PasswordInput';
+import RwandaPhoneInput from '../components/RwandaPhoneInput';
 import { listUsers, registerUser, updateUserStatus, resetUserPassword } from '../api/users';
 import { listMembers } from '../api/members';
 import { useAuth } from '../context/AuthContext';
 import { useCooperative } from '../context/CooperativeContext';
 import { useTranslation } from 'react-i18next';
+import { isValidEmail, isValidRwandaLocalPhone, normalizeRwandaPhone, toLocalRwandaPhone } from '../utils/validation';
 
 const emptyForm = {
   first_name: '',
@@ -75,9 +77,18 @@ const UsersPage = () => {
       setFormError('Select the member who owns this farmer account.');
       return;
     }
+    if (!isValidEmail(form.email)) {
+      setFormError(t('validation.emailInvalid'));
+      return;
+    }
+    if (form.phone && !isValidRwandaLocalPhone(form.phone)) {
+      setFormError(t('validation.phoneInvalid'));
+      return;
+    }
     setIsSaving(true);
     try {
-      const payload = isSuperAdmin ? { ...form, ...cooperativeScope } : form;
+      const normalizedForm = { ...form, phone: normalizeRwandaPhone(form.phone) };
+      const payload = isSuperAdmin ? { ...normalizedForm, ...cooperativeScope } : normalizedForm;
       await registerUser(payload);
       setIsModalOpen(false);
       setForm(emptyForm);
@@ -107,6 +118,7 @@ const UsersPage = () => {
   };
 
   const canManage = isSuperAdmin || currentUser?.role === 'cooperative_manager';
+  const emailState = form.email ? isValidEmail(form.email) ? 'valid' : 'invalid' : 'empty';
 
   const [resettingUser, setResettingUser] = useState(null);
   const [resetPasswordValue, setResetPasswordValue] = useState('');
@@ -178,7 +190,7 @@ const UsersPage = () => {
                 <th className="px-5 py-3 font-medium">Name</th>
                 <th className="px-5 py-3 font-medium">Email</th>
                 <th className="px-5 py-3 font-medium">Role</th>
-                {isSuperAdmin && <th className="px-5 py-3 font-medium">Cooperative</th>}
+                {isSuperAdmin && <th className="px-5 py-3 font-medium">Organization</th>}
                 <th className="px-5 py-3 font-medium">Status</th>
                 <th className="px-5 py-3 font-medium"></th>
               </tr>
@@ -277,19 +289,24 @@ const UsersPage = () => {
               type="email"
               value={form.email}
               onChange={(e) => setForm({ ...form, email: e.target.value })}
-              className="focus-ring w-full rounded-lg border border-sand px-3 py-2 text-sm"
+              aria-invalid={emailState === 'invalid'}
+              className={`focus-ring w-full rounded-lg border px-3 py-2 text-sm ${emailState === 'valid' ? 'border-forest' : emailState === 'invalid' ? 'border-clay' : 'border-sand'}`}
             />
+            {emailState !== 'empty' && (
+              <p className={`mt-1 text-xs ${emailState === 'valid' ? 'text-forest' : 'text-clay'}`}>
+                {emailState === 'valid' ? t('validation.emailValid') : t('validation.emailInvalid')}
+              </p>
+            )}
           </div>
 
           <div className="mb-4">
             <label className="mb-1.5 block text-xs font-medium uppercase tracking-wide text-ink-soft">
               Phone (optional)
             </label>
-            <input
+            <RwandaPhoneInput
+              id="user-phone"
               value={form.phone}
-              onChange={(e) => setForm({ ...form, phone: e.target.value })}
-              placeholder="07XX XXX XXX"
-              className="focus-ring w-full rounded-lg border border-sand px-3 py-2 text-sm"
+              onChange={(phone) => setForm({ ...form, phone })}
             />
           </div>
 
@@ -314,7 +331,7 @@ const UsersPage = () => {
               <label className="mb-1.5 block text-xs font-medium uppercase tracking-wide text-ink-soft">Linked member</label>
               <select required value={form.member_id} onChange={(e) => {
                 const member = availableMembers.find((item) => String(item.id) === e.target.value);
-                setForm({ ...form, member_id: e.target.value, first_name: member?.first_name || form.first_name, last_name: member?.last_name || form.last_name, phone: member?.phone || form.phone });
+                setForm({ ...form, member_id: e.target.value, first_name: member?.first_name || form.first_name, last_name: member?.last_name || form.last_name, phone: member?.phone ? toLocalRwandaPhone(member.phone) : form.phone });
               }} className="focus-ring min-h-11 w-full rounded-lg border border-sand px-3 py-2 text-sm">
                 <option value="">Select a member…</option>
                 {availableMembers.map((member) => <option key={member.id} value={member.id}>{member.first_name} {member.last_name}</option>)}

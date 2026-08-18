@@ -16,6 +16,7 @@ const {
 } = require('../controllers/authController');
 const { verifyToken } = require('../middleware/authMiddleware');
 const { checkRole } = require('../middleware/roleMiddleware');
+const { isRwandaPhone } = require('../utils/rwandaPhone');
 const validate = require('../middleware/validateMiddleware');
 
 // Prevents someone from spamming reset emails at an account, or brute-forcing tokens
@@ -51,6 +52,7 @@ router.post(
     body('first_name').notEmpty().withMessage('First name is required'),
     body('last_name').notEmpty().withMessage('Last name is required'),
     body('email').isEmail().withMessage('Valid email is required'),
+    body('phone').optional({ checkFalsy: true }).custom(isRwandaPhone).withMessage('Phone must contain exactly 9 Rwanda local digits'),
     strongPassword('password'),
     body('preferred_language').optional().isIn(['en', 'rw', 'fr']),
     body('member_id').if(body('role').equals('farmer')).isInt({ min: 1 }).withMessage('member_id is required for farmer accounts'),

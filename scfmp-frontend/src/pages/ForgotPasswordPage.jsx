@@ -174,12 +174,7 @@ const ForgotPasswordPage = () => {
                 {t('auth.back')}
               </button>
               <h2 className="mb-1 font-display text-lg font-medium text-ink">{t('auth.askAdmin')}</h2>
-              <p className="text-sm text-ink-soft">
-                Contact your cooperative manager or SNDS super admin — from the{' '}
-                <strong>Team</strong> page, they can reset your password for you and share a new
-                temporary one with you directly. This has always been available and still works
-                exactly as before.
-              </p>
+              <p className="text-sm text-ink-soft">{t('auth.adminResetInstructions')}</p>
             </>
           )}
         </div>

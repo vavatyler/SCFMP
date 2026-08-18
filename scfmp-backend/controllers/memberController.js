@@ -1,5 +1,14 @@
 const { Op } = require('sequelize');
 const { Member, Farmer, Cooperative } = require('../models');
+const { normalizeRwandaPhone } = require('../utils/rwandaPhone');
+
+const normalizeMemberPayload = (body) => {
+  const payload = { ...body };
+  if (Object.prototype.hasOwnProperty.call(payload, 'phone')) {
+    payload.phone = normalizeRwandaPhone(payload.phone);
+  }
+  return payload;
+};
 
 /**
  * GET /api/members
@@ -84,7 +93,7 @@ const create = async (req, res) => {
       return res.status(400).json({ success: false, message: 'cooperative_id is required' });
     }
 
-    const member = await Member.create({ ...req.body, cooperative_id });
+    const member = await Member.create({ ...normalizeMemberPayload(req.body), cooperative_id });
     return res.status(201).json({ success: true, data: member });
   } catch (err) {
     return res.status(500).json({ success: false, message: err.message });
@@ -101,7 +110,7 @@ const update = async (req, res) => {
     }
 
     // Prevent moving a member to a different cooperative via this endpoint
-    const { cooperative_id, ...safeUpdates } = req.body;
+    const { cooperative_id, ...safeUpdates } = normalizeMemberPayload(req.body);
     await member.update(safeUpdates);
 
     return res.status(200).json({ success: true, data: member });

@@ -14,6 +14,7 @@ import {
   UserCog,
   KeyRound,
   LogOut,
+  ContactRound,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import ChangePasswordModal from './ChangePasswordModal';
@@ -21,7 +22,7 @@ import ChangePasswordModal from './ChangePasswordModal';
 // `roles: null` means every logged-in role can see it.
 const NAV_ITEMS = [
   { to: '/dashboard', labelKey: 'common.dashboard', icon: LayoutDashboard, roles: null },
-  { to: '/cooperatives', labelKey: 'common.cooperatives', icon: Building2, roles: ['super_admin'] },
+  { to: '/cooperatives', labelKey: 'common.organizations', icon: Building2, roles: ['super_admin', 'cooperative_manager'] },
   { to: '/members', labelKey: 'common.members', icon: Users, roles: null },
   { to: '/farmers', labelKey: 'common.farmers', icon: Wheat, roles: null },
   { to: '/production', labelKey: 'common.production', icon: TrendingUp, roles: null },
@@ -29,6 +30,7 @@ const NAV_ITEMS = [
   { to: '/inventory', labelKey: 'common.inventory', icon: Boxes, roles: null },
   { to: '/documents', labelKey: 'common.documents', icon: FileText, roles: null },
   { to: '/team', labelKey: 'common.team', icon: UserCog, roles: ['super_admin', 'cooperative_manager'] },
+  { to: '/contact', labelKey: 'common.contact', icon: ContactRound, roles: null },
 ];
 
 const Sidebar = ({ isOpen = false, onClose = () => {} }) => {

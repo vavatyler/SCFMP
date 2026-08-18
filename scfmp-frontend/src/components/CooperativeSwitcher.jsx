@@ -1,8 +1,10 @@
 import { useState, useRef, useEffect } from 'react';
 import { ChevronDown, Building2, Check } from 'lucide-react';
 import { useCooperative } from '../context/CooperativeContext';
+import { useTranslation } from 'react-i18next';
 
 const CooperativeSwitcher = () => {
+  const { t } = useTranslation();
   const { cooperatives, activeCooperativeId, activeCooperative, setActiveCooperativeId, isSuperAdmin } =
     useCooperative();
   const [isOpen, setIsOpen] = useState(false);
@@ -21,7 +23,7 @@ const CooperativeSwitcher = () => {
   if (!isSuperAdmin) return null;
 
   if (cooperatives.length === 0) {
-    return <p className="text-sm text-ink-soft">No cooperatives yet</p>;
+    return <p className="text-sm text-ink-soft">{t('organizations.noneShort')}</p>;
   }
 
   return (
@@ -32,7 +34,7 @@ const CooperativeSwitcher = () => {
       >
         <Building2 className="h-3.5 w-3.5 text-ink-soft" />
         <span className="max-w-[180px] truncate">
-          {activeCooperative ? activeCooperative.name : 'Select cooperative'}
+          {activeCooperative ? activeCooperative.name : t('organizations.select')}
         </span>
         <ChevronDown className="h-3.5 w-3.5 text-ink-soft" />
       </button>

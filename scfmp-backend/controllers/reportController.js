@@ -12,22 +12,22 @@ const {
 const REPORT_TEXT = {
   en: {
     members: 'Members Report', farmers: 'Farmers Report', production: 'Production Report',
-    finance: 'Finance Report', inventory: 'Inventory Report', all: 'All cooperatives',
+    finance: 'Finance Report', inventory: 'Inventory Report', all: 'All organizations',
   },
   rw: {
     members: 'Raporo y’Abanyamuryango', farmers: 'Raporo y’Abahinzi', production: 'Raporo y’Umusaruro',
-    finance: 'Raporo y’Imari', inventory: 'Raporo y’Ububiko', all: 'Amakoperative yose',
+    finance: 'Raporo y’Imari', inventory: 'Raporo y’Ububiko', all: 'Imiryango yose',
   },
   fr: {
     members: 'Rapport des membres', farmers: 'Rapport des agriculteurs', production: 'Rapport de production',
-    finance: 'Rapport financier', inventory: 'Rapport d’inventaire', all: 'Toutes les coopératives',
+    finance: 'Rapport financier', inventory: 'Rapport d’inventaire', all: 'Toutes les organisations',
   },
 };
 
 const LABELS = {
   en: {
     member_number: 'Member #', name: 'Name', gender: 'Gender', phone: 'Phone', address: 'Address',
-    membership_date: 'Membership date', status: 'Status', cooperative: 'Cooperative', farm_size: 'Farm size (ha)',
+    membership_date: 'Membership date', status: 'Status', cooperative: 'Organization', farm_size: 'Farm size (ha)',
     location: 'Location', crop_type: 'Crop type', product: 'Product', farmer: 'Farmer', quantity: 'Quantity',
     unit: 'Unit', unit_price: 'Unit price (RWF)', total_value: 'Total value (RWF)', season: 'Season',
     production_date: 'Production date', type: 'Type', category: 'Category', amount: 'Amount (RWF)',
@@ -36,7 +36,7 @@ const LABELS = {
   },
   rw: {
     member_number: 'Nimero', name: 'Amazina', gender: 'Igitsina', phone: 'Telefoni', address: 'Aderesi',
-    membership_date: 'Itariki yinjiyeho', status: 'Imimerere', cooperative: 'Koperative', farm_size: 'Ingano y’umurima (ha)',
+    membership_date: 'Itariki yinjiyeho', status: 'Imimerere', cooperative: 'Umuryango', farm_size: 'Ingano y’umurima (ha)',
     location: 'Aho uherereye', crop_type: 'Igihingwa', product: 'Igicuruzwa', farmer: 'Umuhinzi', quantity: 'Ingano',
     unit: 'Igipimo', unit_price: 'Igiciro kuri kimwe (RWF)', total_value: 'Agaciro kose (RWF)', season: 'Igihembwe',
     production_date: 'Itariki y’umusaruro', type: 'Ubwoko', category: 'Icyiciro', amount: 'Amafaranga (RWF)',
@@ -45,7 +45,7 @@ const LABELS = {
   },
   fr: {
     member_number: 'N° membre', name: 'Nom', gender: 'Genre', phone: 'Téléphone', address: 'Adresse',
-    membership_date: 'Date d’adhésion', status: 'Statut', cooperative: 'Coopérative', farm_size: 'Surface (ha)',
+    membership_date: 'Date d’adhésion', status: 'Statut', cooperative: 'Organisation', farm_size: 'Surface (ha)',
     location: 'Localisation', crop_type: 'Culture', product: 'Produit', farmer: 'Agriculteur', quantity: 'Quantité',
     unit: 'Unité', unit_price: 'Prix unitaire (RWF)', total_value: 'Valeur totale (RWF)', season: 'Saison',
     production_date: 'Date de production', type: 'Type', category: 'Catégorie', amount: 'Montant (RWF)',

@@ -6,7 +6,12 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test:i18n": "node scripts/verify-form-translations.mjs",
+    "test:dashboard-greeting": "node scripts/verify-dashboard-greeting.mjs",
+    "test:documents": "node scripts/verify-document-upload.mjs",
+    "test:contact": "node scripts/verify-contact-page.mjs",
+    "test:reports": "node scripts/verify-report-terminology.mjs"
   },
   "dependencies": {
     "axios": "^1.7.4",

@@ -5,7 +5,7 @@ const router = express.Router();
 const { list, upload, download, remove } = require('../controllers/documentController');
 const { verifyToken } = require('../middleware/authMiddleware');
 const { checkRole } = require('../middleware/roleMiddleware');
-const { upload: multerUpload } = require('../middleware/uploadMiddleware');
+const { upload: multerUpload, handleUploadError } = require('../middleware/uploadMiddleware');
 const validate = require('../middleware/validateMiddleware');
 
 router.use(verifyToken);
@@ -26,13 +26,7 @@ router.post(
   '/',
   checkRole('super_admin', 'cooperative_manager', 'field_officer', 'accountant'),
   multerUpload.single('file'),
-  (err, req, res, next) => {
-    // Catches Multer-specific errors (file too large, wrong type) with a clean JSON response
-    if (err) {
-      return res.status(400).json({ success: false, message: err.message });
-    }
-    next();
-  },
+  handleUploadError,
   [
     body('owner_type').isIn(['cooperative', 'member', 'farmer', 'loan']).withMessage('Invalid owner_type'),
     body('owner_id').isInt({ min: 1 }).withMessage('owner_id is required'),

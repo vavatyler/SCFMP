@@ -12,6 +12,7 @@ const {
 const { sendPasswordResetEmail } = require('../services/emailService');
 const { recordAuditEvent } = require('../services/auditService');
 const { validatePasswordStrength } = require('../utils/passwordPolicy');
+const { normalizeRwandaPhone } = require('../utils/rwandaPhone');
 
 const RESET_TOKEN_EXPIRES_MINUTES = Number(process.env.RESET_TOKEN_EXPIRES_MINUTES) || 30;
 const JWT_ISSUER = process.env.JWT_ISSUER || 'scfmp-api';
@@ -112,7 +113,7 @@ const register = async (req, res) => {
         first_name,
         last_name,
         email: email.toLowerCase(),
-        phone,
+        phone: normalizeRwandaPhone(phone),
         password_hash: password,
         role,
         preferred_language,

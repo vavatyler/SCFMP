@@ -4,6 +4,10 @@ const fs = require('fs');
 const crypto = require('crypto');
 const os = require('os');
 
+// Multipart overhead also counts toward Vercel Functions' 4.5 MB request-body
+// ceiling, so keep the file itself at 4 MB for this server-upload architecture.
+const MAX_DOCUMENT_UPLOAD_BYTES = 4 * 1024 * 1024;
+
 const UPLOAD_DIR = process.env.UPLOAD_DIR
   || (process.env.VERCEL
     ? path.join(os.tmpdir(), 'scfmp-uploads')
@@ -44,19 +48,60 @@ const storage = multer.diskStorage({
 const fileFilter = (req, file, cb) => {
   const extension = path.extname(file.originalname).toLowerCase();
   if (Buffer.byteLength(file.originalname, 'utf8') > 255) {
-    return cb(new Error('File name is too long'));
+    const error = new Error('File name is too long');
+    error.code = 'DOCUMENT_FILE_NAME_TOO_LONG';
+    return cb(error);
   }
   if (ALLOWED_MIME_TYPES.includes(file.mimetype) && ALLOWED_EXTENSIONS.has(extension)) {
     return cb(null, true);
   } else {
-    return cb(new Error('Unsupported file type. Allowed: PDF, JPG, PNG, WEBP, Word, Excel, TXT'));
+    const error = new Error('Unsupported file type. Allowed: PDF, JPG, PNG, WEBP, Word, Excel, TXT');
+    error.code = 'DOCUMENT_FILE_TYPE_UNSUPPORTED';
+    return cb(error);
   }
 };
 
 const upload = multer({
   storage,
   fileFilter,
-  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB per file
+  limits: { fileSize: MAX_DOCUMENT_UPLOAD_BYTES },
 });
 
-module.exports = { upload, UPLOAD_DIR };
+const handleUploadError = (error, req, res, next) => {
+  if (!error) return next();
+
+  if (error instanceof multer.MulterError && error.code === 'LIMIT_FILE_SIZE') {
+    return res.status(413).json({
+      success: false,
+      code: 'DOCUMENT_FILE_TOO_LARGE',
+      message: 'The file exceeds the 4 MB upload limit',
+    });
+  }
+
+  const knownErrors = {
+    DOCUMENT_FILE_NAME_TOO_LONG: 'The file name is too long',
+    DOCUMENT_FILE_TYPE_UNSUPPORTED: 'Unsupported file type',
+  };
+  if (knownErrors[error.code]) {
+    return res.status(400).json({
+      success: false,
+      code: error.code,
+      message: knownErrors[error.code],
+    });
+  }
+
+  return res.status(400).json({
+    success: false,
+    code: 'DOCUMENT_UPLOAD_REJECTED',
+    message: 'The file upload was rejected',
+  });
+};
+
+module.exports = {
+  upload,
+  handleUploadError,
+  UPLOAD_DIR,
+  MAX_DOCUMENT_UPLOAD_BYTES,
+  ALLOWED_MIME_TYPES,
+  ALLOWED_EXTENSIONS,
+};

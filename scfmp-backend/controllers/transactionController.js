@@ -1,6 +1,14 @@
 const { Op, fn, col } = require('sequelize');
 const { Transaction, Member, Cooperative } = require('../models');
 
+const TRANSACTION_UPDATE_FIELDS = [
+  'member_id',
+  'category',
+  'amount',
+  'description',
+  'transaction_date',
+];
+
 /**
  * Resolves which cooperative_id a request is scoped to.
  * super_admin can view any cooperative via ?cooperative_id=; everyone else is locked to their own.
@@ -147,7 +155,23 @@ const update = async (req, res) => {
       });
     }
 
-    const { cooperative_id, loan_id, type, ...safeUpdates } = req.body;
+    const safeUpdates = Object.fromEntries(
+      TRANSACTION_UPDATE_FIELDS
+        .filter((field) => Object.prototype.hasOwnProperty.call(req.body, field))
+        .map((field) => [field, req.body[field]])
+    );
+    if (Object.prototype.hasOwnProperty.call(safeUpdates, 'member_id')) {
+      if (safeUpdates.member_id === null || safeUpdates.member_id === '') {
+        safeUpdates.member_id = null;
+      } else {
+        const member = await Member.findByPk(safeUpdates.member_id);
+        if (!member || member.cooperative_id !== record.cooperative_id) {
+          return res
+            .status(400)
+            .json({ success: false, message: 'member_id does not belong to this cooperative' });
+        }
+      }
+    }
     await record.update(safeUpdates);
 
     return res.status(200).json({ success: true, data: record });

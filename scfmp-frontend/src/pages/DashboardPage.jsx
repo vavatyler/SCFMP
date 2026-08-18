@@ -6,11 +6,12 @@ import StatCard from '../components/StatCard';
 import { getDashboardSummary } from '../api/dashboard';
 import { useAuth } from '../context/AuthContext';
 import { useCooperative } from '../context/CooperativeContext';
+import { getDashboardGreeting } from '../utils/dashboardGreeting';
 
 const DashboardPage = () => {
   const { t } = useTranslation();
   const { user } = useAuth();
-  const { cooperativeScope, isSuperAdmin, activeCooperativeId } = useCooperative();
+  const { cooperativeScope, isSuperAdmin, activeCooperativeId, activeCooperative } = useCooperative();
   const [summary, setSummary] = useState(null);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(true);
@@ -46,8 +47,14 @@ const DashboardPage = () => {
     return <DashboardLayout title={t('common.welcome', { name: user?.first_name })}><div className="rounded-xl border border-sand bg-white p-8 text-center shadow-card"><p className="text-sm text-ink-soft">{t('dashboard.noCooperative')}</p></div></DashboardLayout>;
   }
 
+  const dashboardGreeting = getDashboardGreeting({
+    isSuperAdmin,
+    firstName: user?.first_name,
+    organizationName: activeCooperative?.name,
+  });
+
   return (
-    <DashboardLayout title={t('common.welcome', { name: user?.first_name })} subtitle={t('dashboard.subtitle')}>
+    <DashboardLayout title={t(dashboardGreeting.key, dashboardGreeting.values)} subtitle={t('dashboard.subtitle')}>
       <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
         <StatCard label={t('dashboard.totalMembers')} value={summary.members.total} accent="forest" />
         <StatCard label={t('dashboard.activeFarmers')} value={summary.farmers.total} accent="forest" />
