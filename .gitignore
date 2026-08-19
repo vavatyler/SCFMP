@@ -14,9 +14,15 @@ build/
 # IDE
 .vscode/
 
+# Vercel local project metadata
+.vercel/
+
 # Frontend
 scfmp-frontend/node_modules/
 scfmp-frontend/dist/
 
 # Backend
 scfmp-backend/node_modules/
+
+.env.local
+.env.*.local
