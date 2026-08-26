@@ -11,6 +11,7 @@ import {
   updateTransaction,
   deleteTransaction,
   getTransactionSummary,
+  getTransactionCategories,
   listLoans,
   createLoan,
   repayLoan,
@@ -46,6 +47,7 @@ const FinancePage = () => {
   const [transactions, setTransactions] = useState([]);
   const [loans, setLoans] = useState([]);
   const [members, setMembers] = useState([]);
+  const [transactionCategories, setTransactionCategories] = useState({});
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -70,16 +72,18 @@ const FinancePage = () => {
     setIsLoading(true);
     setError('');
     try {
-      const [summaryRes, txnRes, loanRes, membersRes] = await Promise.all([
+      const [summaryRes, txnRes, loanRes, membersRes, categoriesRes] = await Promise.all([
         getTransactionSummary(cooperativeScope),
         listTransactions(cooperativeScope),
         listLoans(cooperativeScope),
         listMembers(cooperativeScope),
+        getTransactionCategories(),
       ]);
       setSummary(summaryRes);
       setTransactions(txnRes.data);
       setLoans(loanRes.data);
       setMembers(membersRes.data);
+      setTransactionCategories(categoriesRes);
     } catch (err) {
       setError('Could not load financial data. Is the backend server running?');
     } finally {
@@ -114,6 +118,17 @@ const FinancePage = () => {
   const handleSubmitTransaction = async (e) => {
     e.preventDefault();
     setTxnError('');
+
+    const allowedCategories = transactionCategories[txnForm.type] || [];
+    const isUnchangedLegacyCategory =
+      !!editingTxn &&
+      txnForm.type === editingTxn.type &&
+      txnForm.category === (editingTxn.category || '');
+    if (!allowedCategories.includes(txnForm.category) && !isUnchangedLegacyCategory) {
+      setTxnError('Select a category allowed for this transaction type.');
+      return;
+    }
+
     setIsSaving(true);
     try {
       if (editingTxn) {
@@ -148,6 +163,17 @@ const FinancePage = () => {
     } finally {
       setIsDeletingTxn(false);
     }
+  };
+
+  const handleTransactionTypeChange = (nextType) => {
+    setTxnForm((currentForm) => {
+      const allowedCategories = transactionCategories[nextType] || [];
+      return {
+        ...currentForm,
+        type: nextType,
+        category: allowedCategories.includes(currentForm.category) ? currentForm.category : '',
+      };
+    });
   };
 
   const handleCreateLoan = async (e) => {
@@ -213,6 +239,12 @@ const FinancePage = () => {
       </DashboardLayout>
     );
   }
+
+  const availableTxnCategories = transactionCategories[txnForm.type] || [];
+  const isLegacyTxnCategory =
+    !!editingTxn &&
+    !!txnForm.category &&
+    !availableTxnCategories.includes(txnForm.category);
 
   return (
     <DashboardLayout title={t('common.finance')} subtitle={t('modules.financeSubtitle')}>
@@ -423,7 +455,7 @@ const FinancePage = () => {
             </label>
             <select
               value={txnForm.type}
-              onChange={(e) => setTxnForm({ ...txnForm, type: e.target.value })}
+              onChange={(e) => handleTransactionTypeChange(e.target.value)}
               disabled={!!editingTxn}
               className="focus-ring w-full rounded-lg border border-sand px-3 py-2 text-sm disabled:bg-sand/30 disabled:text-ink-soft"
             >
@@ -442,12 +474,22 @@ const FinancePage = () => {
             <label className="mb-1.5 block text-xs font-medium uppercase tracking-wide text-ink-soft">
               Category
             </label>
-            <input
+            <select
+              required
               value={txnForm.category}
               onChange={(e) => setTxnForm({ ...txnForm, category: e.target.value })}
-              placeholder="e.g. Coffee sales, Fertilizer purchase"
               className="focus-ring w-full rounded-lg border border-sand px-3 py-2 text-sm"
-            />
+            >
+              <option value="">Select a category...</option>
+              {isLegacyTxnCategory && (
+                <option value={txnForm.category}>{txnForm.category} (existing category)</option>
+              )}
+              {availableTxnCategories.map((category) => (
+                <option key={category} value={category}>
+                  {category}
+                </option>
+              ))}
+            </select>
           </div>
 
           <div className="mb-4">

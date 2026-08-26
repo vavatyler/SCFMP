@@ -4,6 +4,7 @@ import { ArrowLeft, Download, FileText, Loader2, MapPin, Pencil, Sprout, Trash2,
 import { useTranslation } from 'react-i18next';
 import Badge from '../components/Badge';
 import DashboardLayout from '../components/DashboardLayout';
+import FarmSizeFields from '../components/FarmSizeFields';
 import MemberFormFields from '../components/MemberFormFields';
 import RwandaLocationFields from '../components/RwandaLocationFields';
 import { createFarmer, updateFarmer } from '../api/farmers';
@@ -20,17 +21,22 @@ import {
   createEmptyFarmerForm,
   FARMER_WRITE_ROLES,
   farmerToForm,
+  getFarmSizeDisplay,
   getFarmerLocationDisplay,
   isValidFarmSize,
+  isValidFarmSizeUnit,
 } from '../utils/farmerForm';
 import {
   buildMemberPayload,
+  getMemberAddressDisplay,
+  getMemberAddressLocation,
+  MEMBER_ADDRESS_FIELDS,
   MEMBER_DELETE_ROLES,
   MEMBER_GENDERS,
   MEMBER_WRITE_ROLES,
   memberToForm,
 } from '../utils/memberForm';
-import { isValidRwandaLocalPhone } from '../utils/validation';
+import { isValidRwandaLocalPhone, isValidRwandaNationalId } from '../utils/validation';
 import {
   DOCUMENT_DELETE_ROLES,
   DOCUMENT_UPLOAD_ACCEPT,
@@ -141,8 +147,15 @@ const MemberDetailPage = () => {
     if (farmerSubmitLockRef.current || !canEditFarmer) return;
     setFarmerError('');
     setFarmerFieldErrors({});
-    if (!isValidFarmSize(farmerForm.farm_size_ha)) {
-      setFarmerFieldErrors({ farm_size_ha: t('farmers.validation.farmSizeInvalid') });
+    const nextFarmerErrors = {};
+    if (!isValidFarmSize(farmerForm.farm_size)) {
+      nextFarmerErrors.farm_size = t('farmers.validation.farmSizeInvalid');
+    }
+    if (farmerForm.farm_size && !isValidFarmSizeUnit(farmerForm.farm_size_unit)) {
+      nextFarmerErrors.farm_size_unit = t('farmers.validation.farmSizeUnitRequired');
+    }
+    if (Object.keys(nextFarmerErrors).length > 0) {
+      setFarmerFieldErrors(nextFarmerErrors);
       return;
     }
     const existingFarmer = isEditingFarmer ? member.farmerProfile : null;
@@ -240,6 +253,25 @@ const MemberDetailPage = () => {
     const nextFieldErrors = {};
     if (!editForm.first_name.trim()) nextFieldErrors.first_name = t('members.validation.firstNameRequired');
     if (!editForm.last_name.trim()) nextFieldErrors.last_name = t('members.validation.lastNameRequired');
+    const memberPayload = buildMemberPayload(editForm, member);
+    if (
+      Object.prototype.hasOwnProperty.call(memberPayload, 'national_id')
+      && memberPayload.national_id !== null
+      && !isValidRwandaNationalId(memberPayload.national_id)
+    ) {
+      nextFieldErrors.national_id = t('members.validation.nationalIdInvalid');
+    }
+    const addressChanged = MEMBER_ADDRESS_FIELDS.some((field) => (
+      Object.prototype.hasOwnProperty.call(memberPayload, field)
+    ));
+    const addressLocation = getMemberAddressLocation(editForm);
+    if (
+      addressChanged
+      && hasAnyLocation(addressLocation, { includeVillage: true })
+      && !hasCompleteLocation(addressLocation, { includeVillage: true })
+    ) {
+      nextFieldErrors.address_location = t('locations.memberIncomplete');
+    }
     setEditFieldErrors(nextFieldErrors);
     if (Object.keys(nextFieldErrors).length > 0) {
       return;
@@ -252,7 +284,7 @@ const MemberDetailPage = () => {
     editSubmitLockRef.current = true;
     setIsSavingEdit(true);
     try {
-      const updated = await updateMember(id, buildMemberPayload(editForm, member));
+      const updated = await updateMember(id, memberPayload);
       setMember({ ...member, ...updated });
       setIsEditing(false);
       setEditForm(null);
@@ -314,7 +346,7 @@ const MemberDetailPage = () => {
             </form>
           ) : (
             <dl className="space-y-3 text-sm">
-              {[[t('members.fields.phone'), member.phone], [t('members.fields.gender'), MEMBER_GENDERS.includes(member.gender) ? t(`members.gender.${member.gender}`) : member.gender], [t('members.fields.address'), member.address], [t('members.fields.membershipDate'), member.membership_date]].map(([label, value]) => <div key={label} className="flex justify-between border-b border-sand pb-3 last:border-0"><dt className="text-ink-soft">{label}</dt><dd className="text-right text-ink">{value || '—'}</dd></div>)}
+              {[[t('members.fields.nationalId'), member.national_id], [t('members.fields.phone'), member.phone], [t('members.fields.gender'), MEMBER_GENDERS.includes(member.gender) ? t(`members.gender.${member.gender}`) : member.gender], [t('members.fields.residentialAddress'), getMemberAddressDisplay(member)], [t('members.fields.membershipDate'), member.membership_date]].map(([label, value]) => <div key={label} className="flex justify-between border-b border-sand pb-3 last:border-0"><dt className="text-ink-soft">{label}</dt><dd className="text-right text-ink">{value || '—'}</dd></div>)}
             </dl>
           )}
         </div>
@@ -327,7 +359,7 @@ const MemberDetailPage = () => {
           {member.farmerProfile && !showFarmerForm ? (
             <dl className="space-y-3 text-sm">
               <div className="flex justify-between border-b border-sand pb-3"><dt className="text-ink-soft">{t('farmers.fields.cropType')}</dt><dd className="text-ink">{member.farmerProfile.crop_type || '—'}</dd></div>
-              <div className="flex justify-between border-b border-sand pb-3"><dt className="text-ink-soft">{t('farmers.fields.farmSize')}</dt><dd className="figure text-ink">{member.farmerProfile.farm_size_ha != null && member.farmerProfile.farm_size_ha !== '' ? `${member.farmerProfile.farm_size_ha} ha` : '—'}</dd></div>
+              <div className="flex justify-between border-b border-sand pb-3"><dt className="text-ink-soft">{t('farmers.fields.farmSize')}</dt><dd className="figure text-ink">{getFarmSizeDisplay(member.farmerProfile) || '—'}</dd></div>
               <div className="flex items-center justify-between gap-4 border-b border-sand pb-3"><dt className="flex items-center gap-1 text-ink-soft"><MapPin className="h-3.5 w-3.5" />{t('farmers.fields.location')}</dt><dd className="text-right text-ink">{getFarmerLocationDisplay(member.farmerProfile) || '—'}</dd></div>
               {[
                 [t('locations.district'), member.farmerProfile.district],
@@ -340,26 +372,18 @@ const MemberDetailPage = () => {
             <form onSubmit={handleSaveFarmer} noValidate>
               {farmerError && <div className="mb-3 rounded-lg bg-clay/10 px-3 py-2 text-xs text-clay" role="alert">{farmerError}</div>}
               <div className="mb-3"><label htmlFor="crop-type" className="mb-1.5 block text-xs font-medium uppercase tracking-wide text-ink-soft">{t('farmers.fields.cropType')}</label><input id="crop-type" maxLength={100} disabled={isSavingFarmer} value={farmerForm.crop_type} onChange={(event) => setFarmerForm({ ...farmerForm, crop_type: event.target.value })} placeholder={t('farmers.placeholders.cropType')} className="focus-ring w-full rounded-lg border border-sand px-3 py-2 text-sm disabled:cursor-not-allowed disabled:bg-sand/30" /></div>
-              <div className="mb-3">
-                <label htmlFor="farm-size" className="mb-1.5 block text-xs font-medium uppercase tracking-wide text-ink-soft">{t('farmers.fields.farmSizeHectares')}</label>
-                <input
-                  id="farm-size"
-                  type="number"
-                  inputMode="decimal"
-                  min="0"
-                  step="0.01"
-                  disabled={isSavingFarmer}
-                  value={farmerForm.farm_size_ha}
-                  onChange={(event) => {
-                    setFarmerForm({ ...farmerForm, farm_size_ha: event.target.value });
-                    if (farmerFieldErrors.farm_size_ha) setFarmerFieldErrors({});
-                  }}
-                  aria-invalid={Boolean(farmerFieldErrors.farm_size_ha)}
-                  aria-describedby={farmerFieldErrors.farm_size_ha ? 'farm-size-error' : undefined}
-                  className={`focus-ring w-full rounded-lg border px-3 py-2 text-sm disabled:cursor-not-allowed disabled:bg-sand/30 ${farmerFieldErrors.farm_size_ha ? 'border-clay' : 'border-sand'}`}
-                />
-                {farmerFieldErrors.farm_size_ha && <p id="farm-size-error" className="mt-1 text-xs text-clay">{farmerFieldErrors.farm_size_ha}</p>}
-              </div>
+              <FarmSizeFields
+                idPrefix="farmer"
+                form={farmerForm}
+                onChange={(nextForm, field) => {
+                  setFarmerForm(nextForm);
+                  if (farmerFieldErrors[field]) {
+                    setFarmerFieldErrors((current) => ({ ...current, [field]: '' }));
+                  }
+                }}
+                errors={farmerFieldErrors}
+                disabled={isSavingFarmer}
+              />
               {farmerForm.legacy_location && <div className="mb-3 rounded-lg bg-sand/30 px-3 py-2 text-xs text-ink-soft">{t('locations.legacyPreserved', { location: farmerForm.legacy_location })}</div>}
               <div className="mb-4"><RwandaLocationFields idPrefix="farmer-location" value={farmerForm} onChange={setFarmerForm} includeVillage disabled={isSavingFarmer} /></div>
               <div className="flex gap-2"><button type="submit" disabled={isSavingFarmer} className="focus-ring flex flex-1 items-center justify-center gap-2 rounded-lg bg-forest px-4 py-2 text-sm font-medium text-paper hover:bg-forest-light disabled:opacity-60">{isSavingFarmer && <Loader2 className="h-4 w-4 animate-spin" />}{t('common.save')}</button><button type="button" onClick={cancelFarmerForm} disabled={isSavingFarmer} className="focus-ring rounded-lg border border-sand px-4 py-2 text-sm font-medium text-ink-soft hover:bg-sand/30 disabled:opacity-60">{t('common.cancel')}</button></div>

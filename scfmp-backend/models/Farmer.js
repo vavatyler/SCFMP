@@ -30,6 +30,17 @@ module.exports = (sequelize) => {
         type: DataTypes.DECIMAL(10, 2),
         allowNull: true,
       },
+      farm_size: {
+        type: DataTypes.DECIMAL(14, 4),
+        allowNull: true,
+      },
+      farm_size_unit: {
+        type: DataTypes.STRING(10),
+        allowNull: true,
+        validate: {
+          isIn: [['ha', 'acres', 'm2', 'km2']],
+        },
+      },
       location: DataTypes.STRING(255),
       district: DataTypes.STRING(100),
       sector: DataTypes.STRING(100),

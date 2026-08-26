@@ -24,6 +24,11 @@ export const listProducts = async (params = {}) => {
   return data.data;
 };
 
+export const listFarmerGroups = async (params = {}) => {
+  const { data } = await apiClient.get('/production/farmer-groups', { params });
+  return data.data;
+};
+
 export const getProductionAnalytics = async (params = {}) => {
   const { data } = await apiClient.get('/production/analytics', { params });
   return data.data;

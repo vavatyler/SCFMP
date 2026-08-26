@@ -1,5 +1,10 @@
 const { Op, fn, col } = require('sequelize');
 const { Transaction, Member, Cooperative } = require('../models');
+const {
+  TRANSACTION_CATEGORIES,
+  normalizeTransactionCategory,
+  isConfiguredTransactionCategory,
+} = require('../config/transactionCategories');
 
 const TRANSACTION_UPDATE_FIELDS = [
   'member_id',
@@ -25,6 +30,14 @@ const getOwnMemberId = async (userId) => {
   return member?.id || -1;
 };
 
+const categoryValidationMessage = (type) =>
+  `category must be one of the configured ${type || 'transaction'} categories`;
+
+const categories = (req, res) => res.status(200).json({
+  success: true,
+  data: TRANSACTION_CATEGORIES,
+});
+
 /**
  * GET /api/transactions
  * Optional filters: ?type=  &member_id=  &from=YYYY-MM-DD  &to=YYYY-MM-DD
@@ -35,7 +48,9 @@ const list = async (req, res) => {
     const cooperativeId = resolveCooperativeScope(req);
 
     const where = {};
-    if (cooperativeId) where.cooperative_id = cooperativeId;
+    if (req.user.role !== 'super_admin' || cooperativeId) {
+      where.cooperative_id = cooperativeId;
+    }
     if (type) where.type = type;
     if (req.user.role === 'farmer') where.member_id = await getOwnMemberId(req.user.id);
     else if (member_id) where.member_id = member_id;
@@ -108,6 +123,22 @@ const create = async (req, res) => {
       });
     }
 
+    const normalizedCategory = normalizeTransactionCategory(category);
+    if (!isConfiguredTransactionCategory(type, normalizedCategory)) {
+      return res.status(400).json({
+        success: false,
+        message: categoryValidationMessage(type),
+      });
+    }
+
+    if (
+      req.user.role !== 'super_admin' &&
+      Object.prototype.hasOwnProperty.call(req.body, 'cooperative_id') &&
+      Number(req.body.cooperative_id) !== req.user.cooperative_id
+    ) {
+      return res.status(403).json({ success: false, message: 'Access denied' });
+    }
+
     const cooperative_id =
       req.user.role === 'super_admin' ? req.body.cooperative_id : req.user.cooperative_id;
     if (!cooperative_id) {
@@ -127,7 +158,7 @@ const create = async (req, res) => {
       cooperative_id,
       member_id: member_id || null,
       type,
-      category,
+      category: normalizedCategory,
       amount,
       description,
       transaction_date,
@@ -148,11 +179,34 @@ const update = async (req, res) => {
     if (req.user.role !== 'super_admin' && record.cooperative_id !== req.user.cooperative_id) {
       return res.status(403).json({ success: false, message: 'Access denied' });
     }
+    if (
+      req.user.role !== 'super_admin' &&
+      Object.prototype.hasOwnProperty.call(req.body, 'cooperative_id') &&
+      Number(req.body.cooperative_id) !== record.cooperative_id
+    ) {
+      return res.status(403).json({ success: false, message: 'Access denied' });
+    }
     if (record.loan_id) {
       return res.status(400).json({
         success: false,
         message: 'Loan-linked transactions cannot be edited directly — adjust via the loan endpoints',
       });
+    }
+
+    if (Object.prototype.hasOwnProperty.call(req.body, 'category')) {
+      const normalizedCategory = normalizeTransactionCategory(req.body.category);
+      const isUnchangedLegacyCategory =
+        normalizedCategory === normalizeTransactionCategory(record.category);
+      if (
+        !isConfiguredTransactionCategory(record.type, normalizedCategory) &&
+        !isUnchangedLegacyCategory
+      ) {
+        return res.status(400).json({
+          success: false,
+          message: categoryValidationMessage(record.type),
+        });
+      }
+      req.body.category = normalizedCategory;
     }
 
     const safeUpdates = Object.fromEntries(
@@ -213,7 +267,9 @@ const summary = async (req, res) => {
     const { from, to } = req.query;
 
     const where = {};
-    if (cooperativeId) where.cooperative_id = cooperativeId;
+    if (req.user.role !== 'super_admin' || cooperativeId) {
+      where.cooperative_id = cooperativeId;
+    }
     if (req.user.role === 'farmer') where.member_id = await getOwnMemberId(req.user.id);
     if (from || to) {
       where.transaction_date = {};
@@ -240,4 +296,4 @@ const summary = async (req, res) => {
   }
 };
 
-module.exports = { list, getById, create, update, remove, summary };
+module.exports = { list, getById, create, update, remove, summary, categories };

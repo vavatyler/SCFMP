@@ -18,7 +18,9 @@ const list = async (req, res) => {
     const cooperativeId = resolveCooperativeScope(req);
 
     const where = {};
-    if (cooperativeId) where.cooperative_id = cooperativeId;
+    if (req.user.role !== 'super_admin' || cooperativeId) {
+      where.cooperative_id = cooperativeId;
+    }
     if (status) where.status = status;
     if (req.user.role === 'farmer') where.member_id = await getOwnMemberId(req.user.id);
     else if (member_id) where.member_id = member_id;

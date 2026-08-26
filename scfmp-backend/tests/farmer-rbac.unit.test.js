@@ -11,6 +11,7 @@ jest.mock('../middleware/authMiddleware', () => ({
 
 jest.mock('../controllers/farmerController', () => ({
   list: (req, res) => res.status(200).json({ success: true }),
+  eligibleMembers: (req, res) => res.status(200).json({ success: true }),
   getById: (req, res) => res.status(200).json({ success: true }),
   create: (req, res) => res.status(201).json({ success: true }),
   update: (req, res) => res.status(200).json({ success: true }),
@@ -28,7 +29,8 @@ app.use('/api/farmers', farmerRoutes);
 const validFarmer = {
   member_id: 5,
   crop_type: 'Coffee',
-  farm_size_ha: '2.75',
+  farm_size: '2.75',
+  farm_size_unit: 'ha',
   district: 'Nyamagabe',
   sector: 'Buruhukiro',
   cell: 'Bushigishigi',
@@ -36,6 +38,20 @@ const validFarmer = {
 };
 
 describe('farmer profile route validation and RBAC', () => {
+  it.each(['super_admin', 'cooperative_manager', 'field_officer'])(
+    'allows %s to query eligible Members',
+    async (role) => {
+      await request(app).get('/api/farmers/eligible-members').set('x-test-role', role).expect(200);
+    }
+  );
+
+  it.each(['accountant', 'farmer'])(
+    'blocks %s from querying the Farmer creation dropdown',
+    async (role) => {
+      await request(app).get('/api/farmers/eligible-members').set('x-test-role', role).expect(403);
+    }
+  );
+
   it.each(['super_admin', 'cooperative_manager', 'field_officer'])(
     'allows %s to create and edit Farmer profiles',
     async (role) => {
@@ -58,24 +74,56 @@ describe('farmer profile route validation and RBAC', () => {
     await request(app).delete('/api/farmers/9').set('x-test-role', 'super_admin').expect(200);
   });
 
-  it.each(['-1', 'not-a-number', '1.2.3'])(
+  it.each([-1, 0, '-1', 'not-a-number', '1.2.3'])(
     'rejects invalid farm size %s',
     async (farmSize) => {
       const response = await request(app)
         .post('/api/farmers')
         .set('x-test-role', 'cooperative_manager')
-        .send({ ...validFarmer, farm_size_ha: farmSize })
+        .send({ ...validFarmer, farm_size: farmSize })
         .expect(422);
 
       expect(response.body.errors).toEqual(expect.arrayContaining([
-        expect.objectContaining({ field: 'farm_size_ha' }),
+        expect.objectContaining({ field: 'farm_size' }),
       ]));
     }
   );
 
-  it('accepts zero and decimal hectares', async () => {
-    await request(app).post('/api/farmers').set('x-test-role', 'cooperative_manager').send({ ...validFarmer, farm_size_ha: '0' }).expect(201);
-    await request(app).put('/api/farmers/9').set('x-test-role', 'field_officer').send({ farm_size_ha: '0.25' }).expect(200);
+  it('rejects zero and accepts positive decimal farm sizes', async () => {
+    await request(app).post('/api/farmers').set('x-test-role', 'cooperative_manager').send({ ...validFarmer, farm_size: '0' }).expect(422);
+    await request(app).put('/api/farmers/9').set('x-test-role', 'field_officer').send({ farm_size: '0.25', farm_size_unit: 'acres' }).expect(200);
+  });
+
+  it.each(['acres', 'm2', 'km2'])('accepts the supported %s unit', async (farmSizeUnit) => {
+    await request(app)
+      .post('/api/farmers')
+      .set('x-test-role', 'cooperative_manager')
+      .send({ ...validFarmer, farm_size_unit: farmSizeUnit })
+      .expect(201);
+  });
+
+  it.each([
+    [{ farm_size: '1.25' }, 'farm_size_unit'],
+    [{ farm_size_unit: 'acres' }, 'farm_size_unit'],
+    [{ farm_size: '1.25', farm_size_unit: 'perches' }, 'farm_size_unit'],
+  ])('rejects incomplete or unsupported farm size pairs', async (farmSizePayload, field) => {
+    const response = await request(app)
+      .post('/api/farmers')
+      .set('x-test-role', 'cooperative_manager')
+      .send({ member_id: 5, ...farmSizePayload })
+      .expect(422);
+
+    expect(response.body.errors).toEqual(expect.arrayContaining([
+      expect.objectContaining({ field }),
+    ]));
+  });
+
+  it('continues to accept positive legacy hectare payloads', async () => {
+    await request(app)
+      .post('/api/farmers')
+      .set('x-test-role', 'cooperative_manager')
+      .send({ member_id: 5, farm_size_ha: '0.25' })
+      .expect(201);
   });
 
   it('rejects crop values that exceed the existing database field length', async () => {

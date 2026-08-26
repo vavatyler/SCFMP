@@ -61,4 +61,40 @@ describe('Production total_amount auto-calculation', () => {
 
     await expect(record.validate()).rejects.toMatchObject({ name: 'SequelizeValidationError' });
   });
+
+  it('supports group ownership without requiring a farmer', async () => {
+    const record = Production.build({
+      cooperative_id: 1,
+      production_mode: 'group',
+      farmer_group_id: 8,
+      product_id: 1,
+      product_name: 'Tea',
+      actual_harvest: 40.5,
+      unit: 'kg',
+      harvest_date: '2026-08-20',
+    });
+
+    await record.validate();
+
+    expect(Number(record.quantity)).toBe(40.5);
+    expect(record.production_date).toBe('2026-08-20');
+    expect(Number(record.total_amount)).toBe(0);
+  });
+
+  it('rejects mixed or missing ownership for the selected production mode', async () => {
+    const mixedOwner = Production.build({
+      cooperative_id: 1,
+      production_mode: 'group',
+      farmer_id: 2,
+      farmer_group_id: 8,
+      product_id: 1,
+      product_name: 'Tea',
+      actual_harvest: 40,
+      harvest_date: '2026-08-20',
+    });
+
+    await expect(mixedOwner.validate()).rejects.toMatchObject({
+      name: 'SequelizeValidationError',
+    });
+  });
 });

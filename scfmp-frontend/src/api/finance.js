@@ -25,6 +25,11 @@ export const getTransactionSummary = async (params = {}) => {
   return data.data;
 };
 
+export const getTransactionCategories = async () => {
+  const { data } = await apiClient.get('/transactions/categories');
+  return data.data;
+};
+
 // Loans
 export const listLoans = async (params = {}) => {
   const { data } = await apiClient.get('/loans', { params });

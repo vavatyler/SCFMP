@@ -59,6 +59,10 @@ module.exports = (sequelize) => {
       },
       phone: DataTypes.STRING(20),
       address: DataTypes.STRING(255),
+      address_district: DataTypes.STRING(100),
+      address_sector: DataTypes.STRING(100),
+      address_cell: DataTypes.STRING(100),
+      address_village: DataTypes.STRING(100),
       membership_date: DataTypes.DATEONLY,
       status: {
         type: DataTypes.ENUM('active', 'inactive', 'suspended'),

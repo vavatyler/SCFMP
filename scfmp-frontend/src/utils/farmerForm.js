@@ -7,8 +7,16 @@ import {
 
 export const FARMER_WRITE_ROLES = ['super_admin', 'cooperative_manager', 'field_officer'];
 
+export const FARM_SIZE_UNIT_OPTIONS = Object.freeze([
+  { value: 'ha', labelKey: 'farmers.units.ha', symbol: 'ha' },
+  { value: 'acres', labelKey: 'farmers.units.acres', symbol: 'acres' },
+  { value: 'm2', labelKey: 'farmers.units.m2', symbol: 'm²' },
+  { value: 'km2', labelKey: 'farmers.units.km2', symbol: 'km²' },
+]);
+
 export const createEmptyFarmerForm = () => ({
-  farm_size_ha: '',
+  farm_size: '',
+  farm_size_unit: 'ha',
   crop_type: '',
   district: '',
   sector: '',
@@ -21,8 +29,10 @@ const normalizedText = (value) => String(value ?? '').trim();
 
 export const farmerToForm = (farmer = {}) => {
   const hasStructuredLocation = hasAnyLocation(farmer, { includeVillage: true });
+  const farmSize = farmer.farm_size == null ? farmer.farm_size_ha : farmer.farm_size;
   return {
-    farm_size_ha: farmer.farm_size_ha == null ? '' : String(farmer.farm_size_ha),
+    farm_size: farmSize == null ? '' : String(farmSize),
+    farm_size_unit: farmer.farm_size_unit || 'ha',
     crop_type: farmer.crop_type || '',
     district: farmer.district || '',
     sector: farmer.sector || '',
@@ -37,7 +47,18 @@ export const isValidFarmSize = (value) => {
   if (!normalized) return true;
   if (!/^(?:\d+\.?\d*|\.\d+)$/.test(normalized)) return false;
   const numericValue = Number(normalized);
-  return Number.isFinite(numericValue) && numericValue >= 0;
+  return Number.isFinite(numericValue) && numericValue > 0;
+};
+
+export const isValidFarmSizeUnit = (value) => (
+  FARM_SIZE_UNIT_OPTIONS.some((option) => option.value === normalizedText(value))
+);
+
+export const getFarmSizeDisplay = (farmer = {}) => {
+  const form = farmerToForm(farmer);
+  if (!form.farm_size) return '';
+  const option = FARM_SIZE_UNIT_OPTIONS.find(({ value }) => value === form.farm_size_unit);
+  return `${form.farm_size} ${option?.symbol || form.farm_size_unit}`;
 };
 
 export const getFarmerLocationDisplay = (farmer = {}) => {
@@ -51,15 +72,25 @@ export const getFarmerLocationDisplay = (farmer = {}) => {
 export const buildFarmerPayload = (form, originalFarmer = null) => {
   const payload = {};
   const cropType = normalizedText(form.crop_type);
-  const farmSize = normalizedText(form.farm_size_ha);
+  const farmSize = normalizedText(form.farm_size);
+  const farmSizeUnit = normalizedText(form.farm_size_unit);
 
   if (!originalFarmer) {
     if (cropType) payload.crop_type = cropType;
-    if (farmSize) payload.farm_size_ha = farmSize;
+    if (farmSize) {
+      payload.farm_size = farmSize;
+      payload.farm_size_unit = farmSizeUnit;
+    }
   } else {
     const original = farmerToForm(originalFarmer);
     if (cropType !== normalizedText(original.crop_type)) payload.crop_type = cropType || null;
-    if (farmSize !== normalizedText(original.farm_size_ha)) payload.farm_size_ha = farmSize || null;
+    if (
+      farmSize !== normalizedText(original.farm_size)
+      || farmSizeUnit !== normalizedText(original.farm_size_unit)
+    ) {
+      payload.farm_size = farmSize || null;
+      payload.farm_size_unit = farmSize ? farmSizeUnit : null;
+    }
   }
 
   const locationChanged = !originalFarmer || hasLocationChanged(

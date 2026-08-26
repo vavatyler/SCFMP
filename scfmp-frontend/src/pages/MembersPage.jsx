@@ -10,8 +10,14 @@ import ReportActions from '../components/ReportActions';
 import { createMember, listMembers } from '../api/members';
 import { useAuth } from '../context/AuthContext';
 import { useCooperative } from '../context/CooperativeContext';
-import { buildMemberPayload, createEmptyMemberForm, MEMBER_WRITE_ROLES } from '../utils/memberForm';
-import { isValidRwandaLocalPhone } from '../utils/validation';
+import { hasAnyLocation, hasCompleteLocation } from '../utils/locationHierarchy';
+import {
+  buildMemberPayload,
+  createEmptyMemberForm,
+  getMemberAddressLocation,
+  MEMBER_WRITE_ROLES,
+} from '../utils/memberForm';
+import { isValidRwandaLocalPhone, isValidRwandaNationalId } from '../utils/validation';
 
 const MembersPage = () => {
   const { t } = useTranslation();
@@ -83,6 +89,16 @@ const MembersPage = () => {
     const nextFieldErrors = {};
     if (!form.first_name.trim()) nextFieldErrors.first_name = t('members.validation.firstNameRequired');
     if (!form.last_name.trim()) nextFieldErrors.last_name = t('members.validation.lastNameRequired');
+    if (form.national_id.trim() && !isValidRwandaNationalId(form.national_id)) {
+      nextFieldErrors.national_id = t('members.validation.nationalIdInvalid');
+    }
+    const addressLocation = getMemberAddressLocation(form);
+    if (
+      hasAnyLocation(addressLocation, { includeVillage: true })
+      && !hasCompleteLocation(addressLocation, { includeVillage: true })
+    ) {
+      nextFieldErrors.address_location = t('locations.memberIncomplete');
+    }
     setFieldErrors(nextFieldErrors);
     if (Object.keys(nextFieldErrors).length > 0) {
       return;
@@ -141,10 +157,11 @@ const MembersPage = () => {
         ) : members.length === 0 ? (
           <div className="p-10 text-center"><p className="text-sm text-ink-soft">{search ? t('members.noSearchResults') : t('members.empty')}</p></div>
         ) : (
-          <table className="min-w-[760px] w-full text-left text-sm">
+          <table className="min-w-[900px] w-full text-left text-sm">
             <thead className="border-b border-sand bg-sand/30 text-xs uppercase tracking-wide text-ink-soft">
               <tr>
                 <th className="px-5 py-3 font-medium">{t('members.fields.name')}</th>
+                <th className="px-5 py-3 font-medium">{t('members.fields.nationalId')}</th>
                 <th className="px-5 py-3 font-medium">{t('members.fields.phone')}</th>
                 <th className="px-5 py-3 font-medium">{t('common.status')}</th>
                 <th className="px-5 py-3 font-medium">{t('members.farmerProfile')}</th>
@@ -154,6 +171,7 @@ const MembersPage = () => {
               {members.map((member) => (
                 <tr key={member.id} className="transition-colors hover:bg-sand/20">
                   <td className="px-5 py-3.5"><Link to={`/members/${member.id}`} className="font-medium text-ink hover:text-forest">{member.first_name} {member.last_name}</Link></td>
+                  <td className="figure px-5 py-3.5 text-ink-soft">{member.national_id || '—'}</td>
                   <td className="px-5 py-3.5 text-ink-soft">{member.phone || '—'}</td>
                   <td className="px-5 py-3.5"><Badge status={member.status} /></td>
                   <td className="px-5 py-3.5">

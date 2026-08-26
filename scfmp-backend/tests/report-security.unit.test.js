@@ -33,4 +33,16 @@ describe('Report export security and localization', () => {
       expect(Object.prototype.hasOwnProperty.call(_private.LABELS[language], 'organization')).toBe(false);
     }
   });
+
+  it('labels Member address and Farmer farm location as separate report concepts', () => {
+    expect(_private.LABELS.en).toEqual(expect.objectContaining({
+      address: 'Member address',
+      location: 'Farm location',
+    }));
+    for (const language of ['rw', 'fr']) {
+      expect(_private.LABELS[language].address).toBeTruthy();
+      expect(_private.LABELS[language].location).toBeTruthy();
+      expect(_private.LABELS[language].address).not.toBe(_private.LABELS[language].location);
+    }
+  });
 });

@@ -1,14 +1,51 @@
 const { Op } = require('sequelize');
 const { Member, Farmer, Cooperative } = require('../models');
+const { validateHierarchy } = require('../services/rwandaLocationService');
+const {
+  MEMBER_ADDRESS_FIELDS,
+  hasStructuredMemberAddress,
+  memberAddressChanged,
+  memberAddressToHierarchy,
+  mergeMemberAddress,
+} = require('../utils/memberAddress');
+const { normalizeRwandaNationalId } = require('../utils/rwandaNationalId');
 const { normalizeRwandaPhone } = require('../utils/rwandaPhone');
 
+const MEMBER_FIELDS = [
+  'first_name',
+  'last_name',
+  'national_id',
+  'gender',
+  'phone',
+  'address',
+  ...MEMBER_ADDRESS_FIELDS,
+  'membership_date',
+];
+
 const normalizeMemberPayload = (body) => {
-  const payload = { ...body };
+  const payload = Object.fromEntries(
+    MEMBER_FIELDS
+      .filter((field) => Object.prototype.hasOwnProperty.call(body, field))
+      .map((field) => [field, body[field]])
+  );
+  if (Object.prototype.hasOwnProperty.call(payload, 'national_id')) {
+    payload.national_id = normalizeRwandaNationalId(payload.national_id);
+  }
   if (Object.prototype.hasOwnProperty.call(payload, 'phone')) {
     payload.phone = normalizeRwandaPhone(payload.phone);
   }
+  MEMBER_ADDRESS_FIELDS.forEach((field) => {
+    if (Object.prototype.hasOwnProperty.call(payload, field)) {
+      payload[field] = String(payload[field] || '').trim() || null;
+    }
+  });
   return payload;
 };
+
+const validateMemberAddress = (value) => validateHierarchy(
+  memberAddressToHierarchy(value),
+  { requireVillage: hasStructuredMemberAddress(value) }
+);
 
 /**
  * GET /api/members
@@ -32,6 +69,7 @@ const list = async (req, res) => {
       where[Op.or] = [
         { first_name: { [Op.like]: `%${search}%` } },
         { last_name: { [Op.like]: `%${search}%` } },
+        { national_id: { [Op.like]: `%${search}%` } },
         { phone: { [Op.like]: `%${search}%` } },
       ];
     }
@@ -93,6 +131,11 @@ const create = async (req, res) => {
       return res.status(400).json({ success: false, message: 'cooperative_id is required' });
     }
 
+    const addressValidation = validateMemberAddress(req.body);
+    if (!addressValidation.valid) {
+      return res.status(422).json({ success: false, message: addressValidation.error });
+    }
+
     const member = await Member.create({ ...normalizeMemberPayload(req.body), cooperative_id });
     return res.status(201).json({ success: true, data: member });
   } catch (err) {
@@ -109,9 +152,15 @@ const update = async (req, res) => {
       return res.status(403).json({ success: false, message: 'Access denied' });
     }
 
+    if (memberAddressChanged(req.body, member)) {
+      const addressValidation = validateMemberAddress(mergeMemberAddress(req.body, member));
+      if (!addressValidation.valid) {
+        return res.status(422).json({ success: false, message: addressValidation.error });
+      }
+    }
+
     // Prevent moving a member to a different cooperative via this endpoint
-    const { cooperative_id, ...safeUpdates } = normalizeMemberPayload(req.body);
-    await member.update(safeUpdates);
+    await member.update(normalizeMemberPayload(req.body));
 
     return res.status(200).json({ success: true, data: member });
   } catch (err) {

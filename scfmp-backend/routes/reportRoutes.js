@@ -13,6 +13,8 @@ router.get(
     query('format').optional().isIn(['json', 'csv']),
     query('language').optional().isIn(['en', 'rw', 'fr']),
     query('cooperative_id').optional().isInt({ min: 1 }),
+    query('production_mode').optional().isIn(['individual', 'group']),
+    query('farmer_group_id').optional().isInt({ min: 1 }),
     query('from').optional().isISO8601(),
     query('to').optional().isISO8601(),
   ],

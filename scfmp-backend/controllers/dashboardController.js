@@ -22,7 +22,9 @@ const resolveCooperativeScope = (req) => {
  */
 const buildSummary = async (cooperativeId, { from, to, user } = {}) => {
   const memberWhere = {};
-  if (cooperativeId) memberWhere.cooperative_id = cooperativeId;
+  if (user?.role !== 'super_admin' || cooperativeId) {
+    memberWhere.cooperative_id = cooperativeId;
+  }
   if (user?.role === 'farmer') memberWhere.user_id = user.id;
 
   const totalMembers = await Member.count({ where: memberWhere });
@@ -33,23 +35,37 @@ const buildSummary = async (cooperativeId, { from, to, user } = {}) => {
     include: [{ model: Member, as: 'member', where: memberWhere, attributes: [] }],
   });
 
-  // Production: scope through farmer -> member -> cooperative
+  // Production owns its cooperative relationship directly. Always scope organization
+  // totals by that column so a mismatched farmer relationship cannot cross boundaries.
   const productionWhere = {};
+  if (user?.role !== 'super_admin' || cooperativeId) {
+    productionWhere.cooperative_id = cooperativeId;
+  }
   if (from || to) {
     productionWhere.production_date = {};
     if (from) productionWhere.production_date[Op.gte] = from;
     if (to) productionWhere.production_date[Op.lte] = to;
   }
-  const productionTotals = await Production.findOne({
-    where: productionWhere,
-    include: [
+  const productionInclude = user?.role === 'farmer'
+    ? [
       {
         model: Farmer,
         as: 'farmer',
+        required: true,
         attributes: [],
-        include: [{ model: Member, as: 'member', where: memberWhere, attributes: [] }],
+        include: [{
+          model: Member,
+          as: 'member',
+          required: true,
+          where: { user_id: user.id },
+          attributes: [],
+        }],
       },
-    ],
+    ]
+    : [];
+  const productionTotals = await Production.findOne({
+    where: productionWhere,
+    include: productionInclude,
     attributes: [
       [fn('COALESCE', fn('SUM', col('Production.total_amount')), 0), 'total_value'],
       [fn('COALESCE', fn('SUM', col('Production.quantity')), 0), 'total_quantity'],
@@ -60,7 +76,9 @@ const buildSummary = async (cooperativeId, { from, to, user } = {}) => {
 
   // Finance: scoped directly by cooperative_id on transactions
   const transactionWhere = {};
-  if (cooperativeId) transactionWhere.cooperative_id = cooperativeId;
+  if (user?.role !== 'super_admin' || cooperativeId) {
+    transactionWhere.cooperative_id = cooperativeId;
+  }
   if (user?.role === 'farmer') {
     const ownMember = await Member.findOne({ where: { user_id: user.id }, attributes: ['id'] });
     transactionWhere.member_id = ownMember?.id || -1;
@@ -84,14 +102,18 @@ const buildSummary = async (cooperativeId, { from, to, user } = {}) => {
 
   // Loans
   const loanWhere = {};
-  if (cooperativeId) loanWhere.cooperative_id = cooperativeId;
+  if (user?.role !== 'super_admin' || cooperativeId) {
+    loanWhere.cooperative_id = cooperativeId;
+  }
   if (user?.role === 'farmer') loanWhere.member_id = transactionWhere.member_id;
   const activeLoansCount = await Loan.count({ where: { ...loanWhere, status: 'active' } });
   const outstandingBalance = await Loan.sum('balance', { where: { ...loanWhere, status: 'active' } });
 
   // Inventory: low-stock count
   const inventoryWhere = { status: 'active' };
-  if (cooperativeId) inventoryWhere.cooperative_id = cooperativeId;
+  if (user?.role !== 'super_admin' || cooperativeId) {
+    inventoryWhere.cooperative_id = cooperativeId;
+  }
   const lowStockCount = await InventoryItem.count({
     where: {
       ...inventoryWhere,

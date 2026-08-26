@@ -9,6 +9,7 @@ const {
   update,
   remove,
   summary,
+  categories,
 } = require('../controllers/transactionController');
 const { verifyToken } = require('../middleware/authMiddleware');
 const { checkRole } = require('../middleware/roleMiddleware');
@@ -16,8 +17,9 @@ const validate = require('../middleware/validateMiddleware');
 
 router.use(verifyToken);
 
-// IMPORTANT: /summary must be declared before /:id
+// IMPORTANT: static routes must be declared before /:id
 router.get('/summary', summary);
+router.get('/categories', categories);
 
 router.get('/', list);
 router.get('/:id', getById);

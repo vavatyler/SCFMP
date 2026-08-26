@@ -18,6 +18,7 @@ const buildTestDb = async () => {
     'User',
     'Member',
     'Farmer',
+    'FarmerGroup',
     'Product',
     'Production',
     'Transaction',

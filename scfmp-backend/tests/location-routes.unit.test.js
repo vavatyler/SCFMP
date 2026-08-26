@@ -30,24 +30,35 @@ describe('Rwanda location API', () => {
       request(app).get('/api/locations/sectors').query({ district: 'Nyamagabe' })
     ).expect(200);
     expect(sectors.body.data).toEqual(expect.arrayContaining([
-      expect.objectContaining({ name: 'Buruhukiro' }),
+      expect.objectContaining({ name: 'Cyanika' }),
+    ]));
+    expect(sectors.body.data).not.toEqual(expect.arrayContaining([
+      expect.objectContaining({ name: 'Gisozi' }),
     ]));
 
     const cells = await authenticated(
-      request(app).get('/api/locations/cells').query({ district: 'Nyamagabe', sector: 'Buruhukiro' })
+      request(app).get('/api/locations/cells').query({ district: 'Nyamagabe', sector: 'Cyanika' })
     ).expect(200);
     expect(cells.body.data).toEqual(expect.arrayContaining([
+      expect.objectContaining({ name: 'Kiyumba' }),
+    ]));
+    expect(cells.body.data).not.toEqual(expect.arrayContaining([
       expect.objectContaining({ name: 'Bushigishigi' }),
     ]));
 
     const villages = await authenticated(
       request(app).get('/api/locations/villages').query({
         district: 'Nyamagabe',
-        sector: 'Buruhukiro',
-        cell: 'Bushigishigi',
+        sector: 'Cyanika',
+        cell: 'Kiyumba',
       })
     ).expect(200);
-    expect(villages.body.data.length).toBeGreaterThan(0);
+    expect(villages.body.data).toEqual(expect.arrayContaining([
+      expect.objectContaining({ name: 'Gatare' }),
+    ]));
+    expect(villages.body.data).not.toEqual(expect.arrayContaining([
+      expect.objectContaining({ name: 'Giharayumbu' }),
+    ]));
   });
 
   it('rejects missing parent query parameters and safely empties invalid parents', async () => {

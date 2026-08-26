@@ -6,15 +6,23 @@ const { list, getById, create, update, remove } = require('../controllers/member
 const { verifyToken } = require('../middleware/authMiddleware');
 const { checkRole } = require('../middleware/roleMiddleware');
 const validate = require('../middleware/validateMiddleware');
+const { isRwandaNationalId } = require('../utils/rwandaNationalId');
 const { isRwandaPhone } = require('../utils/rwandaPhone');
 
 const optionalMemberFields = [
+  body('national_id')
+    .customSanitizer((value) => typeof value === 'string' ? value.trim() : value)
+    .custom((value) => value === undefined || value === null || value === '' || isRwandaNationalId(value))
+    .withMessage('National ID must contain exactly 16 digits'),
   body('gender').optional({ checkFalsy: true }).isIn(['male', 'female', 'other']),
   body('phone')
     .optional({ checkFalsy: true })
     .custom(isRwandaPhone)
     .withMessage('Phone must contain exactly 9 Rwanda local digits'),
   body('address').optional({ checkFalsy: true }).trim().isLength({ max: 255 }),
+  ...['address_district', 'address_sector', 'address_cell', 'address_village'].map((field) => (
+    body(field).optional({ nullable: true }).trim().isLength({ max: 100 })
+  )),
   body('membership_date').optional({ checkFalsy: true }).isISO8601(),
 ];
 

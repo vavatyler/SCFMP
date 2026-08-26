@@ -1,10 +1,10 @@
 const { Farmer, Member } = require('../models');
 const { formatLocation, validateHierarchy } = require('../services/rwandaLocationService');
+const { normalizeFarmSizePayload } = require('../utils/farmSize');
 
 const LOCATION_FIELDS = ['district', 'sector', 'cell', 'village'];
 const FARMER_FIELDS = [
   'member_id',
-  'farm_size_ha',
   'location',
   'gps_coordinates',
   'crop_type',
@@ -33,6 +33,7 @@ const prepareFarmerPayload = (body, structuredLocation = null) => {
       .filter((field) => Object.prototype.hasOwnProperty.call(body, field))
       .map((field) => [field, body[field]])
   );
+  Object.assign(payload, normalizeFarmSizePayload(body));
   if (structuredLocation) {
     const normalizedLocation = Object.fromEntries(
       LOCATION_FIELDS.map((field) => [
@@ -45,6 +46,46 @@ const prepareFarmerPayload = (body, structuredLocation = null) => {
     });
   }
   return payload;
+};
+
+const resolveEligibleMemberOrganization = (req) => {
+  if (req.user.role !== 'super_admin') return req.user.cooperative_id;
+  const requestedOrganization = Number(req.query.cooperative_id);
+  return Number.isInteger(requestedOrganization) && requestedOrganization > 0
+    ? requestedOrganization
+    : null;
+};
+
+const eligibleMembers = async (req, res) => {
+  try {
+    const cooperativeId = resolveEligibleMemberOrganization(req);
+    if (!cooperativeId) {
+      return res.status(400).json({
+        success: false,
+        message: 'Select an organization before choosing a member',
+      });
+    }
+
+    const members = await Member.findAll({
+      attributes: ['id', 'first_name', 'last_name'],
+      where: {
+        cooperative_id: cooperativeId,
+        '$farmerProfile.id$': null,
+      },
+      include: [{
+        model: Farmer,
+        as: 'farmerProfile',
+        attributes: [],
+        required: false,
+      }],
+      order: [['last_name', 'ASC'], ['first_name', 'ASC']],
+      subQuery: false,
+    });
+
+    return res.status(200).json({ success: true, data: members });
+  } catch (err) {
+    return res.status(500).json({ success: false, message: err.message });
+  }
 };
 
 /**
@@ -137,6 +178,12 @@ const create = async (req, res) => {
 
     return res.status(201).json({ success: true, data: farmer });
   } catch (err) {
+    if (err.name === 'SequelizeUniqueConstraintError') {
+      return res.status(409).json({
+        success: false,
+        message: 'This member already has a farmer profile',
+      });
+    }
     return res.status(500).json({ success: false, message: err.message });
   }
 };
@@ -190,4 +237,4 @@ const remove = async (req, res) => {
   }
 };
 
-module.exports = { list, getById, create, update, remove };
+module.exports = { list, eligibleMembers, getById, create, update, remove };

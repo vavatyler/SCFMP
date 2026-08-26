@@ -19,7 +19,9 @@ const affectedFiles = [
   '../src/pages/MembersPage.jsx',
   '../src/pages/MemberDetailPage.jsx',
   '../src/pages/FarmersPage.jsx',
+  '../src/pages/ProductionPage.jsx',
   '../src/components/MemberFormFields.jsx',
+  '../src/components/FarmSizeFields.jsx',
   '../src/components/RwandaPhoneInput.jsx',
   '../src/components/RwandaLocationFields.jsx',
 ];

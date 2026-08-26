@@ -138,12 +138,12 @@ curl -X POST http://localhost:5000/api/auth/login -H "Content-Type: application/
 
 **2. Record income** (e.g. Valentin's coffee sale — member_id 1 from Sprint 2):
 ```bash
-curl -X POST http://localhost:5000/api/transactions -H "Content-Type: application/json" -H "Authorization: Bearer PASTE_TOKEN_HERE" -d "{\"type\":\"income\",\"category\":\"Coffee sales\",\"amount\":160000,\"transaction_date\":\"2026-06-05\",\"member_id\":1}"
+curl -X POST http://localhost:5000/api/transactions -H "Content-Type: application/json" -H "Authorization: Bearer PASTE_TOKEN_HERE" -d "{\"type\":\"income\",\"category\":\"Product Sales\",\"amount\":160000,\"transaction_date\":\"2026-06-05\",\"member_id\":1}"
 ```
 
 **3. Record an expense** (cooperative-level, no member):
 ```bash
-curl -X POST http://localhost:5000/api/transactions -H "Content-Type: application/json" -H "Authorization: Bearer PASTE_TOKEN_HERE" -d "{\"type\":\"expense\",\"category\":\"Fertilizer purchase\",\"amount\":45000,\"transaction_date\":\"2026-06-06\"}"
+curl -X POST http://localhost:5000/api/transactions -H "Content-Type: application/json" -H "Authorization: Bearer PASTE_TOKEN_HERE" -d "{\"type\":\"expense\",\"category\":\"Agricultural Inputs\",\"amount\":45000,\"transaction_date\":\"2026-06-06\"}"
 ```
 
 **4. Issue a loan to Valentin:**

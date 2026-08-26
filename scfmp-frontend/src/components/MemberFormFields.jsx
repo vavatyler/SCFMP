@@ -1,10 +1,19 @@
 import { useTranslation } from 'react-i18next';
+import RwandaLocationFields from './RwandaLocationFields';
 import RwandaPhoneInput from './RwandaPhoneInput';
-import { MEMBER_GENDERS } from '../utils/memberForm';
+import {
+  applyMemberAddressLocation,
+  getMemberAddressLocation,
+  MEMBER_GENDERS,
+} from '../utils/memberForm';
 
 const MemberFormFields = ({ idPrefix, form, onChange, errors = {}, disabled = false }) => {
   const { t } = useTranslation();
-  const setField = (field, value) => onChange({ ...form, [field]: value });
+  const setField = (field, value) => onChange({ ...form, [field]: value }, field);
+  const setAddressLocation = (location) => onChange(
+    applyMemberAddressLocation(form, location),
+    'address_location'
+  );
 
   return (
     <>
@@ -44,6 +53,25 @@ const MemberFormFields = ({ idPrefix, form, onChange, errors = {}, disabled = fa
       </div>
 
       <div className="mb-4">
+        <label htmlFor={`${idPrefix}-national-id`} className="mb-1.5 block text-xs font-medium uppercase tracking-wide text-ink-soft">{t('members.fields.nationalId')}</label>
+        <input
+          id={`${idPrefix}-national-id`}
+          type="text"
+          inputMode="numeric"
+          pattern="[0-9]{16}"
+          maxLength={16}
+          disabled={disabled}
+          value={form.national_id}
+          onChange={(event) => setField('national_id', event.target.value)}
+          placeholder={t('members.placeholders.nationalId')}
+          aria-invalid={Boolean(errors.national_id)}
+          aria-describedby={errors.national_id ? `${idPrefix}-national-id-error` : undefined}
+          className={`focus-ring w-full rounded-lg border px-3 py-2 text-sm disabled:cursor-not-allowed disabled:bg-sand/30 ${errors.national_id ? 'border-clay' : 'border-sand'}`}
+        />
+        {errors.national_id && <p id={`${idPrefix}-national-id-error`} className="mt-1 text-xs text-clay">{errors.national_id}</p>}
+      </div>
+
+      <div className="mb-4">
         <label htmlFor={`${idPrefix}-gender`} className="mb-1.5 block text-xs font-medium uppercase tracking-wide text-ink-soft">{t('members.fields.gender')}</label>
         <select
           id={`${idPrefix}-gender`}
@@ -68,9 +96,22 @@ const MemberFormFields = ({ idPrefix, form, onChange, errors = {}, disabled = fa
       </div>
 
       <div className="mb-4">
-        <label htmlFor={`${idPrefix}-address`} className="mb-1.5 block text-xs font-medium uppercase tracking-wide text-ink-soft">{t('members.fields.address')}</label>
+        <p className="mb-1.5 text-xs font-medium uppercase tracking-wide text-ink-soft">{t('members.fields.residentialAddress')}</p>
+        <p className="mb-3 text-xs text-ink-soft">{t('members.addressHierarchyHint')}</p>
+        <RwandaLocationFields
+          idPrefix={`${idPrefix}-address`}
+          value={getMemberAddressLocation(form)}
+          onChange={setAddressLocation}
+          includeVillage
+          disabled={disabled}
+        />
+        {errors.address_location && <p className="mt-2 text-xs text-clay">{errors.address_location}</p>}
+      </div>
+
+      <div className="mb-4">
+        <label htmlFor={`${idPrefix}-address-details`} className="mb-1.5 block text-xs font-medium uppercase tracking-wide text-ink-soft">{t('members.fields.addressDetails')}</label>
         <input
-          id={`${idPrefix}-address`}
+          id={`${idPrefix}-address-details`}
           autoComplete="street-address"
           maxLength={255}
           disabled={disabled}
@@ -79,6 +120,7 @@ const MemberFormFields = ({ idPrefix, form, onChange, errors = {}, disabled = fa
           placeholder={t('members.placeholders.address')}
           className="focus-ring w-full rounded-lg border border-sand px-3 py-2 text-sm disabled:cursor-not-allowed disabled:bg-sand/30"
         />
+        <p className="mt-1 text-xs text-ink-soft">{t('members.legacyAddressHint')}</p>
       </div>
 
       <div className="mb-6">

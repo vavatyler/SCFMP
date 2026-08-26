@@ -5,6 +5,11 @@ export const listFarmers = async (params = {}) => {
   return data.data;
 };
 
+export const listEligibleFarmerMembers = async (params = {}) => {
+  const { data } = await apiClient.get('/farmers/eligible-members', { params });
+  return data.data;
+};
+
 export const getFarmer = async (id) => {
   const { data } = await apiClient.get(`/farmers/${id}`);
   return data.data;

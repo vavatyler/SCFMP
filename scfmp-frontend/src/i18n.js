@@ -233,6 +233,13 @@ Object.assign(en.auth, {
   adminResetInstructions: 'Contact your organization manager or Smart Digital Solutions super admin. From the Team page, they can reset your password and share a new temporary one with you directly.',
 });
 Object.assign(en.production, {
+  productionMode: 'Production mode', individual: 'Individual', group: 'Group', producer: 'Producer',
+  farmerGroup: 'Farmer group', selectFarmerGroup: 'Select a farmer group…',
+  productionGroup: 'Production group', selectProductionGroup: 'Select a production group…',
+  selectOrganization: 'Select an organization before adding production.',
+  cropType: 'Crop type', selectCropType: 'Select a crop type…', addCropType: 'Or enter a new crop type',
+  expectedProduction: 'Expected production', actualHarvest: 'Actual harvest', harvestDate: 'Harvest date',
+  productionLocation: 'Farm / production location', notes: 'Notes', activeProducers: 'Active producers',
   subtitle: 'Harvest records and performance across your organization.',
   cooperativeComparison: 'Organization comparison',
 });
@@ -261,6 +268,7 @@ en.locations = {
   incomplete: 'Select a district, sector, and cell in order.', farmerIncomplete: 'Select a district, sector, cell, and village in order.',
   legacyPreserved: 'Saved legacy location: {{location}}. It will be preserved unless you select a complete new location.',
 };
+en.locations.memberIncomplete = 'Select a district, sector, cell, and village for the member address.';
 en.validation = {
   phonePlaceholder: '78X XXX XXX', phoneValid: 'Valid Rwanda phone number.', phoneRequired: 'Enter 9 local digits.',
   phoneOptional: 'Optional — enter 9 local digits.', phoneRemaining: '{{count}} digit(s) remaining.',
@@ -270,13 +278,18 @@ en.validation = {
 en.members = {
   add: 'Add member', edit: 'Edit member', adding: 'Adding...', loading: 'Loading members...', loadError: 'Could not load members.',
   created: 'Member created successfully.', createError: 'Could not add member. Check the details and try again.',
-  searchPlaceholder: 'Search by name or phone...', noSearchResults: 'No members match your search.',
+  searchPlaceholder: 'Search by name, National ID, or phone...', noSearchResults: 'No members match your search.',
   empty: 'No members yet — add your first one.', farmerProfile: 'Farmer profile', notFarmer: 'Not a farmer',
-  fields: { name: 'Name', firstName: 'First name', lastName: 'Last name', gender: 'Gender', phone: 'Phone', address: 'Address', membershipDate: 'Membership date' },
-  placeholders: { address: 'Village, cell, or street address' },
+  fields: { name: 'Name', firstName: 'First name', lastName: 'Last name', nationalId: 'National ID', gender: 'Gender', phone: 'Phone', address: 'Address', membershipDate: 'Membership date' },
+  placeholders: { nationalId: '16-digit National ID', address: 'Village, cell, or street address' },
   gender: { notSpecified: 'Not specified', male: 'Male', female: 'Female', other: 'Other' },
-  validation: { namesRequired: 'First name and last name are required.', firstNameRequired: 'First name is required.', lastNameRequired: 'Last name is required.' },
+  validation: { namesRequired: 'First name and last name are required.', firstNameRequired: 'First name is required.', lastNameRequired: 'Last name is required.', nationalIdInvalid: 'National ID must contain exactly 16 digits.' },
 };
+en.members.fields.residentialAddress = 'Residential/contact address';
+en.members.fields.addressDetails = 'Additional address details';
+en.members.placeholders.address = 'Street, building, or saved address detail';
+en.members.addressHierarchyHint = 'Select the member residence from district through village.';
+en.members.legacyAddressHint = 'Existing address details are preserved and remain separate from farm location.';
 en.memberDetail = {
   back: 'Back to members', details: 'Member details', loadError: 'Could not load this member.', notFound: 'Member not found.',
   updated: 'Member details updated successfully.', saveError: 'Could not save these changes.',
@@ -287,10 +300,18 @@ en.farmers = {
   profile: 'Farmer profile', addProfile: 'Add farmer profile', noProfile: "This member doesn't have a farmer profile yet.",
   loading: 'Loading farmers...', loadError: 'Could not load farmers.', empty: "No farmer profiles yet. Add one from a member's detail page.",
   created: 'Farmer profile created successfully.', updated: 'Farmer profile updated successfully.', saveError: 'Could not save this farmer profile.',
-  fields: { cropType: 'Crop type', farmSize: 'Farm size', farmSizeHectares: 'Farm size (hectares)', location: 'Farm location' },
+  fields: { cropType: 'Crop type', farmSize: 'Farm size', farmSizeUnit: 'Farm size unit', location: 'Farm location' },
   placeholders: { cropType: 'e.g. Coffee' },
-  validation: { farmSizeInvalid: 'Enter a valid farm size of zero or more hectares.', invalid: 'Check the crop, farm size, and complete location hierarchy.' },
+  units: { ha: 'Hectares (ha)', acres: 'Acres', m2: 'Square meters (m²)', km2: 'Square kilometers (km²)' },
+  validation: { farmSizeInvalid: 'Enter a positive numeric farm size.', farmSizeUnitRequired: 'Select a valid farm size unit.', invalid: 'Check the crop, farm size, unit, and complete location hierarchy.' },
 };
+en.farmers.fields.member = 'Select member';
+en.farmers.selectMember = 'Select a member...';
+en.farmers.noEligibleMembers = 'No members without a Farmer Profile are available in this organization.';
+en.farmers.viewMembers = 'View members';
+en.farmers.validation.memberRequired = 'Select an existing member.';
+en.farmers.validation.alreadyExists = 'The selected member already has a Farmer Profile.';
+en.farmers.empty = 'No Farmer Profiles yet. Add one for an existing member.';
 en.contact = { title: 'Contact', subtitle: 'Contact Smart Digital Solutions.', email: 'Email', emailAction: 'Send Email', phone: 'Phone', phoneAction: 'Call Us', whatsapp: 'WhatsApp', whatsappAction: 'Chat on WhatsApp' };
 
 Object.assign(rw.common, {
@@ -312,6 +333,13 @@ Object.assign(rw.auth, {
   adminResetInstructions: 'Vugana n’umuyobozi w’umuryango wawe cyangwa umuyobozi mukuru wa Smart Digital Solutions. Ku rupapuro rw’Abakozi bashobora kuguhindurira ijambobanga bakaguha iry’agateganyo.',
 });
 Object.assign(rw.production, {
+  productionMode: 'Uburyo bw’umusaruro', individual: 'Umuntu ku giti cye', group: 'Itsinda', producer: 'Uwatanze umusaruro',
+  farmerGroup: 'Itsinda ry’abahinzi', selectFarmerGroup: 'Hitamo itsinda ry’abahinzi…',
+  productionGroup: 'Itsinda ritanga umusaruro', selectProductionGroup: 'Hitamo itsinda ritanga umusaruro…',
+  selectOrganization: 'Hitamo umuryango mbere yo kongeramo umusaruro.',
+  cropType: 'Ubwoko bw’igihingwa', selectCropType: 'Hitamo igihingwa…', addCropType: 'Cyangwa andika igihingwa gishya',
+  expectedProduction: 'Umusaruro witezwe', actualHarvest: 'Umusaruro wabonetse', harvestDate: 'Itariki yo gusarura',
+  productionLocation: 'Aho ubuhinzi cyangwa umusaruro ukorerwa', notes: 'Ibisobanuro', activeProducers: 'Abatanga umusaruro bakora',
   subtitle: 'Inyandiko z’umusaruro n’imikorere mu muryango wawe.',
   cooperativeComparison: 'Igereranya ry’imiryango',
 });
@@ -339,6 +367,7 @@ rw.locations = {
   incomplete: 'Hitamo akarere, umurenge n’akagari uko bikurikirana.', farmerIncomplete: 'Hitamo akarere, umurenge, akagari n’umudugudu uko bikurikirana.',
   legacyPreserved: 'Aho byari bisanzwe bibitswe: {{location}}. Hazagumaho keretse uhisemo ahandi huzuye.',
 };
+rw.locations.memberIncomplete = 'Hitamo akarere, umurenge, akagari n\'umudugudu by\'aderesi y\'umunyamuryango.';
 rw.validation = {
   phonePlaceholder: '78X XXX XXX', phoneValid: 'Nomero ya telefone yo mu Rwanda ni nziza.', phoneRequired: 'Andika imibare 9.',
   phoneOptional: 'Si ngombwa — andika imibare 9.', phoneRemaining: 'Hasigaye imibare {{count}}.',
@@ -348,13 +377,18 @@ rw.validation = {
 rw.members = {
   add: 'Ongeraho umunyamuryango', edit: 'Hindura umunyamuryango', adding: 'Birimo kongerwa...', loading: 'Abanyamuryango barimo gutegurwa...', loadError: 'Ntibyashobotse kubona abanyamuryango.',
   created: 'Umunyamuryango yongewe neza.', createError: 'Ntibyashobotse kongeraho umunyamuryango. Reba amakuru wongere ugerageze.',
-  searchPlaceholder: 'Shakisha izina cyangwa telefone...', noSearchResults: 'Nta munyamuryango uhuye n’ishakisha.', empty: 'Nta banyamuryango baraboneka — ongeraho uwa mbere.',
+  searchPlaceholder: 'Shakisha izina, indangamuntu cyangwa telefone...', noSearchResults: 'Nta munyamuryango uhuye n’ishakisha.', empty: 'Nta banyamuryango baraboneka — ongeraho uwa mbere.',
   farmerProfile: 'Umwirondoro w’umuhinzi', notFarmer: 'Si umuhinzi',
-  fields: { name: 'Izina', firstName: 'Izina bwite', lastName: 'Izina ry’umuryango', gender: 'Igitsina', phone: 'Telefone', address: 'Aderesi', membershipDate: 'Itariki yo kuba umunyamuryango' },
-  placeholders: { address: 'Umudugudu, akagari cyangwa umuhanda' },
+  fields: { name: 'Izina', firstName: 'Izina bwite', lastName: 'Izina ry’umuryango', nationalId: 'Indangamuntu', gender: 'Igitsina', phone: 'Telefone', address: 'Aderesi', membershipDate: 'Itariki yo kuba umunyamuryango' },
+  placeholders: { nationalId: 'Imibare 16 y’indangamuntu', address: 'Umudugudu, akagari cyangwa umuhanda' },
   gender: { notSpecified: 'Nticyavuzwe', male: 'Gabo', female: 'Gore', other: 'Ikindi' },
-  validation: { namesRequired: 'Izina bwite n’izina ry’umuryango birakenewe.', firstNameRequired: 'Izina bwite rirakenewe.', lastNameRequired: 'Izina ry’umuryango rirakenewe.' },
+  validation: { namesRequired: 'Izina bwite n’izina ry’umuryango birakenewe.', firstNameRequired: 'Izina bwite rirakenewe.', lastNameRequired: 'Izina ry’umuryango rirakenewe.', nationalIdInvalid: 'Indangamuntu igomba kuba igizwe n’imibare 16 gusa.' },
 };
+rw.members.fields.residentialAddress = 'Aderesi y\'aho umunyamuryango atuye';
+rw.members.fields.addressDetails = 'Ibindi bisobanuro bya aderesi';
+rw.members.placeholders.address = 'Umuhanda, inyubako cyangwa aderesi yari isanzwe ibitswe';
+rw.members.addressHierarchyHint = 'Hitamo aho umunyamuryango atuye kuva ku karere kugera ku mudugudu.';
+rw.members.legacyAddressHint = 'Aderesi yari isanzwe ibitswe iragumaho kandi itandukanye n\'aho umurima uherereye.';
 rw.memberDetail = {
   back: 'Subira ku banyamuryango', details: 'Amakuru y’umunyamuryango', loadError: 'Ntibyashobotse kubona uyu munyamuryango.', notFound: 'Umunyamuryango ntiyabonetse.',
   updated: 'Amakuru y’umunyamuryango yahinduwe neza.', saveError: 'Ntibyashobotse kubika izi mpinduka.',
@@ -364,9 +398,17 @@ rw.farmers = {
   profile: 'Umwirondoro w’umuhinzi', addProfile: 'Ongeraho umwirondoro w’umuhinzi', noProfile: 'Uyu munyamuryango nta mwirondoro w’umuhinzi afite.',
   loading: 'Abahinzi barimo gutegurwa...', loadError: 'Ntibyashobotse kubona abahinzi.', empty: 'Nta myirondoro y’abahinzi iraboneka. Yongerere ku makuru y’umunyamuryango.',
   created: 'Umwirondoro w’umuhinzi wongewe neza.', updated: 'Umwirondoro w’umuhinzi wahinduwe neza.', saveError: 'Ntibyashobotse kubika umwirondoro w’umuhinzi.',
-  fields: { cropType: 'Igihingwa', farmSize: 'Ingano y’umurima', farmSizeHectares: 'Ingano y’umurima (hegitari)', location: 'Aho umurima uherereye' }, placeholders: { cropType: 'urugero: Ikawa' },
-  validation: { farmSizeInvalid: 'Andika ingano y’umurima iri kuri zeru cyangwa irenga, mu mahegitari.', invalid: 'Reba igihingwa, ingano y’umurima n’aho umurima uherereye huzuye.' },
+  fields: { cropType: 'Igihingwa', farmSize: 'Ingano y’umurima', farmSizeUnit: 'Igipimo cy’ingano y’umurima', location: 'Aho umurima uherereye' }, placeholders: { cropType: 'urugero: Ikawa' },
+  units: { ha: 'Hegitari (ha)', acres: 'Acres', m2: 'Metero kare (m²)', km2: 'Kilometero kare (km²)' },
+  validation: { farmSizeInvalid: 'Andika ingano y’umurima yemewe kandi irenze zeru.', farmSizeUnitRequired: 'Hitamo igipimo cyemewe cy’ingano y’umurima.', invalid: 'Reba igihingwa, ingano y’umurima, igipimo n’aho umurima uherereye huzuye.' },
 };
+rw.farmers.fields.member = 'Hitamo umunyamuryango';
+rw.farmers.selectMember = 'Hitamo umunyamuryango...';
+rw.farmers.noEligibleMembers = 'Nta munyamuryango udafite umwirondoro w’umuhinzi uboneka muri uyu muryango.';
+rw.farmers.viewMembers = 'Reba abanyamuryango';
+rw.farmers.validation.memberRequired = 'Hitamo umunyamuryango usanzwe.';
+rw.farmers.validation.alreadyExists = 'Umunyamuryango wahisemo asanzwe afite umwirondoro w’umuhinzi.';
+rw.farmers.empty = 'Nta myirondoro y’abahinzi iraboneka. Ongeraho umwirondoro ku munyamuryango usanzwe.';
 rw.contact = { title: 'Twandikire', subtitle: 'Vugana na Smart Digital Solutions.', email: 'Imeyili', emailAction: 'Ohereza Imeyili', phone: 'Telefone', phoneAction: 'Duhamagare', whatsapp: 'WhatsApp', whatsappAction: 'Vugana natwe kuri WhatsApp' };
 
 Object.assign(fr.common, {
@@ -388,6 +430,13 @@ Object.assign(fr.auth, {
   adminResetInstructions: 'Contactez le gestionnaire de votre organisation ou le super administrateur de Smart Digital Solutions. Depuis la page Équipe, il peut réinitialiser votre mot de passe et vous communiquer un mot de passe temporaire.',
 });
 Object.assign(fr.production, {
+  productionMode: 'Mode de production', individual: 'Individuel', group: 'Groupe', producer: 'Producteur',
+  farmerGroup: 'Groupement d’agriculteurs', selectFarmerGroup: 'Sélectionner un groupement…',
+  productionGroup: 'Groupe de production', selectProductionGroup: 'Sélectionner un groupe de production…',
+  selectOrganization: 'Sélectionnez une organisation avant d’ajouter une production.',
+  cropType: 'Type de culture', selectCropType: 'Sélectionner une culture…', addCropType: 'Ou saisir une nouvelle culture',
+  expectedProduction: 'Production prévue', actualHarvest: 'Récolte réelle', harvestDate: 'Date de récolte',
+  productionLocation: 'Lieu agricole / de production', notes: 'Notes', activeProducers: 'Producteurs actifs',
   subtitle: 'Récoltes et performances de votre organisation.',
   cooperativeComparison: 'Comparaison des organisations',
 });
@@ -415,6 +464,7 @@ fr.locations = {
   incomplete: 'Sélectionnez successivement un district, un secteur et une cellule.', farmerIncomplete: 'Sélectionnez successivement un district, un secteur, une cellule et un village.',
   legacyPreserved: 'Ancienne localisation enregistrée : {{location}}. Elle sera conservée sauf si vous sélectionnez une nouvelle localisation complète.',
 };
+fr.locations.memberIncomplete = 'Sélectionnez un district, un secteur, une cellule et un village pour l’adresse du membre.';
 fr.validation = {
   phonePlaceholder: '78X XXX XXX', phoneValid: 'Numéro rwandais valide.', phoneRequired: 'Saisissez 9 chiffres locaux.',
   phoneOptional: 'Facultatif — saisissez 9 chiffres locaux.', phoneRemaining: 'Il reste {{count}} chiffre(s).',
@@ -424,13 +474,18 @@ fr.validation = {
 fr.members = {
   add: 'Ajouter un membre', edit: 'Modifier le membre', adding: 'Ajout...', loading: 'Chargement des membres...', loadError: 'Impossible de charger les membres.',
   created: 'Membre ajouté avec succès.', createError: 'Impossible d’ajouter le membre. Vérifiez les informations.',
-  searchPlaceholder: 'Rechercher par nom ou téléphone...', noSearchResults: 'Aucun membre ne correspond à la recherche.', empty: 'Aucun membre — ajoutez le premier.',
+  searchPlaceholder: 'Rechercher par nom, numéro d’identité ou téléphone...', noSearchResults: 'Aucun membre ne correspond à la recherche.', empty: 'Aucun membre — ajoutez le premier.',
   farmerProfile: 'Profil agricole', notFarmer: 'Pas agriculteur',
-  fields: { name: 'Nom', firstName: 'Prénom', lastName: 'Nom', gender: 'Genre', phone: 'Téléphone', address: 'Adresse', membershipDate: 'Date d’adhésion' },
-  placeholders: { address: 'Village, cellule ou rue' },
+  fields: { name: 'Nom', firstName: 'Prénom', lastName: 'Nom', nationalId: 'Numéro d’identité nationale', gender: 'Genre', phone: 'Téléphone', address: 'Adresse', membershipDate: 'Date d’adhésion' },
+  placeholders: { nationalId: 'Numéro d’identité à 16 chiffres', address: 'Village, cellule ou rue' },
   gender: { notSpecified: 'Non précisé', male: 'Homme', female: 'Femme', other: 'Autre' },
-  validation: { namesRequired: 'Le prénom et le nom sont obligatoires.', firstNameRequired: 'Le prénom est obligatoire.', lastNameRequired: 'Le nom est obligatoire.' },
+  validation: { namesRequired: 'Le prénom et le nom sont obligatoires.', firstNameRequired: 'Le prénom est obligatoire.', lastNameRequired: 'Le nom est obligatoire.', nationalIdInvalid: 'Le numéro d’identité nationale doit contenir exactement 16 chiffres.' },
 };
+fr.members.fields.residentialAddress = 'Adresse résidentielle/de contact';
+fr.members.fields.addressDetails = 'Détails supplémentaires de l’adresse';
+fr.members.placeholders.address = 'Rue, bâtiment ou ancienne adresse enregistrée';
+fr.members.addressHierarchyHint = 'Sélectionnez la résidence du membre du district jusqu’au village.';
+fr.members.legacyAddressHint = 'L’ancienne adresse est conservée et reste distincte de l’emplacement agricole.';
 fr.memberDetail = {
   back: 'Retour aux membres', details: 'Détails du membre', loadError: 'Impossible de charger ce membre.', notFound: 'Membre introuvable.',
   updated: 'Membre mis à jour avec succès.', saveError: 'Impossible d’enregistrer ces modifications.',
@@ -440,9 +495,17 @@ fr.farmers = {
   profile: 'Profil agricole', addProfile: 'Ajouter un profil agricole', noProfile: 'Ce membre n’a pas encore de profil agricole.',
   loading: 'Chargement des agriculteurs...', loadError: 'Impossible de charger les agriculteurs.', empty: 'Aucun profil agricole. Ajoutez-en un depuis la fiche d’un membre.',
   created: 'Profil agricole créé avec succès.', updated: 'Profil agricole mis à jour avec succès.', saveError: 'Impossible d’enregistrer ce profil agricole.',
-  fields: { cropType: 'Type de culture', farmSize: 'Superficie', farmSizeHectares: 'Superficie (hectares)', location: 'Localisation de la ferme' }, placeholders: { cropType: 'p. ex. Café' },
-  validation: { farmSizeInvalid: 'Saisissez une superficie valide supérieure ou égale à zéro hectare.', invalid: 'Vérifiez la culture, la superficie et la hiérarchie complète du lieu.' },
+  fields: { cropType: 'Type de culture', farmSize: 'Superficie', farmSizeUnit: 'Unité de superficie', location: 'Localisation de la ferme' }, placeholders: { cropType: 'p. ex. Café' },
+  units: { ha: 'Hectares (ha)', acres: 'Acres', m2: 'Mètres carrés (m²)', km2: 'Kilomètres carrés (km²)' },
+  validation: { farmSizeInvalid: 'Saisissez une superficie numérique positive.', farmSizeUnitRequired: 'Sélectionnez une unité de superficie valide.', invalid: 'Vérifiez la culture, la superficie, l’unité et la hiérarchie complète du lieu.' },
 };
+fr.farmers.fields.member = 'Sélectionner un membre';
+fr.farmers.selectMember = 'Sélectionner un membre...';
+fr.farmers.noEligibleMembers = 'Aucun membre sans profil agricole n’est disponible dans cette organisation.';
+fr.farmers.viewMembers = 'Voir les membres';
+fr.farmers.validation.memberRequired = 'Sélectionnez un membre existant.';
+fr.farmers.validation.alreadyExists = 'Le membre sélectionné possède déjà un profil agricole.';
+fr.farmers.empty = 'Aucun profil agricole. Ajoutez-en un à un membre existant.';
 fr.contact = { title: 'Contact', subtitle: 'Contactez Smart Digital Solutions.', email: 'E-mail', emailAction: 'Envoyer un e-mail', phone: 'Téléphone', phoneAction: 'Nous appeler', whatsapp: 'WhatsApp', whatsappAction: 'Discuter sur WhatsApp' };
 
 const savedLanguage = localStorage.getItem('scfmp_language') || 'en';

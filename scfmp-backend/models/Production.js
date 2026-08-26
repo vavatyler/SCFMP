@@ -11,6 +11,10 @@ module.exports = (sequelize) => {
         foreignKey: 'farmer_id',
         as: 'farmer',
       });
+      Production.belongsTo(models.FarmerGroup, {
+        foreignKey: 'farmer_group_id',
+        as: 'farmerGroup',
+      });
       Production.belongsTo(models.Product, {
         foreignKey: 'product_id',
         as: 'product',
@@ -35,7 +39,17 @@ module.exports = (sequelize) => {
       },
       farmer_id: {
         type: DataTypes.INTEGER,
+        allowNull: true,
+      },
+      farmer_group_id: {
+        type: DataTypes.INTEGER,
+        allowNull: true,
+      },
+      production_mode: {
+        type: DataTypes.STRING(20),
         allowNull: false,
+        defaultValue: 'individual',
+        validate: { isIn: [['individual', 'group']] },
       },
       product_id: {
         type: DataTypes.INTEGER,
@@ -47,7 +61,17 @@ module.exports = (sequelize) => {
         validate: { notEmpty: true },
       },
       quantity: {
-        type: DataTypes.DECIMAL(10, 2),
+        type: DataTypes.DECIMAL(14, 2),
+        allowNull: false,
+        validate: { min: 0.01 },
+      },
+      expected_production: {
+        type: DataTypes.DECIMAL(14, 2),
+        allowNull: true,
+        validate: { min: 0.01 },
+      },
+      actual_harvest: {
+        type: DataTypes.DECIMAL(14, 2),
         allowNull: false,
         validate: { min: 0.01 },
       },
@@ -58,6 +82,7 @@ module.exports = (sequelize) => {
       unit_price: {
         type: DataTypes.DECIMAL(10, 2),
         allowNull: false,
+        defaultValue: 0,
         validate: { min: 0 },
       },
       total_amount: {
@@ -74,6 +99,12 @@ module.exports = (sequelize) => {
         type: DataTypes.DATEONLY,
         allowNull: false,
       },
+      harvest_date: {
+        type: DataTypes.DATEONLY,
+        allowNull: false,
+      },
+      production_location: DataTypes.STRING(255),
+      notes: DataTypes.TEXT,
       recorded_by: {
         type: DataTypes.INTEGER,
         allowNull: true,
@@ -84,9 +115,35 @@ module.exports = (sequelize) => {
       modelName: 'Production',
       tableName: 'production',
       underscored: true,
+      validate: {
+        ownerMatchesProductionMode() {
+          if (this.production_mode === 'individual') {
+            if (!this.farmer_id || this.farmer_group_id) {
+              throw new Error('Individual production requires a farmer and cannot have a farmer group');
+            }
+          } else if (this.production_mode === 'group') {
+            if (!this.farmer_group_id || this.farmer_id) {
+              throw new Error('Group production requires a farmer group and cannot have a farmer');
+            }
+          }
+        },
+      },
       hooks: {
         // total_amount is always derived from quantity * unit_price — never trust client input for this
         beforeValidate: (record) => {
+          if (record.actual_harvest == null && record.quantity != null) {
+            record.actual_harvest = record.quantity;
+          }
+          if (record.quantity == null && record.actual_harvest != null) {
+            record.quantity = record.actual_harvest;
+          }
+          if (record.harvest_date == null && record.production_date != null) {
+            record.harvest_date = record.production_date;
+          }
+          if (record.production_date == null && record.harvest_date != null) {
+            record.production_date = record.harvest_date;
+          }
+          if (record.unit_price == null) record.unit_price = 0;
           if (record.quantity != null && record.unit_price != null) {
             record.total_amount = (
               parseFloat(record.quantity) * parseFloat(record.unit_price)

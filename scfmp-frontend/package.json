@@ -8,6 +8,8 @@
     "build": "vite build",
     "preview": "vite preview",
     "test:i18n": "node scripts/verify-form-translations.mjs",
+    "test:members": "node scripts/verify-member-national-id.mjs",
+    "test:farmers": "node scripts/verify-farmer-profile.mjs",
     "test:dashboard-greeting": "node scripts/verify-dashboard-greeting.mjs",
     "test:documents": "node scripts/verify-document-upload.mjs",
     "test:contact": "node scripts/verify-contact-page.mjs",

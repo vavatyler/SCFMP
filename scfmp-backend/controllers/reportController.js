@@ -3,11 +3,14 @@ const {
   Cooperative,
   Member,
   Farmer,
+  FarmerGroup,
   Production,
   Product,
   Transaction,
   InventoryItem,
 } = require('../models');
+const { formatMemberAddress } = require('../utils/memberAddress');
+const { formatFarmSize } = require('../utils/farmSize');
 
 const REPORT_TEXT = {
   en: {
@@ -26,9 +29,9 @@ const REPORT_TEXT = {
 
 const LABELS = {
   en: {
-    member_number: 'Member #', name: 'Name', gender: 'Gender', phone: 'Phone', address: 'Address',
-    membership_date: 'Membership date', status: 'Status', cooperative: 'Organization', farm_size: 'Farm size (ha)',
-    location: 'Location', crop_type: 'Crop type', product: 'Product', farmer: 'Farmer', quantity: 'Quantity',
+    member_number: 'Member #', name: 'Name', gender: 'Gender', phone: 'Phone', address: 'Member address',
+    membership_date: 'Membership date', status: 'Status', cooperative: 'Organization', farm_size: 'Farm size',
+    location: 'Farm location', crop_type: 'Crop type', product: 'Product', farmer: 'Farmer', quantity: 'Quantity',
     unit: 'Unit', unit_price: 'Unit price (RWF)', total_value: 'Total value (RWF)', season: 'Season',
     production_date: 'Production date', type: 'Type', category: 'Category', amount: 'Amount (RWF)',
     description: 'Description', transaction_date: 'Transaction date', item: 'Item', stock: 'Stock',
@@ -36,7 +39,7 @@ const LABELS = {
   },
   rw: {
     member_number: 'Nimero', name: 'Amazina', gender: 'Igitsina', phone: 'Telefoni', address: 'Aderesi',
-    membership_date: 'Itariki yinjiyeho', status: 'Imimerere', cooperative: 'Umuryango', farm_size: 'Ingano y’umurima (ha)',
+    membership_date: 'Itariki yinjiyeho', status: 'Imimerere', cooperative: 'Umuryango', farm_size: 'Ingano y’umurima',
     location: 'Aho uherereye', crop_type: 'Igihingwa', product: 'Igicuruzwa', farmer: 'Umuhinzi', quantity: 'Ingano',
     unit: 'Igipimo', unit_price: 'Igiciro kuri kimwe (RWF)', total_value: 'Agaciro kose (RWF)', season: 'Igihembwe',
     production_date: 'Itariki y’umusaruro', type: 'Ubwoko', category: 'Icyiciro', amount: 'Amafaranga (RWF)',
@@ -45,7 +48,7 @@ const LABELS = {
   },
   fr: {
     member_number: 'N° membre', name: 'Nom', gender: 'Genre', phone: 'Téléphone', address: 'Adresse',
-    membership_date: 'Date d’adhésion', status: 'Statut', cooperative: 'Organisation', farm_size: 'Surface (ha)',
+    membership_date: 'Date d’adhésion', status: 'Statut', cooperative: 'Organisation', farm_size: 'Surface',
     location: 'Localisation', crop_type: 'Culture', product: 'Produit', farmer: 'Agriculteur', quantity: 'Quantité',
     unit: 'Unité', unit_price: 'Prix unitaire (RWF)', total_value: 'Valeur totale (RWF)', season: 'Saison',
     production_date: 'Date de production', type: 'Type', category: 'Catégorie', amount: 'Montant (RWF)',
@@ -53,6 +56,32 @@ const LABELS = {
     reorder_level: 'Seuil de réapprovisionnement', unit_cost: 'Coût unitaire (RWF)', inventory_value: 'Valeur du stock (RWF)',
   },
 };
+
+LABELS.rw.address = "Aderesi y'umunyamuryango";
+LABELS.rw.location = 'Aho umurima uherereye';
+LABELS.fr.address = 'Adresse du membre';
+LABELS.fr.location = 'Emplacement agricole';
+Object.assign(LABELS.en, {
+  production_mode: 'Production mode',
+  expected_production: 'Expected production',
+  production_location: 'Production location',
+  harvest_date: 'Harvest date',
+  notes: 'Notes',
+});
+Object.assign(LABELS.rw, {
+  production_mode: 'Uburyo bw’umusaruro',
+  expected_production: 'Umusaruro witezwe',
+  production_location: 'Aho umusaruro ukorerwa',
+  harvest_date: 'Itariki yo gusarura',
+  notes: 'Ibisobanuro',
+});
+Object.assign(LABELS.fr, {
+  production_mode: 'Mode de production',
+  expected_production: 'Production prévue',
+  production_location: 'Lieu de production',
+  harvest_date: 'Date de récolte',
+  notes: 'Notes',
+});
 
 const columnSet = (language, keys) => keys.map((key) => ({ key, label: LABELS[language][key] }));
 
@@ -71,7 +100,9 @@ const dateWhere = (field, { from, to }) => {
 
 const memberScope = (req, cooperativeId) => {
   const where = {};
-  if (cooperativeId) where.cooperative_id = cooperativeId;
+  if (req.user.role !== 'super_admin' || cooperativeId) {
+    where.cooperative_id = cooperativeId;
+  }
   if (req.user.role === 'farmer') where.user_id = req.user.id;
   if (req.query.status) where.status = req.query.status;
   if (req.query.search) {
@@ -102,7 +133,7 @@ const buildMembers = async (req, cooperativeId, language) => {
     rows: rows.map((row) => ({
       member_number: row.id,
       name: `${row.first_name} ${row.last_name}`,
-      gender: row.gender || '', phone: row.phone || '', address: row.address || '',
+      gender: row.gender || '', phone: row.phone || '', address: formatMemberAddress(row),
       membership_date: row.membership_date || '', status: row.status,
       cooperative: row.cooperative?.name || '',
     })),
@@ -121,7 +152,7 @@ const buildFarmers = async (req, cooperativeId, language) => {
     columns: columnSet(language, ['member_number', 'name', 'phone', 'farm_size', 'location', 'crop_type', 'status', 'cooperative']),
     rows: rows.map((row) => ({
       member_number: row.member_id, name: `${row.member.first_name} ${row.member.last_name}`,
-      phone: row.member.phone || '', farm_size: row.farm_size_ha || '', location: row.location || '',
+      phone: row.member.phone || '', farm_size: formatFarmSize(row), location: row.location || '',
       crop_type: row.crop_type || '', status: row.member.status,
       cooperative: row.member.cooperative?.name || '',
     })),
@@ -130,9 +161,15 @@ const buildFarmers = async (req, cooperativeId, language) => {
 
 const buildProduction = async (req, cooperativeId, language) => {
   const where = { ...dateWhere('production_date', req.query) };
-  if (cooperativeId) where.cooperative_id = cooperativeId;
+  if (req.user.role !== 'super_admin' || cooperativeId) {
+    where.cooperative_id = cooperativeId;
+  }
   if (req.user.role === 'farmer') where.farmer_id = await getOwnFarmerId(req.user.id);
   else if (req.query.farmer_id) where.farmer_id = Number(req.query.farmer_id);
+  if (req.query.production_mode) where.production_mode = req.query.production_mode;
+  if (req.query.farmer_group_id && req.user.role !== 'farmer') {
+    where.farmer_group_id = Number(req.query.farmer_group_id);
+  }
   if (req.query.product_id) where.product_id = Number(req.query.product_id);
   if (req.query.season) where.season = req.query.season;
   if (req.query.status) where.status = req.query.status;
@@ -140,25 +177,41 @@ const buildProduction = async (req, cooperativeId, language) => {
     where,
     include: [
       { model: Farmer, as: 'farmer', include: [{ model: Member, as: 'member', attributes: ['first_name', 'last_name'] }] },
+      { model: FarmerGroup, as: 'farmerGroup', attributes: ['name'] },
       { model: Product, as: 'product', attributes: ['name'] },
       { model: Cooperative, as: 'cooperative', attributes: ['name'] },
     ],
     order: [['production_date', 'DESC']],
   });
   return {
-    columns: columnSet(language, ['farmer', 'product', 'quantity', 'unit', 'unit_price', 'total_value', 'season', 'status', 'production_date', 'cooperative']),
+    columns: columnSet(language, [
+      'production_mode', 'farmer', 'product', 'expected_production', 'quantity', 'unit',
+      'unit_price', 'total_value', 'season', 'production_location', 'harvest_date',
+      'status', 'notes', 'cooperative',
+    ]),
     rows: rows.map((row) => ({
-      farmer: row.farmer?.member ? `${row.farmer.member.first_name} ${row.farmer.member.last_name}` : '',
-      product: row.product?.name || row.product_name, quantity: Number(row.quantity), unit: row.unit,
+      production_mode: row.production_mode,
+      farmer: row.production_mode === 'group'
+        ? row.farmerGroup?.name || ''
+        : (row.farmer?.member ? `${row.farmer.member.first_name} ${row.farmer.member.last_name}` : ''),
+      product: row.product?.name || row.product_name,
+      expected_production: row.expected_production == null ? '' : Number(row.expected_production),
+      quantity: Number(row.actual_harvest ?? row.quantity), unit: row.unit,
       unit_price: Number(row.unit_price), total_value: Number(row.total_amount), season: row.season || '',
-      status: row.status, production_date: row.production_date, cooperative: row.cooperative?.name || '',
+      production_location: row.production_location || '',
+      harvest_date: row.harvest_date || row.production_date,
+      status: row.status,
+      notes: row.notes || '',
+      cooperative: row.cooperative?.name || '',
     })),
   };
 };
 
 const buildFinance = async (req, cooperativeId, language) => {
   const where = { ...dateWhere('transaction_date', req.query) };
-  if (cooperativeId) where.cooperative_id = cooperativeId;
+  if (req.user.role !== 'super_admin' || cooperativeId) {
+    where.cooperative_id = cooperativeId;
+  }
   if (req.query.type) where.type = req.query.type;
   if (req.user.role === 'farmer') {
     const member = await Member.findOne({ where: { user_id: req.user.id } });
@@ -184,7 +237,9 @@ const buildFinance = async (req, cooperativeId, language) => {
 
 const buildInventory = async (req, cooperativeId, language) => {
   const where = {};
-  if (cooperativeId) where.cooperative_id = cooperativeId;
+  if (req.user.role !== 'super_admin' || cooperativeId) {
+    where.cooperative_id = cooperativeId;
+  }
   if (req.query.category) where.category = req.query.category;
   if (req.query.status) where.status = req.query.status;
   if (req.query.search) where.item_name = { [Op.like]: `%${req.query.search}%` };
