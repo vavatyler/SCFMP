@@ -1,0 +1,14 @@
+{
+  "name": "scfmp-demo-edge",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "deploy": "node node_modules/wrangler/wrangler-dist/cli.js deploy",
+    "dev": "node node_modules/wrangler/wrangler-dist/cli.js dev",
+    "test": "node --test --test-isolation=none"
+  },
+  "devDependencies": {
+    "wrangler": "4.126.0"
+  }
+}

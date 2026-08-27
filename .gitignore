@@ -17,6 +17,9 @@ build/
 # Vercel local project metadata
 .vercel/
 
+# Cloudflare local project metadata
+.wrangler/
+
 # Frontend
 scfmp-frontend/node_modules/
 scfmp-frontend/dist/
