@@ -5,8 +5,20 @@
   "compatibility_date": "2026-08-27",
   "workers_dev": true,
   "preview_urls": false,
+  "routes": [
+    {
+      "pattern": "agribridge.cloud",
+      "custom_domain": true
+    },
+    {
+      "pattern": "www.agribridge.cloud",
+      "custom_domain": true
+    }
+  ],
   "vars": {
-    "SCFMP_ORIGIN": "https://scfmp.vercel.app"
+    "SCFMP_ORIGIN": "https://scfmp.vercel.app",
+    "SCFMP_CANONICAL_ORIGIN": "https://agribridge.cloud",
+    "SCFMP_REDIRECT_HOSTS": "www.agribridge.cloud"
   },
   "observability": {
     "enabled": true

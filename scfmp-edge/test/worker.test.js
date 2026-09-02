@@ -70,6 +70,50 @@ test('rewrites same-origin redirects and CORS response headers to the edge URL',
   );
 });
 
+test('redirects www to the apex domain while preserving path and query', async () => {
+  let upstreamCalled = false;
+  const worker = createWorker(async () => {
+    upstreamCalled = true;
+    return new Response('unexpected');
+  });
+
+  const response = await worker.fetch(
+    new Request('https://www.agribridge.cloud/production?mode=group'),
+    {
+      SCFMP_ORIGIN: 'https://scfmp.vercel.app',
+      SCFMP_CANONICAL_ORIGIN: 'https://agribridge.cloud',
+      SCFMP_REDIRECT_HOSTS: 'www.agribridge.cloud',
+    }
+  );
+
+  assert.equal(response.status, 308);
+  assert.equal(
+    response.headers.get('location'),
+    'https://agribridge.cloud/production?mode=group'
+  );
+  assert.equal(upstreamCalled, false);
+});
+
+test('keeps the workers.dev address available as an independent fallback', async () => {
+  let capturedUrl;
+  const worker = createWorker(async (request) => {
+    capturedUrl = request.url;
+    return new Response('SCFMP');
+  });
+
+  const response = await worker.fetch(
+    new Request('https://scfmp-demo-edge.example.workers.dev/login'),
+    {
+      SCFMP_ORIGIN: 'https://scfmp.vercel.app',
+      SCFMP_CANONICAL_ORIGIN: 'https://agribridge.cloud',
+      SCFMP_REDIRECT_HOSTS: 'www.agribridge.cloud',
+    }
+  );
+
+  assert.equal(response.status, 200);
+  assert.equal(capturedUrl, 'https://scfmp.vercel.app/login');
+});
+
 test('fails closed when the configured origin is not HTTPS', async () => {
   const worker = createWorker(async () => {
     throw new Error('The upstream must not be called');

@@ -11,6 +11,22 @@ const normalizeOrigin = (value) => {
   return origin;
 };
 
+const parseHosts = (value) => new Set(
+  String(value || '')
+    .split(',')
+    .map((host) => host.trim().toLowerCase())
+    .filter(Boolean)
+);
+
+const canonicalRedirect = (incomingUrl, env) => {
+  const redirectHosts = parseHosts(env.SCFMP_REDIRECT_HOSTS);
+  if (!redirectHosts.has(incomingUrl.hostname.toLowerCase())) return null;
+
+  const canonicalOrigin = normalizeOrigin(env.SCFMP_CANONICAL_ORIGIN);
+  const destination = new URL(`${incomingUrl.pathname}${incomingUrl.search}`, canonicalOrigin);
+  return Response.redirect(destination, 308);
+};
+
 const rewriteSameOriginUrl = (value, sourceOrigin, targetOrigin) => {
   if (!value) return value;
 
@@ -51,6 +67,8 @@ export const createWorker = (fetchUpstream = fetch) => ({
 
     let origin;
     try {
+      const redirect = canonicalRedirect(incomingUrl, env);
+      if (redirect) return redirect;
       origin = normalizeOrigin(env.SCFMP_ORIGIN);
     } catch {
       return unavailableResponse(isApiRequest);

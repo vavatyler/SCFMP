@@ -22,3 +22,11 @@ https://scfmp-demo-edge.<account-subdomain>.workers.dev
 
 Keep `https://scfmp.vercel.app` as the primary URL and use the Worker URL as the
 cellular-friendly presentation URL and fallback.
+
+## Custom domain
+
+The production edge configuration serves `https://agribridge.cloud` and sends
+`https://www.agribridge.cloud/*` to the matching apex-domain path with a 308
+redirect. The `workers.dev` address remains available as an independent
+fallback. The domain must first be an active zone in the authorized Cloudflare
+account.
