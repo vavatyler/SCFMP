@@ -83,7 +83,7 @@ const NotificationBell = () => {
       {isOpen && (
         <>
           <div className="fixed inset-0 z-30 bg-ink/5" onClick={() => setIsOpen(false)} />
-          <div className="absolute right-0 z-40 mt-2 w-80 rounded-xl border border-sand bg-white shadow-2xl">
+          <div className="absolute right-0 z-40 mt-2 w-[min(20rem,calc(100vw-1rem))] rounded-xl border border-sand bg-white shadow-2xl">
           <div className="flex items-center justify-between border-b border-sand px-4 py-3">
             <h3 className="font-display text-sm font-semibold text-ink">Notifications</h3>
             {unreadCount > 0 && (

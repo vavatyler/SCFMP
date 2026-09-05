@@ -1,7 +1,7 @@
 {
   "name": "scfmp-frontend",
   "version": "1.0.0",
-  "description": "Smart Cooperative & Farmer Management Platform - Frontend",
+  "description": "AgriBridge by SmartBridge Technologies Ltd - Frontend",
   "type": "module",
   "scripts": {
     "dev": "vite",

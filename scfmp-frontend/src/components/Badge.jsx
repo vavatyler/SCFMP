@@ -5,6 +5,12 @@ const STATUS_STYLES = {
   recorded: 'bg-gold/15 text-gold-dark',
   verified: 'bg-forest/10 text-forest',
   rejected: 'bg-clay/10 text-clay',
+  expiring_soon: 'bg-gold/15 text-gold-dark',
+  expired: 'bg-clay/10 text-clay',
+  archived: 'bg-ink-soft/10 text-ink-soft',
+  trialing: 'bg-gold/15 text-gold-dark',
+  past_due: 'bg-clay/10 text-clay',
+  cancelled: 'bg-ink-soft/10 text-ink-soft',
 };
 
 const Badge = ({ status, children }) => (

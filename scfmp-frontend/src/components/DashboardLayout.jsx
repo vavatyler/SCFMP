@@ -7,6 +7,7 @@ import CooperativeSwitcher from './CooperativeSwitcher';
 import LanguageSwitcher from './LanguageSwitcher';
 import ChangePasswordModal from './ChangePasswordModal';
 import { useAuth } from '../context/AuthContext';
+import { COMPANY_NAME, PRODUCT_NAME } from '../config/company';
 
 const DashboardLayout = ({ title, subtitle, children }) => {
   const { t } = useTranslation();
@@ -47,7 +48,7 @@ const DashboardLayout = ({ title, subtitle, children }) => {
             </button>
             <CooperativeSwitcher />
           </div>
-          <div className="flex items-center gap-2 sm:gap-3">
+          <div className="flex shrink-0 items-center gap-1.5 sm:gap-3">
             <LanguageSwitcher compact />
             <NotificationBell />
             <div className="relative" ref={menuRef}>
@@ -95,6 +96,9 @@ const DashboardLayout = ({ title, subtitle, children }) => {
           )}
           {children}
         </div>
+        <footer className="border-t border-sand/70 px-4 py-5 text-center text-xs text-ink-soft sm:px-6">
+          © 2026 {PRODUCT_NAME} · {COMPANY_NAME}
+        </footer>
       </main>
       <ChangePasswordModal isOpen={passwordOpen} onClose={() => setPasswordOpen(false)} />
     </div>

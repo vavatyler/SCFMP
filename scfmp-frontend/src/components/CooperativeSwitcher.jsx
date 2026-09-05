@@ -33,7 +33,7 @@ const CooperativeSwitcher = () => {
         className="focus-ring flex items-center gap-2 rounded-lg border border-sand bg-white px-3 py-1.5 text-sm font-medium text-ink hover:bg-sand/30"
       >
         <Building2 className="h-3.5 w-3.5 text-ink-soft" />
-        <span className="max-w-[180px] truncate">
+        <span className="max-w-[92px] truncate sm:max-w-[180px]">
           {activeCooperative ? activeCooperative.name : t('organizations.select')}
         </span>
         <ChevronDown className="h-3.5 w-3.5 text-ink-soft" />
@@ -42,7 +42,7 @@ const CooperativeSwitcher = () => {
       {isOpen && (
         <>
           <div className="fixed inset-0 z-30" onClick={() => setIsOpen(false)} />
-          <div className="absolute left-0 z-40 mt-2 w-64 rounded-xl border border-sand bg-white py-1.5 shadow-2xl">
+          <div className="absolute left-0 z-40 mt-2 w-[min(16rem,calc(100vw-1rem))] rounded-xl border border-sand bg-white py-1.5 shadow-2xl">
             {cooperatives.map((coop) => (
               <button
                 key={coop.id}

@@ -2,12 +2,13 @@ import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import * as XLSX from 'xlsx';
 import i18n from '../i18n.js';
+import { COMPANY_NAME, PRODUCT_NAME } from '../config/company.js';
 
 const fileBase = (report) =>
-  `scfmp-${report.metadata.module}-${report.metadata.generated_at.slice(0, 10)}`;
+  `agribridge-${report.metadata.module}-${report.metadata.generated_at.slice(0, 10)}`;
 
 export const buildReportHeaderRows = (report) => [
-  ['SCFMP — Smart Cooperative & Farmer Management Platform'],
+  [`${PRODUCT_NAME} — ${COMPANY_NAME}`],
   [report.metadata.title],
   [`${i18n.getFixedT(report.metadata.language || 'en')('reports.cooperative')}: ${report.metadata.cooperative}`],
   [`Generated: ${new Date(report.metadata.generated_at).toLocaleString()}`],
@@ -32,7 +33,7 @@ export const exportReportToExcel = (report) => {
   workbook.Props = {
     Title: report.metadata.title,
     Author: report.metadata.generated_by,
-    Company: 'SCFMP',
+    Company: COMPANY_NAME,
     CreatedDate: new Date(report.metadata.generated_at),
   };
   XLSX.writeFile(workbook, `${fileBase(report)}.xlsx`, { compression: true });
@@ -55,7 +56,7 @@ export const exportReportToPdf = (report) => {
   document.setFont('helvetica', 'normal');
   document.setTextColor(95, 105, 100);
   document.setFontSize(8.5);
-  document.text(`SCFMP  •  ${report.metadata.cooperative}`, 27, 18);
+  document.text(`${PRODUCT_NAME}  •  ${COMPANY_NAME}  •  ${report.metadata.cooperative}`, 27, 18);
   document.text(
     `${new Date(report.metadata.generated_at).toLocaleString()}  •  ${report.metadata.generated_by}  •  ${report.metadata.record_count} records`,
     27,
@@ -75,7 +76,7 @@ export const exportReportToPdf = (report) => {
       const page = document.internal.getCurrentPageInfo().pageNumber;
       document.setFontSize(8);
       document.setTextColor(110, 110, 110);
-      document.text(`SCFMP • ${report.metadata.title}`, 10, document.internal.pageSize.getHeight() - 6);
+      document.text(`${PRODUCT_NAME} • ${COMPANY_NAME} • ${report.metadata.title}`, 10, document.internal.pageSize.getHeight() - 6);
       document.text(`Page ${page}`, pageWidth - 10, document.internal.pageSize.getHeight() - 6, { align: 'right' });
     },
   });
@@ -104,10 +105,10 @@ export const printReport = (report) => {
       tr:nth-child(even) td { background: #f6f4ed; }
       footer { position: fixed; bottom: -12mm; left: 0; right: 0; font-size: 9px; color: #65716b; border-top: 1px solid #d8d3c5; padding-top: 5px; }
     </style></head><body><header><div class="logo">S</div><div><h1>${escapeHtml(report.metadata.title)}</h1>
-    <p>SCFMP • ${escapeHtml(report.metadata.cooperative)}</p><p>${escapeHtml(new Date(report.metadata.generated_at).toLocaleString())} • ${escapeHtml(report.metadata.generated_by)} • ${report.metadata.record_count} records</p></div></header>
+    <p>${PRODUCT_NAME} • ${COMPANY_NAME} • ${escapeHtml(report.metadata.cooperative)}</p><p>${escapeHtml(new Date(report.metadata.generated_at).toLocaleString())} • ${escapeHtml(report.metadata.generated_by)} • ${report.metadata.record_count} records</p></div></header>
     <table><thead><tr>${report.columns.map((column) => `<th>${escapeHtml(column.label)}</th>`).join('')}</tr></thead><tbody>
     ${report.rows.map((row) => `<tr>${report.columns.map((column) => `<td>${escapeHtml(row[column.key])}</td>`).join('')}</tr>`).join('')}
-    </tbody></table><footer>SCFMP — ${escapeHtml(report.metadata.title)}</footer></body></html>`);
+    </tbody></table><footer>${PRODUCT_NAME} — ${COMPANY_NAME} — ${escapeHtml(report.metadata.title)}</footer></body></html>`);
   popup.document.close();
   popup.focus();
   popup.print();

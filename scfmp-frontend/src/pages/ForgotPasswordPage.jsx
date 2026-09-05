@@ -4,6 +4,7 @@ import { Loader2, Sprout, Mail, UserCog, ArrowLeft } from 'lucide-react';
 import { forgotPassword } from '../api/auth';
 import LanguageSwitcher from '../components/LanguageSwitcher';
 import { useTranslation } from 'react-i18next';
+import { COMPANY_NAME, PRODUCT_NAME } from '../config/company';
 
 const ForgotPasswordPage = () => {
   const { t } = useTranslation();
@@ -56,7 +57,7 @@ const ForgotPasswordPage = () => {
           <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-gold/15">
             <Sprout className="h-6 w-6 text-gold" strokeWidth={1.75} />
           </div>
-          <h1 className="font-display text-2xl font-semibold text-paper">SCFMP</h1>
+          <h1 className="font-display text-2xl font-semibold text-paper">{PRODUCT_NAME}</h1>
           <p className="mt-1 text-sm text-paper/60">{t('auth.resetPassword')}</p>
         </div>
 
@@ -186,6 +187,7 @@ const ForgotPasswordPage = () => {
           <ArrowLeft className="h-3.5 w-3.5" />
           {t('auth.backToLogin')}
         </Link>
+        <p className="mt-4 text-center text-xs text-paper/50">{COMPANY_NAME}</p>
       </div>
     </div>
   );

@@ -39,6 +39,10 @@ module.exports = (sequelize) => {
         foreignKey: 'cooperative_id',
         as: 'productionRecords',
       });
+      Cooperative.hasOne(models.Subscription, {
+        foreignKey: 'cooperative_id',
+        as: 'subscription',
+      });
     }
   }
 

@@ -67,6 +67,9 @@ Object.assign(LABELS.en, {
   production_location: 'Production location',
   harvest_date: 'Harvest date',
   notes: 'Notes',
+  reporting_period: 'Reporting period', variety: 'Variety', production_category: 'Production category',
+  quality_grade: 'Quality / grade', storage_location: 'Storage location', storage_quantity: 'Storage quantity',
+  sold_quantity: 'Sold quantity', remaining_quantity: 'Remaining quantity', buyer: 'Buyer',
 });
 Object.assign(LABELS.rw, {
   production_mode: 'Uburyo bw’umusaruro',
@@ -74,6 +77,9 @@ Object.assign(LABELS.rw, {
   production_location: 'Aho umusaruro ukorerwa',
   harvest_date: 'Itariki yo gusarura',
   notes: 'Ibisobanuro',
+  reporting_period: 'Igihe cya raporo', variety: 'Ubwoko', production_category: 'Icyiciro cy’umusaruro',
+  quality_grade: 'Ubwiza / urwego', storage_location: 'Aho ubitswe', storage_quantity: 'Ingano ibitswe',
+  sold_quantity: 'Ingano yagurishijwe', remaining_quantity: 'Ingano isigaye', buyer: 'Umuguzi',
 });
 Object.assign(LABELS.fr, {
   production_mode: 'Mode de production',
@@ -81,6 +87,9 @@ Object.assign(LABELS.fr, {
   production_location: 'Lieu de production',
   harvest_date: 'Date de récolte',
   notes: 'Notes',
+  reporting_period: 'Période de rapport', variety: 'Variété', production_category: 'Catégorie de production',
+  quality_grade: 'Qualité / grade', storage_location: 'Lieu de stockage', storage_quantity: 'Quantité stockée',
+  sold_quantity: 'Quantité vendue', remaining_quantity: 'Quantité restante', buyer: 'Acheteur',
 });
 
 const columnSet = (language, keys) => keys.map((key) => ({ key, label: LABELS[language][key] }));
@@ -186,8 +195,9 @@ const buildProduction = async (req, cooperativeId, language) => {
   return {
     columns: columnSet(language, [
       'production_mode', 'farmer', 'product', 'expected_production', 'quantity', 'unit',
-      'unit_price', 'total_value', 'season', 'production_location', 'harvest_date',
-      'status', 'notes', 'cooperative',
+      'unit_price', 'total_value', 'season', 'reporting_period', 'variety', 'production_category',
+      'production_location', 'harvest_date', 'quality_grade', 'storage_location', 'storage_quantity',
+      'sold_quantity', 'remaining_quantity', 'buyer', 'status', 'notes', 'cooperative',
     ]),
     rows: rows.map((row) => ({
       production_mode: row.production_mode,
@@ -198,8 +208,15 @@ const buildProduction = async (req, cooperativeId, language) => {
       expected_production: row.expected_production == null ? '' : Number(row.expected_production),
       quantity: Number(row.actual_harvest ?? row.quantity), unit: row.unit,
       unit_price: Number(row.unit_price), total_value: Number(row.total_amount), season: row.season || '',
+      reporting_period: row.reporting_period || '', variety: row.variety || '',
+      production_category: row.production_category || '',
       production_location: row.production_location || '',
       harvest_date: row.harvest_date || row.production_date,
+      quality_grade: row.quality_grade || '', storage_location: row.storage_location || '',
+      storage_quantity: row.storage_quantity == null ? '' : Number(row.storage_quantity),
+      sold_quantity: Number(row.sold_quantity || 0),
+      remaining_quantity: row.remaining_quantity == null ? '' : Number(row.remaining_quantity),
+      buyer: row.buyer || '',
       status: row.status,
       notes: row.notes || '',
       cooperative: row.cooperative?.name || '',
@@ -298,7 +315,7 @@ const download = async (req, res) => {
       ];
       const csv = `\uFEFF${csvRows.map((row) => row.map(safeCsvValue).join(',')).join('\r\n')}`;
       res.setHeader('Content-Type', 'text/csv; charset=utf-8');
-      res.setHeader('Content-Disposition', `attachment; filename="scfmp-${moduleName}-${new Date().toISOString().slice(0, 10)}.csv"`);
+      res.setHeader('Content-Disposition', `attachment; filename="agribridge-${moduleName}-${new Date().toISOString().slice(0, 10)}.csv"`);
       return res.status(200).send(csv);
     }
 

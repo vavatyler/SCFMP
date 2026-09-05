@@ -73,7 +73,7 @@ describe('document controller storage and organization isolation', () => {
     }, response);
 
     expect(models.Document.findAll).toHaveBeenCalledWith(expect.objectContaining({
-      where: { cooperative_id: 7, owner_type: 'member' },
+      where: { cooperative_id: 7, owner_type: 'member', archived_at: null },
     }));
     expect(response.statusCode).toBe(200);
   });
@@ -88,7 +88,7 @@ describe('document controller storage and organization isolation', () => {
     }, response);
 
     expect(models.Document.findAll).toHaveBeenCalledWith(expect.objectContaining({
-      where: { cooperative_id: 9 },
+      where: { cooperative_id: 9, archived_at: null },
     }));
   });
 
@@ -106,6 +106,49 @@ describe('document controller storage and organization isolation', () => {
     expect(storage.saveUploadedFile).not.toHaveBeenCalled();
     expect(models.Document.create).not.toHaveBeenCalled();
     expect(storage.unlinkIfPresent).toHaveBeenCalledWith(uploadedFile.path);
+  });
+
+  it('rejects document category and type combinations that do not match the organization type', async () => {
+    models.Member.findByPk.mockResolvedValue({ id: 11, cooperative_id: 7 });
+    models.Cooperative.findByPk.mockResolvedValue({ id: 7, organization_type: 'sme' });
+    const response = createResponse();
+
+    await controller.upload({
+      file: uploadedFile,
+      body: {
+        owner_type: 'member',
+        owner_id: '11',
+        title: 'Invalid SME document',
+        category: 'meetings',
+        document_type: 'general_assembly_minutes',
+      },
+      user: { id: 1, role: 'cooperative_manager', cooperative_id: 7 },
+    }, response);
+
+    expect(response.statusCode).toBe(400);
+    expect(response.body.code).toBe('DOCUMENT_CLASSIFICATION_INVALID');
+    expect(storage.saveUploadedFile).not.toHaveBeenCalled();
+    expect(models.Document.create).not.toHaveBeenCalled();
+    expect(storage.unlinkIfPresent).toHaveBeenCalledWith(uploadedFile.path);
+  });
+
+  it('prevents non-manager roles from creating documents they would be unable to access', async () => {
+    models.Member.findByPk.mockResolvedValue({ id: 11, cooperative_id: 7 });
+    models.Cooperative.findByPk.mockResolvedValue({ id: 7, organization_type: 'sme' });
+    const response = createResponse();
+
+    await controller.upload({
+      file: uploadedFile,
+      body: {
+        owner_type: 'member', owner_id: '11', title: 'Restricted file',
+        category: 'other', document_type: 'other', visibility: 'restricted',
+      },
+      user: { id: 2, role: 'field_officer', cooperative_id: 7 },
+    }, response);
+
+    expect(response.statusCode).toBe(403);
+    expect(storage.saveUploadedFile).not.toHaveBeenCalled();
+    expect(models.Document.create).not.toHaveBeenCalled();
   });
 
   it('saves existing metadata only after a private Blob upload succeeds', async () => {
@@ -134,7 +177,10 @@ describe('document controller storage and organization isolation', () => {
       uploaded_by: 5,
     }));
     expect(response.statusCode).toBe(201);
-    expect(response.body.data).toBe(document);
+    expect(response.body.data).toEqual(expect.objectContaining({
+      ...document,
+      document_status: 'active',
+    }));
   });
 
   it('returns a safe service-unavailable response for missing Blob configuration', async () => {

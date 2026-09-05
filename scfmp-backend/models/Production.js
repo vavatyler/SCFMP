@@ -23,6 +23,10 @@ module.exports = (sequelize) => {
         foreignKey: 'recorded_by',
         as: 'recordedByUser',
       });
+      Production.hasMany(models.ProductionContribution, {
+        foreignKey: 'production_id',
+        as: 'contributions',
+      });
     }
   }
 
@@ -70,6 +74,9 @@ module.exports = (sequelize) => {
         allowNull: true,
         validate: { min: 0.01 },
       },
+      reporting_period: DataTypes.STRING(50),
+      variety: DataTypes.STRING(100),
+      production_category: DataTypes.STRING(100),
       actual_harvest: {
         type: DataTypes.DECIMAL(14, 2),
         allowNull: false,
@@ -104,6 +111,25 @@ module.exports = (sequelize) => {
         allowNull: false,
       },
       production_location: DataTypes.STRING(255),
+      quality_grade: DataTypes.STRING(50),
+      storage_location: DataTypes.STRING(255),
+      storage_quantity: {
+        type: DataTypes.DECIMAL(14, 2),
+        allowNull: true,
+        validate: { min: 0 },
+      },
+      sold_quantity: {
+        type: DataTypes.DECIMAL(14, 2),
+        allowNull: false,
+        defaultValue: 0,
+        validate: { min: 0 },
+      },
+      remaining_quantity: {
+        type: DataTypes.DECIMAL(14, 2),
+        allowNull: true,
+        validate: { min: 0 },
+      },
+      buyer: DataTypes.STRING(150),
       notes: DataTypes.TEXT,
       recorded_by: {
         type: DataTypes.INTEGER,
@@ -122,8 +148,8 @@ module.exports = (sequelize) => {
               throw new Error('Individual production requires a farmer and cannot have a farmer group');
             }
           } else if (this.production_mode === 'group') {
-            if (!this.farmer_group_id || this.farmer_id) {
-              throw new Error('Group production requires a farmer group and cannot have a farmer');
+            if (this.farmer_id) {
+              throw new Error('Group production cannot have a primary farmer');
             }
           }
         },

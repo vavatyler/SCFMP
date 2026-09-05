@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import { useAuth } from './AuthContext';
 import { getCooperative, listCooperatives } from '../api/cooperatives';
 
@@ -58,8 +58,10 @@ export const CooperativeProvider = ({ children }) => {
   // What every page should spread into its API params:
   // - super_admin: whichever organization is currently selected (or {} if none exist yet)
   // - everyone else: {} — the backend already scopes them to their own cooperative automatically
-  const cooperativeScope =
-    isSuperAdmin && activeCooperativeId ? { cooperative_id: activeCooperativeId } : {};
+  const cooperativeScope = useMemo(
+    () => (isSuperAdmin && activeCooperativeId ? { cooperative_id: activeCooperativeId } : {}),
+    [activeCooperativeId, isSuperAdmin]
+  );
 
   const activeCooperative = cooperatives.find((c) => c.id === activeCooperativeId) || null;
 

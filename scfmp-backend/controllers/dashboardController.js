@@ -196,7 +196,7 @@ const exportCsv = async (req, res) => {
     const csv = rows.map((row) => row.map((cell) => `"${cell}"`).join(',')).join('\n');
 
     res.setHeader('Content-Type', 'text/csv');
-    res.setHeader('Content-Disposition', 'attachment; filename="scfmp-dashboard-summary.csv"');
+    res.setHeader('Content-Disposition', 'attachment; filename="agribridge-dashboard-summary.csv"');
     return res.status(200).send(csv);
   } catch (err) {
     return res.status(500).json({ success: false, message: err.message });

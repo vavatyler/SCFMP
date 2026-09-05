@@ -1,11 +1,14 @@
-# SCFMP System Support implementation
+# AgriBridge / SmartBridge Technologies Ltd implementation
 
 This repository now contains the support-document enhancements in the existing backend and frontend applications.
 
 ## Delivered capabilities
 
 - Reporting API for members, farmers, production, finance, and inventory with cooperative/farmer authorization, filters, localized headings, JSON data, and CSV download.
-- Frontend report toolbar for CSV, real `.xlsx`, paginated PDF, and print output. Reports include SCFMP branding, report/cooperative names, generated date, generator, record count, and PDF page numbers.
+- Frontend report toolbar for CSV, real `.xlsx`, paginated PDF, and print output. Reports include AgriBridge branding, report/organization names, generated date, generator, record count, and PDF page numbers.
+- Individual, farmer-group, and organization-level production with optional same-unit farmer contributions, storage/sales metadata, and organization-scoped analytics.
+- Organization-aware document classification, metadata editing, file replacement, archive/restore, expiry states, real statistics, and private authenticated downloads through the existing storage service.
+- Data-driven Team profiles and organization-owned subscription readiness with monthly/yearly plan configuration and no fabricated personnel, billing provider, prices, or invoices.
 - Production records now carry direct `cooperative_id`, `farmer_id`, `product_id`, `season`, `status`, and `production_date` fields. A cooperative product catalog maintains compatibility with the existing `product_name` column.
 - Production filters, summary cards, monthly trends, product totals, farmer performance, cooperative comparison data, and paginated records.
 - English (`en`), Kinyarwanda (`rw`), and French (`fr`) with a persistent user preference and local fallback.
@@ -37,6 +40,13 @@ The new migrations are:
 3. `20260811000015-create-audit-logs.js`
 4. `20260811000016-create-refresh-tokens.js`
 5. `20260817000017-add-organization-types-and-farmer-locations.js`
+6. `20260825000018-add-member-address-hierarchy.js`
+7. `20260825000019-add-farmer-size-unit.js`
+8. `20260826000020-add-group-production.js`
+9. `20260827000021-deduplicate-production-farmer-foreign-key.js`
+10. `20260905000022-expand-production-details-and-contributions.js`
+11. `20260905000023-expand-document-metadata.js`
+12. `20260905000024-create-team-and-subscriptions.js`
 
 Migration 14 backfills every existing production row's cooperative through `farmer -> member`, creates a cooperative product from its legacy `product_name`, assigns `product_id`, and then applies non-null constraints.
 
@@ -70,7 +80,7 @@ SMTP_HOST=<smtp host>
 SMTP_PORT=587
 SMTP_USER=<smtp user>
 SMTP_PASS=<smtp app password>
-SMTP_FROM=SCFMP <no-reply@your-domain>
+SMTP_FROM=AgriBridge <no-reply@your-domain>
 RESET_TOKEN_EXPIRES_MINUTES=30
 DOCUMENT_STORAGE=blob
 ```
@@ -82,7 +92,7 @@ Do not set `VITE_API_URL` for the combined Vercel project; the frontend intentio
 ## Vercel deployment
 
 1. Provision a persistent managed MySQL database. Vercel Functions do not provide a persistent local database.
-2. Create or connect a private Vercel Blob store in the same Vercel project and select the required Production, Preview, and Development environments. New connections supply `BLOB_STORE_ID` and use Vercel's automatically rotating OIDC identity; legacy token-based connections supply `BLOB_READ_WRITE_TOKEN`. SCFMP stores documents as private blobs and streams them only through the authenticated download endpoint.
+2. Create or connect a private Vercel Blob store in the same Vercel project and select the required Production, Preview, and Development environments. New connections supply `BLOB_STORE_ID` and use Vercel's automatically rotating OIDC identity; legacy token-based connections supply `BLOB_READ_WRITE_TOKEN`. AgriBridge stores documents as private blobs and streams them only through the authenticated download endpoint.
 3. Set the environment variables above.
 4. Run migrations once against that production database from a trusted terminal with the same database environment variables.
 5. Import the repository in Vercel with the repository root as Root Directory. Leave the Framework Preset on Vite/Other (do not select the experimental Services preset). The checked-in `vercel.json` builds the Vite frontend and routes `/api/*` to the supported `api/index.js` Express function.

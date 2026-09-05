@@ -18,7 +18,7 @@ const ReportActions = ({ moduleName, filters = {} }) => {
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.href = url;
-        link.download = `scfmp-${moduleName}-${new Date().toISOString().slice(0, 10)}.csv`;
+        link.download = `agribridge-${moduleName}-${new Date().toISOString().slice(0, 10)}.csv`;
         link.click();
         URL.revokeObjectURL(url);
       } else {

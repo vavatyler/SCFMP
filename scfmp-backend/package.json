@@ -1,7 +1,7 @@
 {
   "name": "scfmp-backend",
   "version": "1.0.0",
-  "description": "Smart Cooperative & Farmer Management Platform - Backend API",
+  "description": "AgriBridge by SmartBridge Technologies Ltd - Backend API",
   "main": "server.js",
   "type": "commonjs",
   "scripts": {

@@ -189,6 +189,9 @@ describe('Task 17 authentication, RBAC, and organization isolation', () => {
       cooperative_id: organizationA.id,
       owner_type: 'member',
       owner_id: memberA.id,
+      title: 'Organization A document',
+      category: 'other',
+      document_type: 'other',
       original_name: 'alpha.pdf',
       stored_name: 'alpha.pdf',
       file_path: 'https://private.example.test/alpha.pdf',
@@ -197,6 +200,9 @@ describe('Task 17 authentication, RBAC, and organization isolation', () => {
       cooperative_id: organizationB.id,
       owner_type: 'member',
       owner_id: memberB.id,
+      title: 'Organization B document',
+      category: 'other',
+      document_type: 'other',
       original_name: 'beta.pdf',
       stored_name: 'beta.pdf',
       file_path: 'https://private.example.test/beta.pdf',
@@ -215,6 +221,9 @@ describe('Task 17 authentication, RBAC, and organization isolation', () => {
     app.use('/api/inventory', require('../routes/inventoryRoutes'));
     app.use('/api/reports', require('../routes/reportRoutes'));
     app.use('/api/documents', require('../routes/documentRoutes'));
+    app.use('/api/farmer-groups', require('../routes/farmerGroupRoutes'));
+    app.use('/api/team-members', require('../routes/teamMemberRoutes'));
+    app.use('/api/subscriptions', require('../routes/subscriptionRoutes'));
   });
 
   afterAll(async () => {
@@ -269,6 +278,9 @@ describe('Task 17 authentication, RBAC, and organization isolation', () => {
     '/api/inventory',
     '/api/reports/members',
     '/api/documents',
+    '/api/farmer-groups',
+    '/api/team-members',
+    '/api/subscriptions',
   ])('rejects unauthenticated access to %s', async (path) => {
     await request(app).get(path).expect(401);
   });
@@ -688,7 +700,7 @@ describe('Task 17 authentication, RBAC, and organization isolation', () => {
         season: '2026B',
         production_location: 'Nyamagabe',
       })
-      .expect(422);
+      .expect(201);
 
     const managerGroupProduction = await withBearer(
       request(app).post('/api/production'),
@@ -760,6 +772,62 @@ describe('Task 17 authentication, RBAC, and organization isolation', () => {
       total_expected_production: 15,
       total_actual_harvest: 12.5,
     }));
+
+    await withBearer(request(app).post('/api/production'), managerToken)
+      .send({
+        production_mode: 'group',
+        farmer_group_id: groupA.id,
+        product_id: productA.id,
+        actual_harvest: 99,
+        harvest_date: '2026-08-23',
+        unit: 'kg',
+        contributions: [{ farmer_id: farmerB.id, quantity: 3, unit: 'kg' }],
+      })
+      .expect(400);
+
+    const contributedProduction = await withBearer(request(app).post('/api/production'), managerToken)
+      .send({
+        production_mode: 'group',
+        farmer_group_id: groupA.id,
+        product_id: productA.id,
+        actual_harvest: 99,
+        harvest_date: '2026-08-23',
+        unit: 'kg',
+        contributions: [{ farmer_id: farmerA.id, quantity: 3.25, unit: 'kg' }],
+      })
+      .expect(201);
+    expect(contributedProduction.body.data).toEqual(expect.objectContaining({
+      cooperative_id: organizationA.id,
+      production_mode: 'group',
+      actual_harvest: 3.25,
+      quantity: 3.25,
+      contributions: [expect.objectContaining({ farmer_id: farmerA.id, quantity: 3.25, unit: 'kg' })],
+    }));
+    await withBearer(
+      request(app).delete(`/api/production/${contributedProduction.body.data.id}`),
+      managerToken
+    ).expect(200);
+
+    const cooperativeProduction = await withBearer(request(app).post('/api/production'), managerToken)
+      .send({
+        production_mode: 'group',
+        product_id: productA.id,
+        actual_harvest: 8,
+        production_date: '2026-08-24',
+        unit: 'kg',
+      })
+      .expect(201);
+    expect(cooperativeProduction.body.data).toEqual(expect.objectContaining({
+      cooperative_id: organizationA.id,
+      production_mode: 'group',
+      farmer_id: null,
+      farmer_group_id: null,
+      actual_harvest: 8,
+    }));
+    await withBearer(
+      request(app).delete(`/api/production/${cooperativeProduction.body.data.id}`),
+      managerToken
+    ).expect(200);
 
     const protectedOwnerUpdate = await withBearer(
       request(app).put(`/api/production/${managerGroupProduction.body.data.id}`),
@@ -1154,5 +1222,76 @@ describe('Task 17 authentication, RBAC, and organization isolation', () => {
       request(app).delete(`/api/transactions/${managerCreate.body.data.id}`),
       managerToken
     ).expect(200);
+  });
+
+  it('scopes subscriptions and Farmer Group administration while keeping Team administration Super Admin-only', async () => {
+    const managerToken = accessTokenFor(managerA);
+    const superToken = accessTokenFor(superAdmin);
+    const farmerToken = accessTokenFor(farmerUserA);
+    await models.Subscription.create({
+      cooperative_id: organizationA.id,
+      plan_id: 'basic',
+      status: 'active',
+      billing_cycle: 'monthly',
+      payment_status: 'not_required',
+    });
+    await models.Subscription.create({
+      cooperative_id: organizationB.id,
+      plan_id: 'professional',
+      status: 'active',
+      billing_cycle: 'yearly',
+      payment_status: 'not_required',
+    });
+
+    const managerSubscription = await withBearer(
+      request(app).get('/api/subscriptions').query({ cooperative_id: organizationB.id }),
+      managerToken
+    ).expect(200);
+    expect(managerSubscription.body.data.current).toEqual(expect.objectContaining({
+      cooperative_id: organizationA.id,
+      plan_id: 'basic',
+    }));
+    expect(managerSubscription.body.data.plans.every((plan) => (
+      plan.prices.monthly === null && plan.prices.yearly === null
+    ))).toBe(true);
+
+    const farmerSubscription = await withBearer(request(app).get('/api/subscriptions'), farmerToken).expect(200);
+    expect(farmerSubscription.body.data.current.cooperative_id).toBe(organizationA.id);
+    const superSubscription = await withBearer(
+      request(app).get('/api/subscriptions').query({ cooperative_id: organizationB.id }),
+      superToken
+    ).expect(200);
+    expect(superSubscription.body.data.current.plan_id).toBe('professional');
+
+    await withBearer(request(app).post('/api/team-members'), managerToken)
+      .send({ full_name: 'Not allowed', position: 'Manager' })
+      .expect(403);
+    const teamMember = await withBearer(request(app).post('/api/team-members'), superToken)
+      .send({ full_name: 'Configured Person', position: 'Configured Role', display_order: 2 })
+      .expect(201);
+    await withBearer(request(app).put(`/api/team-members/${teamMember.body.data.id}`), superToken)
+      .send({ status: 'inactive' })
+      .expect(200);
+    const managerTeam = await withBearer(request(app).get('/api/team-members'), managerToken).expect(200);
+    expect(managerTeam.body.data).toEqual([]);
+    const superTeam = await withBearer(
+      request(app).get('/api/team-members').query({ include_inactive: true }),
+      superToken
+    ).expect(200);
+    expect(superTeam.body.data).toEqual([expect.objectContaining({ full_name: 'Configured Person', status: 'inactive' })]);
+    await withBearer(request(app).delete(`/api/team-members/${teamMember.body.data.id}`), superToken).expect(200);
+
+    const group = await withBearer(request(app).post('/api/farmer-groups'), managerToken)
+      .send({ cooperative_id: organizationB.id, name: 'Scoped API Group', location: 'Gasaka' })
+      .expect(201);
+    expect(group.body.data.cooperative_id).toBe(organizationA.id);
+    const groups = await withBearer(
+      request(app).get('/api/farmer-groups').query({ cooperative_id: organizationB.id }),
+      managerToken
+    ).expect(200);
+    expect(groups.body.data).toEqual(expect.arrayContaining([
+      expect.objectContaining({ id: group.body.data.id, cooperative_id: organizationA.id }),
+    ]));
+    await withBearer(request(app).delete(`/api/farmer-groups/${group.body.data.id}`), managerToken).expect(200);
   });
 });

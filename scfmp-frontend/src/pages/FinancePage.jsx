@@ -510,7 +510,7 @@ const FinancePage = () => {
             </select>
           </div>
 
-          <div className="mb-4 grid grid-cols-2 gap-3">
+          <div className="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div>
               <label className="mb-1.5 block text-xs font-medium uppercase tracking-wide text-ink-soft">
                 Amount (RWF)
@@ -576,7 +576,7 @@ const FinancePage = () => {
             </select>
           </div>
 
-          <div className="mb-4 grid grid-cols-2 gap-3">
+          <div className="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div>
               <label className="mb-1.5 block text-xs font-medium uppercase tracking-wide text-ink-soft">
                 Principal (RWF)
@@ -604,7 +604,7 @@ const FinancePage = () => {
             </div>
           </div>
 
-          <div className="mb-6 grid grid-cols-2 gap-3">
+          <div className="mb-6 grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div>
               <label className="mb-1.5 block text-xs font-medium uppercase tracking-wide text-ink-soft">
                 Issue date
@@ -657,7 +657,7 @@ const FinancePage = () => {
               </p>
             </div>
 
-            <div className="mb-4 grid grid-cols-2 gap-3">
+            <div className="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
               <div>
                 <label className="mb-1.5 block text-xs font-medium uppercase tracking-wide text-ink-soft">
                   Amount (RWF)

@@ -50,7 +50,7 @@ const en = {
     signingIn: 'Signing in…', sendReset: 'Send reset link', sending: 'Sending…', backToLogin: 'Back to login',
     chooseReset: 'How would you like to reset it?', chooseResetHint: 'Choose the option that works best for you.',
     resetViaEmail: 'Reset via email', resetEmailHint: 'Get a secure reset link sent to your registered email address.',
-    askAdmin: 'Ask your organization admin', askAdminHint: 'Your organization manager or Smart Digital Solutions admin can reset it for you directly.',
+    askAdmin: 'Ask your organization admin', askAdminHint: 'Your organization manager or SmartBridge Technologies Ltd administrator can reset it for you directly.',
     enterEmail: "Enter your account email and we'll send you a secure reset link.", back: 'Back',
     chooseNew: 'Choose a new password', passwordReset: 'Password reset', resetSuccess: 'Your password has been updated. You can now log in.',
     goToLogin: 'Go to login', invalidResetLink: 'This reset link is invalid or incomplete. Please request a new one.',
@@ -108,7 +108,7 @@ const rw = {
     signingIn: 'Birimo kwinjira…', sendReset: 'Ohereza ihuza', sending: 'Birimo kohereza…', backToLogin: 'Subira aho binjirira',
     chooseReset: 'Ushaka guhindura ijambobanga ute?', chooseResetHint: 'Hitamo uburyo bukubereye.',
     resetViaEmail: 'Hindura ukoresheje imeyili', resetEmailHint: 'Oherezwa ihuza ryizewe kuri imeyili wandikishije.',
-    askAdmin: 'Saba umuyobozi w’umuryango', askAdminHint: 'Umuyobozi w’umuryango cyangwa umuyobozi wa Smart Digital Solutions ashobora kuriguhindurira.',
+    askAdmin: 'Saba umuyobozi w’umuryango', askAdminHint: 'Umuyobozi w’umuryango cyangwa umuyobozi wa SmartBridge Technologies Ltd ashobora kuriguhindurira.',
     enterEmail: 'Andika imeyili ya konti yawe twohereze ihuza ryizewe.', back: 'Subira inyuma',
     chooseNew: 'Hitamo ijambobanga rishya', passwordReset: 'Ijambobanga ryahinduwe', resetSuccess: 'Ijambobanga ryawe ryahinduwe. Ubu ushobora kwinjira.',
     goToLogin: 'Jya kwinjira', invalidResetLink: 'Iri huza ntiryuzuye cyangwa ntirikora. Saba irindi.',
@@ -166,7 +166,7 @@ const fr = {
     signingIn: 'Connexion…', sendReset: 'Envoyer le lien', sending: 'Envoi…', backToLogin: 'Retour à la connexion',
     chooseReset: 'Comment souhaitez-vous le réinitialiser ?', chooseResetHint: 'Choisissez l’option qui vous convient.',
     resetViaEmail: 'Réinitialiser par e-mail', resetEmailHint: 'Recevez un lien sécurisé à votre adresse enregistrée.',
-    askAdmin: 'Demander à l’administrateur de votre organisation', askAdminHint: 'Le gestionnaire de votre organisation ou un administrateur de Smart Digital Solutions peut le réinitialiser.',
+    askAdmin: 'Demander à l’administrateur de votre organisation', askAdminHint: 'Le gestionnaire de votre organisation ou un administrateur de SmartBridge Technologies Ltd peut le réinitialiser.',
     enterEmail: 'Saisissez votre e-mail et nous vous enverrons un lien sécurisé.', back: 'Retour',
     chooseNew: 'Choisissez un nouveau mot de passe', passwordReset: 'Mot de passe réinitialisé', resetSuccess: 'Votre mot de passe a été mis à jour. Vous pouvez vous connecter.',
     goToLogin: 'Aller à la connexion', invalidResetLink: 'Ce lien est invalide ou incomplet. Demandez-en un nouveau.',
@@ -229,8 +229,8 @@ Object.assign(en.modules, {
 });
 Object.assign(en.auth, {
   askAdmin: 'Ask your organization admin',
-  askAdminHint: 'Your organization manager or Smart Digital Solutions admin can reset it for you directly.',
-  adminResetInstructions: 'Contact your organization manager or Smart Digital Solutions super admin. From the Team page, they can reset your password and share a new temporary one with you directly.',
+  askAdminHint: 'Your organization manager or SmartBridge Technologies Ltd administrator can reset it for you directly.',
+  adminResetInstructions: 'Contact your organization manager or SmartBridge Technologies Ltd super admin. From Staff Accounts, they can reset your password and share a new temporary one with you directly.',
 });
 Object.assign(en.production, {
   productionMode: 'Production mode', individual: 'Individual', group: 'Group', producer: 'Producer',
@@ -312,7 +312,7 @@ en.farmers.viewMembers = 'View members';
 en.farmers.validation.memberRequired = 'Select an existing member.';
 en.farmers.validation.alreadyExists = 'The selected member already has a Farmer Profile.';
 en.farmers.empty = 'No Farmer Profiles yet. Add one for an existing member.';
-en.contact = { title: 'Contact', subtitle: 'Contact Smart Digital Solutions.', email: 'Email', emailAction: 'Send Email', phone: 'Phone', phoneAction: 'Call Us', whatsapp: 'WhatsApp', whatsappAction: 'Chat on WhatsApp' };
+en.contact = { title: 'Contact', subtitle: 'Contact SmartBridge Technologies Ltd.', email: 'Email', emailAction: 'Send Email', phone: 'Phone', phoneAction: 'Call Us', whatsapp: 'WhatsApp', whatsappAction: 'Chat on WhatsApp' };
 
 Object.assign(rw.common, {
   cooperatives: 'Imiryango', organizations: 'Imiryango', contact: 'Twandikire', view: 'Reba',
@@ -329,8 +329,8 @@ Object.assign(rw.modules, {
 });
 Object.assign(rw.auth, {
   askAdmin: 'Saba umuyobozi w’umuryango',
-  askAdminHint: 'Umuyobozi w’umuryango cyangwa umuyobozi wa Smart Digital Solutions ashobora kuriguhindurira.',
-  adminResetInstructions: 'Vugana n’umuyobozi w’umuryango wawe cyangwa umuyobozi mukuru wa Smart Digital Solutions. Ku rupapuro rw’Abakozi bashobora kuguhindurira ijambobanga bakaguha iry’agateganyo.',
+  askAdminHint: 'Umuyobozi w’umuryango cyangwa umuyobozi wa SmartBridge Technologies Ltd ashobora kuriguhindurira.',
+  adminResetInstructions: 'Vugana n’umuyobozi w’umuryango wawe cyangwa umuyobozi mukuru wa SmartBridge Technologies Ltd. Kuri Konti z’Abakozi bashobora kuguhindurira ijambobanga.',
 });
 Object.assign(rw.production, {
   productionMode: 'Uburyo bw’umusaruro', individual: 'Umuntu ku giti cye', group: 'Itsinda', producer: 'Uwatanze umusaruro',
@@ -409,7 +409,7 @@ rw.farmers.viewMembers = 'Reba abanyamuryango';
 rw.farmers.validation.memberRequired = 'Hitamo umunyamuryango usanzwe.';
 rw.farmers.validation.alreadyExists = 'Umunyamuryango wahisemo asanzwe afite umwirondoro w’umuhinzi.';
 rw.farmers.empty = 'Nta myirondoro y’abahinzi iraboneka. Ongeraho umwirondoro ku munyamuryango usanzwe.';
-rw.contact = { title: 'Twandikire', subtitle: 'Vugana na Smart Digital Solutions.', email: 'Imeyili', emailAction: 'Ohereza Imeyili', phone: 'Telefone', phoneAction: 'Duhamagare', whatsapp: 'WhatsApp', whatsappAction: 'Vugana natwe kuri WhatsApp' };
+rw.contact = { title: 'Twandikire', subtitle: 'Vugana na SmartBridge Technologies Ltd.', email: 'Imeyili', emailAction: 'Ohereza Imeyili', phone: 'Telefone', phoneAction: 'Duhamagare', whatsapp: 'WhatsApp', whatsappAction: 'Vugana natwe kuri WhatsApp' };
 
 Object.assign(fr.common, {
   cooperatives: 'Organisations', organizations: 'Organisations', contact: 'Contact', view: 'Voir',
@@ -426,8 +426,8 @@ Object.assign(fr.modules, {
 });
 Object.assign(fr.auth, {
   askAdmin: 'Demander à l’administrateur de votre organisation',
-  askAdminHint: 'Le gestionnaire de votre organisation ou un administrateur de Smart Digital Solutions peut le réinitialiser.',
-  adminResetInstructions: 'Contactez le gestionnaire de votre organisation ou le super administrateur de Smart Digital Solutions. Depuis la page Équipe, il peut réinitialiser votre mot de passe et vous communiquer un mot de passe temporaire.',
+  askAdminHint: 'Le gestionnaire de votre organisation ou un administrateur de SmartBridge Technologies Ltd peut le réinitialiser.',
+  adminResetInstructions: 'Contactez le gestionnaire de votre organisation ou le super administrateur de SmartBridge Technologies Ltd. Depuis Comptes du personnel, il peut réinitialiser votre mot de passe.',
 });
 Object.assign(fr.production, {
   productionMode: 'Mode de production', individual: 'Individuel', group: 'Groupe', producer: 'Producteur',
@@ -506,7 +506,197 @@ fr.farmers.viewMembers = 'Voir les membres';
 fr.farmers.validation.memberRequired = 'Sélectionnez un membre existant.';
 fr.farmers.validation.alreadyExists = 'Le membre sélectionné possède déjà un profil agricole.';
 fr.farmers.empty = 'Aucun profil agricole. Ajoutez-en un à un membre existant.';
-fr.contact = { title: 'Contact', subtitle: 'Contactez Smart Digital Solutions.', email: 'E-mail', emailAction: 'Envoyer un e-mail', phone: 'Téléphone', phoneAction: 'Nous appeler', whatsapp: 'WhatsApp', whatsappAction: 'Discuter sur WhatsApp' };
+fr.contact = { title: 'Contact', subtitle: 'Contactez SmartBridge Technologies Ltd.', email: 'E-mail', emailAction: 'Envoyer un e-mail', phone: 'Téléphone', phoneAction: 'Nous appeler', whatsapp: 'WhatsApp', whatsappAction: 'Discuter sur WhatsApp' };
+
+Object.assign(en.common, {
+  farmerGroups: 'Farmer Groups', individualProduction: 'Individual Production', groupProduction: 'Group / Cooperative Production',
+  documentCategories: 'Document Categories', expiringDocuments: 'Expiring Documents', reports: 'Reports',
+  staffAccounts: 'Staff Accounts', subscription: 'Subscription', settings: 'Settings', active: 'Active', inactive: 'Inactive',
+  pageNotFound: "This AgriBridge page doesn't exist.", backToDashboard: 'Back to AgriBridge dashboard',
+});
+Object.assign(rw.common, {
+  farmerGroups: 'Amatsinda y’Abahinzi', individualProduction: 'Umusaruro w’Umuhinzi', groupProduction: 'Umusaruro w’Itsinda / Umuryango',
+  documentCategories: 'Ibyiciro by’Inyandiko', expiringDocuments: 'Inyandiko Zigiye Kurangira', reports: 'Raporo',
+  staffAccounts: 'Konti z’Abakozi', subscription: 'Ifatabuguzi', settings: 'Igenamiterere', active: 'Bikora', inactive: 'Ntibikora',
+  pageNotFound: 'Uru rupapuro rwa AgriBridge ntirubaho.', backToDashboard: 'Subira ku rubuga rwa AgriBridge',
+});
+Object.assign(fr.common, {
+  farmerGroups: 'Groupements d’agriculteurs', individualProduction: 'Production individuelle', groupProduction: 'Production de groupe / organisation',
+  documentCategories: 'Catégories de documents', expiringDocuments: 'Documents arrivant à expiration', reports: 'Rapports',
+  staffAccounts: 'Comptes du personnel', subscription: 'Abonnement', settings: 'Paramètres', active: 'Actif', inactive: 'Inactif',
+  pageNotFound: "Cette page AgriBridge n’existe pas.", backToDashboard: 'Retour au tableau de bord AgriBridge',
+});
+
+en.branding = { productTagline: 'Cooperative and farmer management, connected.' };
+rw.branding = { productTagline: 'Imicungire ihuza imiryango n’abahinzi.' };
+fr.branding = { productTagline: 'La gestion connectée des organisations et des agriculteurs.' };
+en.modules.staffSubtitle = 'Staff and farmer user accounts for your organization.';
+rw.modules.staffSubtitle = 'Konti z’abakozi n’abahinzi b’umuryango wawe.';
+fr.modules.staffSubtitle = 'Comptes du personnel et des agriculteurs de votre organisation.';
+
+Object.assign(en.production, {
+  cooperativeLevel: 'Organization-level production (no group)', groupPrimaryFarmerError: 'Group production cannot have a primary farmer.',
+  variety: 'Variety', reportingPeriod: 'Reporting period', productionCategory: 'Production category', qualityGrade: 'Quality / grade',
+  contributingFarmers: 'Contributing farmers', contributionHint: 'Optional. Automatic totals require every contribution to use the production unit.',
+  addFarmer: 'Add farmer', noContributions: 'No farmer contributions added.', contributionQuantity: 'Contribution quantity', contributionTotal: 'Contribution total',
+  storageAndSales: 'Storage and sales', storageLocation: 'Storage location', storageQuantity: 'Storage quantity', soldQuantity: 'Sold quantity', remainingQuantity: 'Remaining quantity', buyer: 'Buyer',
+});
+Object.assign(rw.production, {
+  cooperativeLevel: 'Umusaruro w’umuryango (nta tsinda)', groupPrimaryFarmerError: 'Umusaruro w’itsinda ntugomba kugira umuhinzi umwe w’ibanze.',
+  variety: 'Ubwoko bwihariye', reportingPeriod: 'Igihe cya raporo', productionCategory: 'Icyiciro cy’umusaruro', qualityGrade: 'Ubwiza / urwego',
+  contributingFarmers: 'Abahinzi batanze umusaruro', contributionHint: 'Si ngombwa. Igiteranyo cyikora gusa iyo bose bakoresheje igipimo kimwe n’umusaruro.',
+  addFarmer: 'Ongeraho umuhinzi', noContributions: 'Nta musanzu w’abahinzi urongerwamo.', contributionQuantity: 'Ingano y’umusanzu', contributionTotal: 'Igiteranyo cy’imisanzu',
+  storageAndSales: 'Ububiko n’igurisha', storageLocation: 'Aho bibitswe', storageQuantity: 'Ingano ibitswe', soldQuantity: 'Ingano yagurishijwe', remainingQuantity: 'Ingano isigaye', buyer: 'Umuguzi',
+});
+Object.assign(fr.production, {
+  cooperativeLevel: 'Production de l’organisation (sans groupe)', groupPrimaryFarmerError: 'La production de groupe ne peut pas avoir un agriculteur principal.',
+  variety: 'Variété', reportingPeriod: 'Période de rapport', productionCategory: 'Catégorie de production', qualityGrade: 'Qualité / grade',
+  contributingFarmers: 'Agriculteurs contributeurs', contributionHint: 'Facultatif. Le total automatique exige la même unité que la production.',
+  addFarmer: 'Ajouter un agriculteur', noContributions: 'Aucune contribution ajoutée.', contributionQuantity: 'Quantité contribuée', contributionTotal: 'Total des contributions',
+  storageAndSales: 'Stockage et ventes', storageLocation: 'Lieu de stockage', storageQuantity: 'Quantité stockée', soldQuantity: 'Quantité vendue', remainingQuantity: 'Quantité restante', buyer: 'Acheteur',
+});
+
+en.farmerGroups = {
+  title: 'Farmer Groups', subtitle: 'Organization-owned groups for collective production.', add: 'Add farmer group', edit: 'Edit farmer group',
+  name: 'Group name', location: 'Location', empty: 'No farmer groups have been configured.', loadError: 'Could not load farmer groups.',
+  saveError: 'Could not save this farmer group.', deleteConfirm: 'Delete {{name}}?', deleteError: 'Could not delete this farmer group.',
+};
+rw.farmerGroups = {
+  title: 'Amatsinda y’Abahinzi', subtitle: 'Amatsinda y’umuryango akoreshwa mu musaruro rusange.', add: 'Ongeraho itsinda', edit: 'Hindura itsinda',
+  name: 'Izina ry’itsinda', location: 'Aho riherereye', empty: 'Nta tsinda ry’abahinzi rirashyirwaho.', loadError: 'Ntibyashobotse kubona amatsinda.',
+  saveError: 'Ntibyashobotse kubika itsinda.', deleteConfirm: 'Siba {{name}}?', deleteError: 'Ntibyashobotse gusiba itsinda.',
+};
+fr.farmerGroups = {
+  title: 'Groupements d’agriculteurs', subtitle: 'Groupes appartenant à l’organisation pour la production collective.', add: 'Ajouter un groupement', edit: 'Modifier le groupement',
+  name: 'Nom du groupe', location: 'Emplacement', empty: 'Aucun groupement configuré.', loadError: 'Impossible de charger les groupements.',
+  saveError: 'Impossible d’enregistrer ce groupement.', deleteConfirm: 'Supprimer {{name}} ?', deleteError: 'Impossible de supprimer ce groupement.',
+};
+
+en.team = {
+  title: 'TEAM', subtitle: 'Meet the Team Behind SmartBridge Technologies', add: 'Add member', edit: 'Edit member',
+  emptyTitle: 'No team members configured', emptyBody: 'Real names, biographies, photos, and contact details have not been provided. A Super Admin can add verified personnel without fabricated information.',
+  fullName: 'Full name', position: 'Position', biography: 'Short biography', responsibilities: 'Responsibilities', skills: 'Skills / expertise',
+  photoUrl: 'Profile photo URL', email: 'Email', displayOrder: 'Display order', onePerLine: 'One item per line', loadError: 'Could not load team members.',
+  saveError: 'Could not save this team member.', deleteConfirm: 'Delete {{name}}?', deleteError: 'Could not delete this team member.',
+};
+rw.team = {
+  title: 'ITSINDA', subtitle: 'Menya Itsinda rya SmartBridge Technologies', add: 'Ongeraho umuntu', edit: 'Hindura umuntu',
+  emptyTitle: 'Nta bagize itsinda barashyirwaho', emptyBody: 'Amazina nyayo, imyirondoro, amafoto n’aho kubariza ntibiratangazwa. Umuyobozi mukuru ashobora kongeramo amakuru yemejwe atabanje guhimba.',
+  fullName: 'Amazina yose', position: 'Umwanya', biography: 'Umwirondoro mugufi', responsibilities: 'Inshingano', skills: 'Ubumenyi / ubuhanga',
+  photoUrl: 'Ihuza ry’ifoto', email: 'Imeyili', displayOrder: 'Uko bakurikirana', onePerLine: 'Kimwe kuri buri murongo', loadError: 'Ntibyashobotse kubona abagize itsinda.',
+  saveError: 'Ntibyashobotse kubika ugize itsinda.', deleteConfirm: 'Siba {{name}}?', deleteError: 'Ntibyashobotse gusiba ugize itsinda.',
+};
+fr.team = {
+  title: 'ÉQUIPE', subtitle: 'Découvrez l’équipe derrière SmartBridge Technologies', add: 'Ajouter un membre', edit: 'Modifier le membre',
+  emptyTitle: 'Aucun membre configuré', emptyBody: 'Les noms, biographies, photos et coordonnées réels n’ont pas été fournis. Un Super Admin peut ajouter des informations vérifiées sans en inventer.',
+  fullName: 'Nom complet', position: 'Poste', biography: 'Courte biographie', responsibilities: 'Responsabilités', skills: 'Compétences / expertise',
+  photoUrl: 'URL de la photo', email: 'E-mail', displayOrder: 'Ordre d’affichage', onePerLine: 'Un élément par ligne', loadError: 'Impossible de charger l’équipe.',
+  saveError: 'Impossible d’enregistrer ce membre.', deleteConfirm: 'Supprimer {{name}} ?', deleteError: 'Impossible de supprimer ce membre.',
+};
+
+en.subscription = {
+  title: 'Subscription / Plans', subtitle: 'Review plan options and billing readiness for your organization.', loading: 'Loading subscription…', loadError: 'Could not load subscription information.',
+  current: 'Current subscription', plan: 'Plan', billingCycle: 'Billing cycle', monthly: 'Monthly', yearly: 'Yearly', nextBilling: 'Next billing date', renewal: 'Renewal', ends: 'Ends after current period', paymentStatus: 'Payment status',
+  noSubscription: 'No subscription is configured', noSubscriptionBody: 'Your organization has no billing record yet. Existing access is unchanged.', available: 'Available plans', pricingPending: 'Business pricing has not been finalized; no monetary values are shown.',
+  contactPricing: 'Contact us for pricing', yearlyGuidance: 'Designed for a future {{minimum_percent}}–{{maximum_percent}}% annual discount.', configurable: 'Feature access can be configured centrally', organizationReady: 'Organization-owned subscription architecture', currentBadge: 'Current plan', upgrade: 'Request upgrade', downgrade: 'Request downgrade',
+  requestBody: 'Please contact me about the {{plan}} plan with {{cycle}} billing.', history: 'Subscription history', invoices: 'Invoices & receipts', noHistory: 'No subscription history is available.', noInvoices: 'No paid invoices or receipts exist.',
+  status: { trialing: 'Trialing', active: 'Active', past_due: 'Past due', cancelled: 'Cancelled', inactive: 'Inactive', not_required: 'Not required', pending: 'Pending', paid: 'Paid', failed: 'Failed', refunded: 'Refunded' },
+  planNames: { free_trial: 'Free / Trial', basic: 'Basic', professional: 'Professional', enterprise: 'Enterprise' },
+  planDescriptions: { free_trial: 'A starting plan for evaluating AgriBridge.', basic: 'Core organization, farmer, and record management.', professional: 'Expanded production, document, reporting, and team workflows.', enterprise: 'Configurable support for larger and multi-organization operations.' },
+};
+rw.subscription = {
+  title: 'Ifatabuguzi / Gahunda', subtitle: 'Reba gahunda n’uko kwishyura bizategurwa ku muryango wawe.', loading: 'Ifatabuguzi ririmo gutegurwa…', loadError: 'Ntibyashobotse kubona amakuru y’ifatabuguzi.',
+  current: 'Ifatabuguzi ririho', plan: 'Gahunda', billingCycle: 'Igihe cyo kwishyura', monthly: 'Buri kwezi', yearly: 'Buri mwaka', nextBilling: 'Itariki yo kwishyura ikurikira', renewal: 'Kuvugurura', ends: 'Rirangira iki gihe kirangiye', paymentStatus: 'Imimerere y’ubwishyu',
+  noSubscription: 'Nta fatabuguzi rirashyirwaho', noSubscriptionBody: 'Umuryango wawe nta nyandiko y’ubwishyu ufite. Uburenganzira busanzwe ntibuhindutse.', available: 'Gahunda ziboneka', pricingPending: 'Ibiciro ntibirarangira; nta mafaranga mpimbano yerekanwa.',
+  contactPricing: 'Twandikire ku biciro', yearlyGuidance: 'Yateguriwe ko buri mwaka hazagabanywa {{minimum_percent}}–{{maximum_percent}}%.', configurable: 'Uburenganzira bushobora kugenwa hamwe', organizationReady: 'Ifatabuguzi rifitwe n’umuryango', currentBadge: 'Gahunda iriho', upgrade: 'Saba gahunda yo hejuru', downgrade: 'Saba gahunda yo hasi',
+  requestBody: 'Mundebere amakuru ya gahunda {{plan}} yishyurwa {{cycle}}.', history: 'Amateka y’ifatabuguzi', invoices: 'Inyemezabuguzi n’inyemezabyishyuwe', noHistory: 'Nta mateka y’ifatabuguzi araboneka.', noInvoices: 'Nta nyemezabuguzi zishyuwe ziboneka.',
+  status: { trialing: 'Igerageza', active: 'Rikora', past_due: 'Ubwishyu bwaratinze', cancelled: 'Ryahagaritswe', inactive: 'Ntirikora', not_required: 'Ntibikenewe', pending: 'Bitegereje', paid: 'Byishyuwe', failed: 'Byanze', refunded: 'Byasubijwe' },
+  planNames: { free_trial: 'Ubuntu / Igerageza', basic: 'Ibanze', professional: 'Iy’umwuga', enterprise: 'Iy’ikigo kinini' },
+  planDescriptions: { free_trial: 'Gahunda yo gutangira kugerageza AgriBridge.', basic: 'Imicungire y’ibanze y’umuryango n’abahinzi.', professional: 'Umusaruro, inyandiko, raporo n’itsinda byagutse.', enterprise: 'Imicungire ihindurwa ku miryango minini cyangwa myinshi.' },
+};
+fr.subscription = {
+  title: 'Abonnement / Offres', subtitle: 'Consultez les offres et la préparation de la facturation de votre organisation.', loading: 'Chargement de l’abonnement…', loadError: 'Impossible de charger les informations d’abonnement.',
+  current: 'Abonnement actuel', plan: 'Offre', billingCycle: 'Cycle de facturation', monthly: 'Mensuel', yearly: 'Annuel', nextBilling: 'Prochaine facturation', renewal: 'Renouvellement', ends: 'Prend fin après la période actuelle', paymentStatus: 'Statut du paiement',
+  noSubscription: 'Aucun abonnement configuré', noSubscriptionBody: 'Votre organisation n’a pas encore de dossier de facturation. L’accès existant reste inchangé.', available: 'Offres disponibles', pricingPending: 'Les tarifs ne sont pas finalisés ; aucun montant fictif n’est affiché.',
+  contactPricing: 'Nous contacter pour le tarif', yearlyGuidance: 'Prévu pour une remise annuelle future de {{minimum_percent}} à {{maximum_percent}} %.', configurable: 'Accès aux fonctionnalités configurable', organizationReady: 'Architecture d’abonnement par organisation', currentBadge: 'Offre actuelle', upgrade: 'Demander une mise à niveau', downgrade: 'Demander une réduction',
+  requestBody: 'Veuillez me contacter au sujet de l’offre {{plan}} avec facturation {{cycle}}.', history: 'Historique des abonnements', invoices: 'Factures et reçus', noHistory: 'Aucun historique d’abonnement disponible.', noInvoices: 'Aucune facture ou reçu payé.',
+  status: { trialing: 'Essai', active: 'Actif', past_due: 'En retard', cancelled: 'Annulé', inactive: 'Inactif', not_required: 'Non requis', pending: 'En attente', paid: 'Payé', failed: 'Échoué', refunded: 'Remboursé' },
+  planNames: { free_trial: 'Gratuit / Essai', basic: 'Essentiel', professional: 'Professionnel', enterprise: 'Entreprise' },
+  planDescriptions: { free_trial: 'Une offre de départ pour évaluer AgriBridge.', basic: 'Gestion essentielle des organisations et agriculteurs.', professional: 'Production, documents, rapports et équipes étendus.', enterprise: 'Support configurable pour les grandes opérations multi-organisations.' },
+};
+
+en.settings = { title: 'AgriBridge Settings', subtitle: 'Manage your language and account security.', language: 'Language', languageHint: 'Choose the language used throughout AgriBridge.', security: 'Account security', securityHint: 'Update your password using the existing secure workflow.' };
+rw.settings = { title: 'Igenamiterere rya AgriBridge', subtitle: 'Gena ururimi n’umutekano wa konti.', language: 'Ururimi', languageHint: 'Hitamo ururimi rukoreshwa muri AgriBridge.', security: 'Umutekano wa konti', securityHint: 'Hindura ijambobanga ukoresheje uburyo busanzwe bwizewe.' };
+fr.settings = { title: 'Paramètres AgriBridge', subtitle: 'Gérez votre langue et la sécurité du compte.', language: 'Langue', languageHint: 'Choisissez la langue utilisée dans AgriBridge.', security: 'Sécurité du compte', securityHint: 'Modifiez votre mot de passe avec le processus sécurisé existant.' };
+Object.assign(en.reports, { hubTitle: 'AgriBridge Reports', hubSubtitle: 'Open a module to filter and export its live organization data.', openModule: 'Open the module and use its CSV, Excel, PDF, or print actions.', modules: { members: 'Member reports', production: 'Production reports', finance: 'Finance reports', inventory: 'Inventory reports', documents: 'Document records' } });
+Object.assign(rw.reports, { hubTitle: 'Raporo za AgriBridge', hubSubtitle: 'Fungura igice uyungurure kandi wohereze amakuru nyayo y’umuryango.', openModule: 'Fungura igice ukoreshe CSV, Excel, PDF cyangwa gucapa.', modules: { members: 'Raporo z’abanyamuryango', production: 'Raporo z’umusaruro', finance: 'Raporo z’imari', inventory: 'Raporo z’ububiko', documents: 'Inyandiko' } });
+Object.assign(fr.reports, { hubTitle: 'Rapports AgriBridge', hubSubtitle: 'Ouvrez un module pour filtrer et exporter ses données réelles.', openModule: 'Ouvrez le module et utilisez les actions CSV, Excel, PDF ou impression.', modules: { members: 'Rapports des membres', production: 'Rapports de production', finance: 'Rapports financiers', inventory: 'Rapports d’inventaire', documents: 'Registre documentaire' } });
+
+en.contact.subtitle = 'Contact SmartBridge Technologies Ltd.';
+rw.contact.subtitle = 'Vugana na SmartBridge Technologies Ltd.';
+fr.contact.subtitle = 'Contactez SmartBridge Technologies Ltd.';
+en.auth.askAdminHint = 'Your organization manager or SmartBridge Technologies Ltd administrator can reset it for you directly.';
+en.auth.adminResetInstructions = 'Contact your organization manager or SmartBridge Technologies Ltd super admin. From Staff Accounts, they can reset your password and share a temporary one securely.';
+rw.auth.askAdminHint = 'Umuyobozi w’umuryango cyangwa umuyobozi wa SmartBridge Technologies Ltd ashobora kuriguhindurira.';
+rw.auth.adminResetInstructions = 'Vugana n’umuyobozi w’umuryango cyangwa umuyobozi mukuru wa SmartBridge Technologies Ltd. Kuri Konti z’Abakozi ashobora kuguhindurira ijambobanga.';
+fr.auth.askAdminHint = 'Le gestionnaire de votre organisation ou un administrateur de SmartBridge Technologies Ltd peut le réinitialiser.';
+fr.auth.adminResetInstructions = 'Contactez le gestionnaire de votre organisation ou le super administrateur de SmartBridge Technologies Ltd. Depuis Comptes du personnel, il peut réinitialiser votre mot de passe.';
+
+Object.assign(en.documents, {
+  title: 'Document Management', subtitle: 'Organize, protect, and monitor organization documents.', all: 'All Documents', categoriesTitle: 'Categories', expiring: 'Expiring Documents', add: 'Add Document',
+  totalDocuments: 'Total Documents', meetingDocuments: 'Meeting Documents', legalDocuments: 'Legal Documents', financialDocuments: 'Financial Documents', expiringSoon: 'Expiring Soon',
+  categoriesFor: 'Valid categories for {{type}}', search: 'Search title, file, description, or tags…', category: 'Document category', documentType: 'Document type',
+  documentDate: 'Document date', expiryDate: 'Expiry date', uploadedBy: 'Uploaded by', clearFilters: 'Clear filters', noExpiring: 'No documents are expiring soon.',
+  noCategoryResults: 'No documents match these category filters.', titleField: 'Document title', organizationOwner: 'Organization / owner', organization: 'Organization',
+  editMetadata: 'Edit metadata', replaceFile: 'Replace file', archive: 'Archive', restore: 'Restore', attachTo: 'Attach to', version: 'Version', tags: 'Tags',
+  tagsHint: 'Comma-separated tags', visibility: 'Visibility', notes: 'Notes', selectCategory: 'Select a category…', selectType: 'Select a document type…',
+  classificationRequired: 'Select a valid document category and type.', expiryAfterDate: 'Expiry date cannot be before the document date.', updated: 'Document metadata updated.', replaced: 'Document file replaced.',
+  replaceHint: 'Replace the file for “{{title}}” while preserving its metadata and ID.', archiveConfirm: 'Archive “{{name}}”?', restoreConfirm: 'Restore “{{name}}”?', actionError: 'Could not update this document.',
+  ownerTypes: { cooperative: 'Organization', member: 'Member', farmer: 'Farmer', loan: 'Loan' },
+  visibilityOptions: { organization: 'Organization users', restricted: 'Restricted roles' },
+  status: { active: 'Active', expiring_soon: 'Expiring soon', expired: 'Expired', archived: 'Archived' },
+  categories: { registration: 'Registration', governance: 'Governance', meetings: 'Meetings', membership: 'Membership', finance: 'Financial', strategy: 'Strategy & Planning', operations: 'Operations', legal: 'Legal & Compliance', people: 'People & Records', projects: 'Projects & Programs', education: 'Academic & School Records', other: 'Other' },
+});
+Object.assign(rw.documents, {
+  title: 'Imicungire y’Inyandiko', subtitle: 'Tegura, urinde kandi ukurikirane inyandiko z’umuryango.', all: 'Inyandiko Zose', categoriesTitle: 'Ibyiciro', expiring: 'Izigiye Kurangira', add: 'Ongeraho Inyandiko',
+  totalDocuments: 'Inyandiko Zose', meetingDocuments: 'Inyandiko z’Inama', legalDocuments: 'Inyandiko z’Amategeko', financialDocuments: 'Inyandiko z’Imari', expiringSoon: 'Izigiye Kurangira',
+  categoriesFor: 'Ibyiciro byemewe kuri {{type}}', search: 'Shakisha umutwe, dosiye, ibisobanuro cyangwa ibirango…', category: 'Icyiciro cy’inyandiko', documentType: 'Ubwoko bw’inyandiko',
+  documentDate: 'Itariki y’inyandiko', expiryDate: 'Itariki yo kurangira', uploadedBy: 'Yashyizweho na', clearFilters: 'Kuraho akayunguruzo', noExpiring: 'Nta nyandiko iri hafi kurangira.',
+  noCategoryResults: 'Nta nyandiko ihuye n’ibi byiciro.', titleField: 'Umutwe w’inyandiko', organizationOwner: 'Umuryango / nyirayo', organization: 'Umuryango',
+  editMetadata: 'Hindura amakuru', replaceFile: 'Simbuza dosiye', archive: 'Shyira mu bubiko', restore: 'Subiza', attachTo: 'Yomeke kuri', version: 'Verisiyo', tags: 'Ibirango',
+  tagsHint: 'Tandukanya ibirango n’akitso', visibility: 'Abayibona', notes: 'Ibisobanuro', selectCategory: 'Hitamo icyiciro…', selectType: 'Hitamo ubwoko bw’inyandiko…',
+  classificationRequired: 'Hitamo icyiciro n’ubwoko bw’inyandiko byemewe.', expiryAfterDate: 'Itariki yo kurangira ntishobora kubanziriza iy’inyandiko.', updated: 'Amakuru y’inyandiko yahinduwe.', replaced: 'Dosiye y’inyandiko yasimbujwe.',
+  replaceHint: 'Simbuza dosiye ya “{{title}}” udahinduye amakuru n’indangamuntu yayo.', archiveConfirm: 'Shyira “{{name}}” mu bubiko?', restoreConfirm: 'Subiza “{{name}}”?', actionError: 'Ntibyashobotse guhindura iyi nyandiko.',
+  ownerTypes: { cooperative: 'Umuryango', member: 'Umunyamuryango', farmer: 'Umuhinzi', loan: 'Inguzanyo' },
+  visibilityOptions: { organization: 'Abakoresha b’umuryango', restricted: 'Inshingano zihariye' },
+  status: { active: 'Irakora', expiring_soon: 'Igiye kurangira', expired: 'Yararangiye', archived: 'Mu bubiko' },
+  categories: { registration: 'Iyandikisha', governance: 'Imiyoborere', meetings: 'Inama', membership: 'Abanyamuryango', finance: 'Imari', strategy: 'Ingamba n’Igenamigambi', operations: 'Ibikorwa', legal: 'Amategeko n’Iyubahiriza', people: 'Abantu n’Inyandiko', projects: 'Imishinga na Porogaramu', education: 'Amashuri n’Amasomo', other: 'Ibindi' },
+});
+Object.assign(fr.documents, {
+  title: 'Gestion documentaire', subtitle: 'Organisez, protégez et suivez les documents de l’organisation.', all: 'Tous les documents', categoriesTitle: 'Catégories', expiring: 'Documents à expiration', add: 'Ajouter un document',
+  totalDocuments: 'Total des documents', meetingDocuments: 'Documents de réunion', legalDocuments: 'Documents juridiques', financialDocuments: 'Documents financiers', expiringSoon: 'Expire bientôt',
+  categoriesFor: 'Catégories valides pour {{type}}', search: 'Rechercher titre, fichier, description ou tags…', category: 'Catégorie', documentType: 'Type de document',
+  documentDate: 'Date du document', expiryDate: 'Date d’expiration', uploadedBy: 'Téléversé par', clearFilters: 'Effacer les filtres', noExpiring: 'Aucun document n’expire bientôt.',
+  noCategoryResults: 'Aucun document ne correspond à ces catégories.', titleField: 'Titre du document', organizationOwner: 'Organisation / propriétaire', organization: 'Organisation',
+  editMetadata: 'Modifier les métadonnées', replaceFile: 'Remplacer le fichier', archive: 'Archiver', restore: 'Restaurer', attachTo: 'Rattacher à', version: 'Version', tags: 'Tags',
+  tagsHint: 'Tags séparés par des virgules', visibility: 'Visibilité', notes: 'Notes', selectCategory: 'Sélectionner une catégorie…', selectType: 'Sélectionner un type…',
+  classificationRequired: 'Sélectionnez une catégorie et un type valides.', expiryAfterDate: 'La date d’expiration ne peut pas précéder la date du document.', updated: 'Métadonnées mises à jour.', replaced: 'Fichier remplacé.',
+  replaceHint: 'Remplacez le fichier de « {{title}} » en conservant ses métadonnées et son identifiant.', archiveConfirm: 'Archiver « {{name}} » ?', restoreConfirm: 'Restaurer « {{name}} » ?', actionError: 'Impossible de mettre à jour ce document.',
+  ownerTypes: { cooperative: 'Organisation', member: 'Membre', farmer: 'Agriculteur', loan: 'Prêt' },
+  visibilityOptions: { organization: 'Utilisateurs de l’organisation', restricted: 'Rôles restreints' },
+  status: { active: 'Actif', expiring_soon: 'Expire bientôt', expired: 'Expiré', archived: 'Archivé' },
+  categories: { registration: 'Enregistrement', governance: 'Gouvernance', meetings: 'Réunions', membership: 'Adhésion', finance: 'Financier', strategy: 'Stratégie et planification', operations: 'Opérations', legal: 'Juridique et conformité', people: 'Personnel et dossiers', projects: 'Projets et programmes', education: 'Dossiers scolaires et académiques', other: 'Autre' },
+});
+
+en.documents.types = {
+  cooperative_registration_certificate: 'Cooperative Registration Certificate', certificates: 'Certificates', cooperative_bylaws_constitution: 'Cooperative Bylaws / Constitution', policies: 'Policies', general_assembly_minutes: 'General Assembly Minutes', board_meeting_minutes: 'Board Meeting Minutes', management_meeting_minutes: 'Management Meeting Minutes', meeting_agenda: 'Meeting Agenda', annual_general_meeting_documents: 'Annual General Meeting Documents', member_register: 'Member Register', membership_documents: 'Membership Documents', financial_reports: 'Financial Reports', audit_reports: 'Audit Reports', annual_reports: 'Annual Reports', strategic_plan: 'Strategic Plan', business_plan: 'Business Plan', production_reports: 'Production Reports', contracts_agreements: 'Contracts / Agreements', government_correspondence: 'Government Correspondence', group_registration: 'Group Registration', group_constitution: 'Group Constitution', group_rules: 'Group Rules', meeting_minutes: 'Meeting Minutes', attendance_records: 'Attendance Records', financial_records: 'Financial Records', production_records: 'Production Records', training_documents: 'Training Documents', agreements: 'Agreements', business_registration: 'Business Registration', business_license: 'Business License', company_policies: 'Company Policies', board_minutes: 'Board Minutes', financial_statements: 'Financial Statements', invoices: 'Invoices', tax_documents: 'Tax Documents', contracts: 'Contracts', compliance_documents: 'Compliance Documents', employee_documents: 'Employee Documents', registration_certificate: 'Registration Certificate', constitution: 'Constitution', project_documents: 'Project Documents', monitoring_evaluation_reports: 'Monitoring & Evaluation Reports', donor_agreements: 'Donor Agreements', registration_documents: 'Registration Documents', school_policies: 'School Policies', academic_reports: 'Academic Reports', student_records: 'Student Records', staff_documents: 'Staff Documents', bylaws: 'Bylaws', other: 'Other',
+};
+rw.documents.types = {
+  cooperative_registration_certificate: 'Icyemezo cy’Iyandikisha rya Koperative', certificates: 'Impamyabushobozi', cooperative_bylaws_constitution: 'Amategeko Shingiro ya Koperative', policies: 'Politiki', general_assembly_minutes: 'Inyandiko z’Inteko Rusange', board_meeting_minutes: 'Inyandiko z’Inama y’Ubutegetsi', management_meeting_minutes: 'Inyandiko z’Inama y’Ubuyobozi', meeting_agenda: 'Gahunda y’Inama', annual_general_meeting_documents: 'Inyandiko z’Inteko Rusange y’Umwaka', member_register: 'Igitabo cy’Abanyamuryango', membership_documents: 'Inyandiko z’Ubunyamuryango', financial_reports: 'Raporo z’Imari', audit_reports: 'Raporo z’Ubugenzuzi', annual_reports: 'Raporo z’Umwaka', strategic_plan: 'Gahunda y’Ingamba', business_plan: 'Gahunda y’Ubucuruzi', production_reports: 'Raporo z’Umusaruro', contracts_agreements: 'Amasezerano', government_correspondence: 'Inyandiko z’Inzego za Leta', group_registration: 'Iyandikisha ry’Itsinda', group_constitution: 'Amategeko Shingiro y’Itsinda', group_rules: 'Amategeko y’Itsinda', meeting_minutes: 'Inyandiko z’Inama', attendance_records: 'Inyandiko z’Abitabiriye', financial_records: 'Inyandiko z’Imari', production_records: 'Inyandiko z’Umusaruro', training_documents: 'Inyandiko z’Amahugurwa', agreements: 'Amasezerano', business_registration: 'Iyandikisha ry’Ubucuruzi', business_license: 'Uruhushya rw’Ubucuruzi', company_policies: 'Politiki z’Ikigo', board_minutes: 'Inyandiko z’Inama y’Ubutegetsi', financial_statements: 'Imibare y’Imari', invoices: 'Inyemezabuguzi', tax_documents: 'Inyandiko z’Imisoro', contracts: 'Amasezerano', compliance_documents: 'Inyandiko z’Iyubahiriza', employee_documents: 'Inyandiko z’Abakozi', registration_certificate: 'Icyemezo cy’Iyandikisha', constitution: 'Amategeko Shingiro', project_documents: 'Inyandiko z’Imishinga', monitoring_evaluation_reports: 'Raporo z’Ikurikirana n’Isuzuma', donor_agreements: 'Amasezerano n’Abaterankunga', registration_documents: 'Inyandiko z’Iyandikisha', school_policies: 'Politiki z’Ishuri', academic_reports: 'Raporo z’Amasomo', student_records: 'Inyandiko z’Abanyeshuri', staff_documents: 'Inyandiko z’Abakozi', bylaws: 'Amategeko Ngengamikorere', other: 'Ibindi',
+};
+fr.documents.types = {
+  cooperative_registration_certificate: 'Certificat d’enregistrement de la coopérative', certificates: 'Certificats', cooperative_bylaws_constitution: 'Statuts / Constitution de la coopérative', policies: 'Politiques', general_assembly_minutes: 'Procès-verbal de l’Assemblée générale', board_meeting_minutes: 'Procès-verbal du Conseil', management_meeting_minutes: 'Procès-verbal de la direction', meeting_agenda: 'Ordre du jour', annual_general_meeting_documents: 'Documents de l’Assemblée générale annuelle', member_register: 'Registre des membres', membership_documents: 'Documents d’adhésion', financial_reports: 'Rapports financiers', audit_reports: 'Rapports d’audit', annual_reports: 'Rapports annuels', strategic_plan: 'Plan stratégique', business_plan: 'Plan d’affaires', production_reports: 'Rapports de production', contracts_agreements: 'Contrats / Accords', government_correspondence: 'Correspondance gouvernementale', group_registration: 'Enregistrement du groupe', group_constitution: 'Constitution du groupe', group_rules: 'Règles du groupe', meeting_minutes: 'Procès-verbal de réunion', attendance_records: 'Registres de présence', financial_records: 'Dossiers financiers', production_records: 'Dossiers de production', training_documents: 'Documents de formation', agreements: 'Accords', business_registration: 'Enregistrement commercial', business_license: 'Licence commerciale', company_policies: 'Politiques de l’entreprise', board_minutes: 'Procès-verbal du Conseil', financial_statements: 'États financiers', invoices: 'Factures', tax_documents: 'Documents fiscaux', contracts: 'Contrats', compliance_documents: 'Documents de conformité', employee_documents: 'Documents des employés', registration_certificate: 'Certificat d’enregistrement', constitution: 'Constitution', project_documents: 'Documents de projet', monitoring_evaluation_reports: 'Rapports de suivi et évaluation', donor_agreements: 'Accords avec les donateurs', registration_documents: 'Documents d’enregistrement', school_policies: 'Politiques scolaires', academic_reports: 'Rapports académiques', student_records: 'Dossiers des élèves', staff_documents: 'Documents du personnel', bylaws: 'Règlements', other: 'Autre',
+};
 
 const savedLanguage = localStorage.getItem('scfmp_language') || 'en';
 

@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { resetPasswordWithToken } from '../api/auth';
 import PasswordInput from '../components/PasswordInput';
 import LanguageSwitcher from '../components/LanguageSwitcher';
+import { COMPANY_NAME, PRODUCT_NAME } from '../config/company';
 
 const isStrongPassword = (value) => value.length >= 8 && /[a-z]/.test(value) && /[A-Z]/.test(value) && /\d/.test(value);
 
@@ -42,7 +43,7 @@ const ResetPasswordPage = () => {
         <div className="mb-4 flex justify-end"><LanguageSwitcher compact /></div>
         <div className="mb-8 flex flex-col items-center text-center">
           <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-gold/15"><Sprout className="h-6 w-6 text-gold" /></div>
-          <h1 className="font-display text-2xl font-semibold text-paper">SCFMP</h1>
+          <h1 className="font-display text-2xl font-semibold text-paper">{PRODUCT_NAME}</h1>
           <p className="mt-1 text-sm text-paper/60">{t('auth.chooseNew')}</p>
         </div>
         <div className="rounded-2xl bg-paper p-6 shadow-2xl shadow-black/20 sm:p-8">
@@ -72,6 +73,7 @@ const ResetPasswordPage = () => {
           )}
         </div>
         {!isDone && <Link to="/login" className="focus-ring mt-6 flex items-center justify-center gap-1.5 text-sm text-paper/60 hover:text-paper"><ArrowLeft className="h-3.5 w-3.5" />{t('auth.backToLogin')}</Link>}
+        <p className="mt-4 text-center text-xs text-paper/50">{COMPANY_NAME}</p>
       </div>
     </div>
   );

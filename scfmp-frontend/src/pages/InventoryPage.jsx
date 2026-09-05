@@ -287,7 +287,7 @@ const InventoryPage = () => {
             />
           </div>
 
-          <div className="mb-4 grid grid-cols-2 gap-3">
+          <div className="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div>
               <label className="mb-1.5 block text-xs font-medium uppercase tracking-wide text-ink-soft">
                 Category
@@ -317,7 +317,7 @@ const InventoryPage = () => {
             </div>
           </div>
 
-          <div className="mb-4 grid grid-cols-2 gap-3">
+          <div className="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div>
               <label className="mb-1.5 block text-xs font-medium uppercase tracking-wide text-ink-soft">
                 Reorder level
@@ -426,7 +426,7 @@ const InventoryPage = () => {
               </div>
             </div>
 
-            <div className="mb-4 grid grid-cols-2 gap-3">
+            <div className="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
               <div>
                 <label className="mb-1.5 block text-xs font-medium uppercase tracking-wide text-ink-soft">
                   Quantity ({movingItem.unit})

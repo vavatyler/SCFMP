@@ -35,8 +35,8 @@ const buildTransporter = () => {
 const sendPasswordResetEmail = async (toEmail, resetLink, expiresInMinutes) => {
   const transporter = buildTransporter();
 
-  const subject = 'Reset your SCFMP password';
-  const text = `We received a request to reset your SCFMP password.
+  const subject = 'Reset your AgriBridge password';
+  const text = `We received a request to reset your AgriBridge password.
 
 Click the link below to choose a new password. This link expires in ${expiresInMinutes} minutes and can only be used once:
 
@@ -44,11 +44,11 @@ ${resetLink}
 
 If you didn't request this, you can safely ignore this email — your password will not be changed.
 
-— SmartNyamagabe Digital Solutions Ltd`;
+— SmartBridge Technologies Ltd`;
 
   const html = `
     <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto;">
-      <h2 style="color: #1C3829;">Reset your SCFMP password</h2>
+      <h2 style="color: #1C3829;">Reset your AgriBridge password</h2>
       <p>We received a request to reset your password. Click the button below to choose a new one.</p>
       <p style="margin: 24px 0;">
         <a href="${resetLink}" style="background:#1C3829; color:#F6F2E9; padding:12px 20px; border-radius:8px; text-decoration:none; display:inline-block;">
@@ -59,7 +59,7 @@ If you didn't request this, you can safely ignore this email — your password w
         This link expires in ${expiresInMinutes} minutes and can only be used once.
         If you didn't request this, you can safely ignore this email.
       </p>
-      <p style="color:#5A5548; font-size: 13px;">— SmartNyamagabe Digital Solutions Ltd</p>
+      <p style="color:#5A5548; font-size: 13px;">— SmartBridge Technologies Ltd</p>
     </div>
   `;
 

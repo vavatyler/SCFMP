@@ -6,6 +6,13 @@
   body {
     @apply bg-paper text-ink font-sans antialiased;
   }
+  #root {
+    @apply min-h-screen min-w-0;
+  }
+  img,
+  svg {
+    max-width: 100%;
+  }
   h1,
   h2,
   h3 {

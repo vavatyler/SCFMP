@@ -3,9 +3,11 @@ const {
   Production,
   Farmer,
   FarmerGroup,
+  ProductionContribution,
   Member,
   Product,
   Cooperative,
+  sequelize,
 } = require('../models');
 const { recordAuditEvent } = require('../services/auditService');
 
@@ -84,6 +86,17 @@ const includeDetails = [
   },
   { model: Product, as: 'product', attributes: ['id', 'name', 'category', 'default_unit'] },
   { model: Cooperative, as: 'cooperative', attributes: ['id', 'name'] },
+  {
+    model: ProductionContribution,
+    as: 'contributions',
+    attributes: ['id', 'farmer_id', 'quantity', 'unit'],
+    include: [{
+      model: Farmer,
+      as: 'farmer',
+      attributes: ['id'],
+      include: [{ model: Member, as: 'member', attributes: ['id', 'first_name', 'last_name'] }],
+    }],
+  },
 ];
 
 const canAccess = async (record, user) => {
@@ -129,9 +142,9 @@ const getById = async (req, res) => {
   }
 };
 
-const resolveProduct = async ({ product_id, product_name, unit, cooperative_id }) => {
+const resolveProduct = async ({ product_id, product_name, unit, cooperative_id }, transaction) => {
   if (product_id) {
-    const product = await Product.findOne({ where: { id: product_id, cooperative_id, status: 'active' } });
+    const product = await Product.findOne({ where: { id: product_id, cooperative_id, status: 'active' }, transaction });
     if (!product) return null;
     return product;
   }
@@ -140,11 +153,72 @@ const resolveProduct = async ({ product_id, product_name, unit, cooperative_id }
   const [product] = await Product.findOrCreate({
     where: { cooperative_id, name },
     defaults: { default_unit: unit || 'kg' },
+    transaction,
   });
   return product;
 };
 
+const normalizeUnit = (value) => String(value || '').trim().toLowerCase();
+
+const validateContributions = async (contributions, cooperativeId, productionUnit, transaction) => {
+  if (contributions === undefined) return null;
+  if (!Array.isArray(contributions)) {
+    throw Object.assign(new Error('Contributions must be an array'), { status: 400 });
+  }
+  if (contributions.length === 0) return [];
+  const normalizedUnit = normalizeUnit(productionUnit);
+  const seen = new Set();
+  const normalized = contributions.map((item) => {
+    const farmerId = Number(item.farmer_id);
+    const quantity = Number(item.quantity);
+    const unit = normalizeUnit(item.unit || productionUnit);
+    if (!Number.isInteger(farmerId) || farmerId < 1 || !Number.isFinite(quantity) || quantity <= 0) {
+      throw Object.assign(new Error('Each contribution requires a valid farmer and positive quantity'), { status: 400 });
+    }
+    if (!unit || unit !== normalizedUnit) {
+      throw Object.assign(new Error('Contribution units must match the production unit'), { status: 400 });
+    }
+    if (seen.has(farmerId)) {
+      throw Object.assign(new Error('A farmer can only be added once per production record'), { status: 400 });
+    }
+    seen.add(farmerId);
+    return { farmer_id: farmerId, quantity, unit: String(productionUnit).trim() };
+  });
+  const farmers = await Farmer.findAll({
+    where: { id: { [Op.in]: [...seen] } },
+    include: [{ model: Member, as: 'member', required: true, where: { cooperative_id: cooperativeId }, attributes: ['id'] }],
+    transaction,
+  });
+  if (farmers.length !== seen.size) {
+    throw Object.assign(new Error('Every contributing farmer must belong to the production organization'), { status: 400 });
+  }
+  return normalized;
+};
+
+const quantityBreakdown = ({ actualHarvest, soldQuantity, storageQuantity, remainingQuantity }) => {
+  const actual = Number(actualHarvest);
+  const sold = soldQuantity === undefined || soldQuantity === '' ? 0 : Number(soldQuantity);
+  const remaining = remainingQuantity === undefined || remainingQuantity === ''
+    ? actual - sold
+    : Number(remainingQuantity);
+  const storage = storageQuantity === undefined || storageQuantity === '' || storageQuantity === null
+    ? null
+    : Number(storageQuantity);
+  const values = [actual, sold, remaining, ...(storage === null ? [] : [storage])];
+  if (values.some((value) => !Number.isFinite(value) || value < 0)) {
+    throw Object.assign(new Error('Production quantities must be nonnegative numbers'), { status: 400 });
+  }
+  if (sold > actual || remaining > actual || Math.abs((actual - sold) - remaining) > 0.01) {
+    throw Object.assign(new Error('Remaining quantity must equal actual quantity minus sold quantity'), { status: 400 });
+  }
+  if (storage !== null && storage > remaining) {
+    throw Object.assign(new Error('Storage quantity cannot exceed remaining quantity'), { status: 400 });
+  }
+  return { sold, storage, remaining };
+};
+
 const create = async (req, res) => {
+  let dbTransaction;
   try {
     const productionMode = req.body.production_mode || 'individual';
     let farmer = null;
@@ -152,11 +226,22 @@ const create = async (req, res) => {
     let cooperative_id;
 
     if (productionMode === 'group') {
-      farmerGroup = await FarmerGroup.findByPk(req.body.farmer_group_id);
-      if (!farmerGroup) {
-        return res.status(404).json({ success: false, message: 'Farmer group not found' });
+      if (req.body.farmer_group_id) {
+        farmerGroup = await FarmerGroup.findByPk(req.body.farmer_group_id);
+        if (!farmerGroup) {
+          return res.status(404).json({ success: false, message: 'Farmer group not found' });
+        }
+        cooperative_id = farmerGroup.cooperative_id;
+      } else {
+        cooperative_id = req.user.role === 'super_admin'
+          ? Number(req.body.cooperative_id || 0) || null
+          : req.user.cooperative_id;
+        if (!cooperative_id) {
+          return res.status(400).json({ success: false, message: 'Organization is required for cooperative production' });
+        }
+        const cooperative = await Cooperative.findByPk(cooperative_id);
+        if (!cooperative) return res.status(404).json({ success: false, message: 'Organization not found' });
       }
-      cooperative_id = farmerGroup.cooperative_id;
     } else {
       farmer = await Farmer.findByPk(req.body.farmer_id, {
         include: [{ model: Member, as: 'member', required: true }],
@@ -172,15 +257,33 @@ const create = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Production owner does not belong to the selected organization' });
     }
 
-    const product = await resolveProduct({ ...req.body, cooperative_id });
-    if (!product) return res.status(400).json({ success: false, message: 'A valid product is required' });
+    dbTransaction = await sequelize.transaction();
+    const product = await resolveProduct({ ...req.body, cooperative_id }, dbTransaction);
+    if (!product) throw Object.assign(new Error('A valid product is required'), { status: 400 });
     const requestedStatus = req.body.status || 'recorded';
     const status = ['super_admin', 'cooperative_manager'].includes(req.user.role)
       ? requestedStatus
       : 'recorded';
-    const actualHarvest = req.body.actual_harvest ?? req.body.quantity;
-    const harvestDate = req.body.harvest_date ?? req.body.production_date;
-    const fallbackLocation = productionMode === 'group' ? farmerGroup.location : farmer.location;
+    const unit = String(req.body.unit || product.default_unit || '').trim();
+    const contributions = productionMode === 'group'
+      ? await validateContributions(req.body.contributions, cooperative_id, unit, dbTransaction)
+      : null;
+    if (productionMode !== 'group' && req.body.contributions?.length) {
+      throw Object.assign(new Error('Contributions are only supported for group production'), { status: 400 });
+    }
+    const contributionTotal = contributions?.length
+      ? contributions.reduce((sum, item) => sum + item.quantity, 0)
+      : null;
+    const actualHarvest = contributionTotal ?? Number(req.body.actual_harvest ?? req.body.quantity);
+    const productionDate = req.body.production_date || req.body.harvest_date;
+    const harvestDate = req.body.harvest_date || req.body.production_date;
+    const fallbackLocation = productionMode === 'group' ? farmerGroup?.location : farmer.location;
+    const breakdown = quantityBreakdown({
+      actualHarvest,
+      soldQuantity: req.body.sold_quantity,
+      storageQuantity: req.body.storage_quantity,
+      remainingQuantity: req.body.remaining_quantity,
+    });
 
     const record = await Production.create({
       cooperative_id,
@@ -191,17 +294,34 @@ const create = async (req, res) => {
       product_name: product.name,
       quantity: actualHarvest,
       expected_production: req.body.expected_production || null,
+      reporting_period: String(req.body.reporting_period || '').trim() || null,
+      variety: String(req.body.variety || '').trim() || null,
+      production_category: String(req.body.production_category || '').trim() || null,
       actual_harvest: actualHarvest,
-      unit: req.body.unit || product.default_unit,
+      unit,
       unit_price: req.body.unit_price ?? 0,
       season: req.body.season || null,
       status,
-      production_date: harvestDate,
+      production_date: productionDate,
       harvest_date: harvestDate,
       production_location: String(req.body.production_location || fallbackLocation || '').trim() || null,
+      quality_grade: String(req.body.quality_grade || '').trim() || null,
+      storage_location: String(req.body.storage_location || '').trim() || null,
+      storage_quantity: breakdown.storage,
+      sold_quantity: breakdown.sold,
+      remaining_quantity: breakdown.remaining,
+      buyer: String(req.body.buyer || '').trim() || null,
       notes: String(req.body.notes || '').trim() || null,
       recorded_by: req.user.id,
-    });
+    }, { transaction: dbTransaction });
+    if (contributions?.length) {
+      await ProductionContribution.bulkCreate(
+        contributions.map((item) => ({ ...item, production_id: record.id })),
+        { transaction: dbTransaction }
+      );
+    }
+    await dbTransaction.commit();
+    dbTransaction = null;
     await recordAuditEvent({
       req,
       actor: req.user,
@@ -216,20 +336,24 @@ const create = async (req, res) => {
         product_id: product.id,
       },
     });
-    return res.status(201).json({ success: true, data: record });
+    const created = await Production.findByPk(record.id, { include: includeDetails });
+    return res.status(201).json({ success: true, data: created });
   } catch (err) {
-    return res.status(500).json({ success: false, message: err.message });
+    if (dbTransaction) await dbTransaction.rollback();
+    return res.status(err.status || 500).json({ success: false, message: err.message });
   }
 };
 
 const update = async (req, res) => {
+  let dbTransaction;
   try {
-    const record = await Production.findByPk(req.params.id);
+    const record = await Production.findByPk(req.params.id, { include: [{ model: ProductionContribution, as: 'contributions' }] });
     if (!record) return res.status(404).json({ success: false, message: 'Production record not found' });
     if (!(await canAccess(record, req.user))) {
       return res.status(403).json({ success: false, message: 'Access denied' });
     }
 
+    dbTransaction = await sequelize.transaction();
     const updates = {};
     ['unit', 'unit_price', 'season'].forEach((field) => {
       if (req.body[field] !== undefined) updates[field] = req.body[field];
@@ -239,12 +363,35 @@ const update = async (req, res) => {
       updates.actual_harvest = actualHarvest;
       updates.quantity = actualHarvest;
     }
+    const requestedUnit = String(req.body.unit ?? record.unit).trim();
+    let contributions = null;
+    if (req.body.contributions !== undefined) {
+      if (record.production_mode !== 'group') {
+        throw Object.assign(new Error('Contributions are only supported for group production'), { status: 400 });
+      }
+      contributions = await validateContributions(
+        req.body.contributions,
+        record.cooperative_id,
+        requestedUnit,
+        dbTransaction
+      );
+      if (contributions.length) {
+        const contributionTotal = contributions.reduce((sum, item) => sum + item.quantity, 0);
+        updates.actual_harvest = contributionTotal;
+        updates.quantity = contributionTotal;
+      }
+    } else if (record.contributions?.length && normalizeUnit(requestedUnit) !== normalizeUnit(record.unit)) {
+      throw Object.assign(new Error('Provide updated contributions before changing a contributed record unit'), { status: 400 });
+    }
     if (req.body.harvest_date !== undefined || req.body.production_date !== undefined) {
       const harvestDate = req.body.harvest_date ?? req.body.production_date;
       updates.harvest_date = harvestDate;
       updates.production_date = harvestDate;
     }
-    for (const field of ['expected_production', 'production_location', 'notes']) {
+    for (const field of [
+      'expected_production', 'reporting_period', 'variety', 'production_category',
+      'production_location', 'quality_grade', 'storage_location', 'buyer', 'notes',
+    ]) {
       if (req.body[field] !== undefined) {
         updates[field] = typeof req.body[field] === 'string'
           ? req.body[field].trim() || null
@@ -253,18 +400,42 @@ const update = async (req, res) => {
     }
     if (req.body.status !== undefined) {
       if (!['super_admin', 'cooperative_manager'].includes(req.user.role)) {
-        return res.status(403).json({ success: false, message: 'Only managers can change verification status' });
+        throw Object.assign(new Error('Only managers can change verification status'), { status: 403 });
       }
       updates.status = req.body.status;
     }
     if (req.body.product_id || req.body.product_name) {
-      const product = await resolveProduct({ ...req.body, cooperative_id: record.cooperative_id });
-      if (!product) return res.status(400).json({ success: false, message: 'A valid product is required' });
+      const product = await resolveProduct({ ...req.body, cooperative_id: record.cooperative_id }, dbTransaction);
+      if (!product) throw Object.assign(new Error('A valid product is required'), { status: 400 });
       updates.product_id = product.id;
       updates.product_name = product.name;
     }
 
-    await record.update(updates);
+    const actualHarvest = Number(updates.actual_harvest ?? record.actual_harvest ?? record.quantity);
+    const breakdown = quantityBreakdown({
+      actualHarvest,
+      soldQuantity: req.body.sold_quantity ?? record.sold_quantity,
+      storageQuantity: req.body.storage_quantity !== undefined ? req.body.storage_quantity : record.storage_quantity,
+      remainingQuantity: req.body.remaining_quantity !== undefined
+        ? req.body.remaining_quantity
+        : (updates.actual_harvest !== undefined || req.body.sold_quantity !== undefined ? undefined : record.remaining_quantity),
+    });
+    updates.sold_quantity = breakdown.sold;
+    updates.storage_quantity = breakdown.storage;
+    updates.remaining_quantity = breakdown.remaining;
+
+    await record.update(updates, { transaction: dbTransaction });
+    if (contributions !== null) {
+      await ProductionContribution.destroy({ where: { production_id: record.id }, transaction: dbTransaction });
+      if (contributions.length) {
+        await ProductionContribution.bulkCreate(
+          contributions.map((item) => ({ ...item, production_id: record.id })),
+          { transaction: dbTransaction }
+        );
+      }
+    }
+    await dbTransaction.commit();
+    dbTransaction = null;
     await recordAuditEvent({
       req,
       actor: req.user,
@@ -273,9 +444,11 @@ const update = async (req, res) => {
       entityId: record.id,
       metadata: { cooperative_id: record.cooperative_id, changed_fields: Object.keys(updates) },
     });
-    return res.status(200).json({ success: true, data: record });
+    const updated = await Production.findByPk(record.id, { include: includeDetails });
+    return res.status(200).json({ success: true, data: updated });
   } catch (err) {
-    return res.status(500).json({ success: false, message: err.message });
+    if (dbTransaction) await dbTransaction.rollback();
+    return res.status(err.status || 500).json({ success: false, message: err.message });
   }
 };
 
@@ -353,8 +526,11 @@ const analytics = async (req, res) => {
       total_quantity: 0,
       total_expected: 0,
       total_value: 0,
+      total_sold: 0,
+      total_remaining: 0,
       farmer_ids: new Set(),
       farmer_group_ids: new Set(),
+      cooperative_group_ids: new Set(),
     };
     const monthly = new Map();
     const products = new Map();
@@ -363,6 +539,8 @@ const analytics = async (req, res) => {
     const producers = new Map();
     const modes = new Map();
     const cooperatives = new Map();
+    const locations = new Map();
+    const years = new Map();
 
     records.forEach((record) => {
       const quantity = Number(record.quantity || 0);
@@ -370,16 +548,23 @@ const analytics = async (req, res) => {
       totals.total_quantity += quantity;
       totals.total_expected += Number(record.expected_production || 0);
       totals.total_value += value;
+      totals.total_sold += Number(record.sold_quantity || 0);
+      totals.total_remaining += Number(record.remaining_quantity || 0);
       if (record.farmer_id) totals.farmer_ids.add(record.farmer_id);
       if (record.farmer_group_id) totals.farmer_group_ids.add(record.farmer_group_id);
+      if (record.production_mode === 'group' && !record.farmer_group_id) {
+        totals.cooperative_group_ids.add(record.cooperative_id);
+      }
       const month = String(record.harvest_date || record.production_date).slice(0, 7);
       const farmerName = record.farmer?.member
         ? `${record.farmer.member.first_name} ${record.farmer.member.last_name}`
         : `Farmer #${record.farmer_id}`;
-      const farmerGroupName = record.farmerGroup?.name || `Farmer Group #${record.farmer_group_id}`;
-      const producerName = record.production_mode === 'group' ? farmerGroupName : farmerName;
       const productName = record.product?.name || record.product_name;
       const cooperativeName = record.cooperative?.name || `Cooperative #${record.cooperative_id}`;
+      const farmerGroupName = record.farmerGroup?.name || cooperativeName;
+      const producerName = record.production_mode === 'group' ? farmerGroupName : farmerName;
+      const locationName = record.production_location || 'Not specified';
+      const year = String(record.harvest_date || record.production_date).slice(0, 4);
 
       const add = (map, key, label) => {
         const item = map.get(key) || { key, label, quantity: 0, value: 0, records: 0 };
@@ -391,14 +576,17 @@ const analytics = async (req, res) => {
       add(monthly, month, month);
       add(products, record.product_id, productName);
       if (record.production_mode === 'group') {
-        add(farmerGroups, record.farmer_group_id, farmerGroupName);
-        add(producers, `group:${record.farmer_group_id}`, farmerGroupName);
+        const groupKey = record.farmer_group_id || `cooperative:${record.cooperative_id}`;
+        add(farmerGroups, groupKey, farmerGroupName);
+        add(producers, `group:${groupKey}`, farmerGroupName);
       } else {
         add(farmers, record.farmer_id, farmerName);
         add(producers, `individual:${record.farmer_id}`, producerName);
       }
       add(modes, record.production_mode, record.production_mode);
       add(cooperatives, record.cooperative_id, cooperativeName);
+      add(locations, locationName, locationName);
+      add(years, year, year);
     });
 
     const byValueDesc = (map) => [...map.values()].sort((a, b) => b.value - a.value);
@@ -411,9 +599,11 @@ const analytics = async (req, res) => {
           total_actual_harvest: totals.total_quantity,
           total_expected_production: totals.total_expected,
           total_value: totals.total_value,
+          sold_quantity: totals.total_sold,
+          remaining_quantity: totals.total_remaining,
           active_farmers: totals.farmer_ids.size,
           active_groups: totals.farmer_group_ids.size,
-          active_producers: totals.farmer_ids.size + totals.farmer_group_ids.size,
+          active_producers: totals.farmer_ids.size + totals.farmer_group_ids.size + totals.cooperative_group_ids.size,
         },
         monthly_trend: [...monthly.values()],
         by_product: byValueDesc(products),
@@ -422,6 +612,8 @@ const analytics = async (req, res) => {
         producer_performance: byValueDesc(producers),
         by_mode: byValueDesc(modes),
         cooperative_comparison: byValueDesc(cooperatives),
+        by_location: byValueDesc(locations),
+        by_year: [...years.values()].sort((a, b) => String(a.key).localeCompare(String(b.key))),
       },
     });
   } catch (err) {

@@ -11,11 +11,16 @@ jest.mock('../middleware/authMiddleware', () => ({
 
 jest.mock('../controllers/documentController', () => ({
   list: jest.fn((req, res) => res.status(200).json({ success: true })),
+  classification: jest.fn((req, res) => res.status(200).json({ success: true })),
+  stats: jest.fn((req, res) => res.status(200).json({ success: true })),
   upload: jest.fn(async (req, res) => {
     if (req.file?.path) await require('fs').promises.unlink(req.file.path);
     return res.status(201).json({ success: true });
   }),
   download: jest.fn((req, res) => res.status(200).json({ success: true })),
+  updateMetadata: jest.fn((req, res) => res.status(200).json({ success: true })),
+  replaceFile: jest.fn((req, res) => res.status(200).json({ success: true })),
+  setArchived: jest.fn((req, res) => res.status(200).json({ success: true })),
   remove: jest.fn((req, res) => res.status(200).json({ success: true })),
 }));
 

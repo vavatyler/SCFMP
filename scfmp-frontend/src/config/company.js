@@ -1,5 +1,7 @@
 export const COMPANY_EMAIL = 'info@smartdigitalsolutions.com';
 export const COMPANY_PHONE = '+250 789 329 052';
+export const COMPANY_NAME = 'SmartBridge Technologies Ltd';
+export const PRODUCT_NAME = 'AgriBridge';
 
 export const createCompanyContact = ({ email, phone }) => {
   const normalizedEmail = String(email).trim();

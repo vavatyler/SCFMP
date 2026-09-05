@@ -5,17 +5,61 @@ export const listDocuments = async (params = {}) => {
   return data.data;
 };
 
-export const uploadDocument = async ({ file, owner_type, owner_id, description }) => {
+export const uploadDocument = async ({ file, ...metadata }) => {
   const formData = new FormData();
   formData.append('file', file);
-  formData.append('owner_type', owner_type);
-  formData.append('owner_id', owner_id);
-  if (description) formData.append('description', description);
+  Object.entries(metadata).forEach(([key, value]) => {
+    if (value !== undefined && value !== null && value !== '') formData.append(key, value);
+  });
 
   const { data } = await apiClient.post('/documents', formData, {
     headers: { 'Content-Type': 'multipart/form-data' },
   });
   return data.data;
+};
+
+export const getDocumentClassification = async (params = {}) => {
+  const { data } = await apiClient.get('/documents/classification/options', { params });
+  return data.data;
+};
+
+export const getDocumentStats = async (params = {}) => {
+  const { data } = await apiClient.get('/documents/stats/summary', { params });
+  return data.data;
+};
+
+export const updateDocument = async (id, metadata) => {
+  const { data } = await apiClient.put(`/documents/${id}`, metadata);
+  return data.data;
+};
+
+export const replaceDocumentFile = async (id, file) => {
+  const formData = new FormData();
+  formData.append('file', file);
+  const { data } = await apiClient.put(`/documents/${id}/file`, formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
+  return data.data;
+};
+
+export const setDocumentArchived = async (id, archived) => {
+  const { data } = await apiClient.put(`/documents/${id}/archive`, { archived });
+  return data.data;
+};
+
+export const viewDocument = async (id, filename) => {
+  const response = await apiClient.get(`/documents/${id}/download`, {
+    params: { disposition: 'inline' },
+    responseType: 'blob',
+  });
+  const url = window.URL.createObjectURL(new Blob([response.data], { type: response.data.type }));
+  const opened = window.open(url, '_blank', 'noopener,noreferrer');
+  if (!opened) {
+    window.URL.revokeObjectURL(url);
+    return downloadDocument(id, filename);
+  }
+  window.setTimeout(() => window.URL.revokeObjectURL(url), 60000);
+  return undefined;
 };
 
 export const downloadDocument = async (id, filename) => {

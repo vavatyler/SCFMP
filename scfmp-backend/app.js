@@ -18,6 +18,9 @@ const notificationRoutes = require('./routes/notificationRoutes');
 const userRoutes = require('./routes/userRoutes');
 const reportRoutes = require('./routes/reportRoutes');
 const locationRoutes = require('./routes/locationRoutes');
+const farmerGroupRoutes = require('./routes/farmerGroupRoutes');
+const teamMemberRoutes = require('./routes/teamMemberRoutes');
+const subscriptionRoutes = require('./routes/subscriptionRoutes');
 
 const app = express();
 
@@ -41,7 +44,7 @@ app.use(express.json({ limit: '1mb' }));
 app.use(express.urlencoded({ extended: false, limit: '1mb' }));
 
 app.get('/api/health', (req, res) => {
-  res.status(200).json({ success: true, message: 'SCFMP API is running' });
+  res.status(200).json({ success: true, message: 'AgriBridge API is running' });
 });
 
 app.use('/api/auth', authRoutes);
@@ -58,6 +61,9 @@ app.use('/api/notifications', notificationRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/reports', reportRoutes);
 app.use('/api/locations', locationRoutes);
+app.use('/api/farmer-groups', farmerGroupRoutes);
+app.use('/api/team-members', teamMemberRoutes);
+app.use('/api/subscriptions', subscriptionRoutes);
 
 // 404 handler
 app.use((req, res) => {

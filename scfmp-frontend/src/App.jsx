@@ -12,6 +12,11 @@ import InventoryPage from './pages/InventoryPage';
 import DocumentsPage from './pages/DocumentsPage';
 import CooperativesPage from './pages/CooperativesPage';
 import UsersPage from './pages/UsersPage';
+import TeamPage from './pages/TeamPage';
+import SubscriptionPage from './pages/SubscriptionPage';
+import FarmerGroupsPage from './pages/FarmerGroupsPage';
+import ReportsPage from './pages/ReportsPage';
+import SettingsPage from './pages/SettingsPage';
 import NotFoundPage from './pages/NotFoundPage';
 import ContactPage from './pages/ContactPage';
 import ProtectedRoute from './components/ProtectedRoute';
@@ -63,6 +68,9 @@ function App() {
           </ProtectedRoute>
         }
       />
+      <Route path="/production/individual" element={<ProtectedRoute><ProductionPage forcedMode="individual" /></ProtectedRoute>} />
+      <Route path="/production/group" element={<ProtectedRoute><ProductionPage forcedMode="group" /></ProtectedRoute>} />
+      <Route path="/farmer-groups" element={<ProtectedRoute><FarmerGroupsPage /></ProtectedRoute>} />
       <Route
         path="/finance"
         element={
@@ -99,10 +107,12 @@ function App() {
         path="/team"
         element={
           <ProtectedRoute>
-            <UsersPage />
+            <TeamPage />
           </ProtectedRoute>
         }
       />
+      <Route path="/documents/categories" element={<ProtectedRoute><DocumentsPage forcedView="categories" /></ProtectedRoute>} />
+      <Route path="/documents/expiring" element={<ProtectedRoute><DocumentsPage forcedStatus="expiring_soon" /></ProtectedRoute>} />
       <Route
         path="/contact"
         element={
@@ -111,6 +121,10 @@ function App() {
           </ProtectedRoute>
         }
       />
+      <Route path="/staff" element={<ProtectedRoute><UsersPage /></ProtectedRoute>} />
+      <Route path="/subscription" element={<ProtectedRoute><SubscriptionPage /></ProtectedRoute>} />
+      <Route path="/reports" element={<ProtectedRoute><ReportsPage /></ProtectedRoute>} />
+      <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
       <Route path="*" element={<NotFoundPage />} />
     </Routes>
   );

@@ -21,6 +21,7 @@ const buildTestDb = async () => {
     'FarmerGroup',
     'Product',
     'Production',
+    'ProductionContribution',
     'Transaction',
     'Loan',
     'InventoryItem',
@@ -30,6 +31,8 @@ const buildTestDb = async () => {
     'PasswordResetToken',
     'RefreshToken',
     'AuditLog',
+    'TeamMember',
+    'Subscription',
   ];
 
   const models = {};

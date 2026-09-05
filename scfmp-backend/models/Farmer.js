@@ -11,6 +11,10 @@ module.exports = (sequelize) => {
         foreignKey: 'farmer_id',
         as: 'productionRecords',
       });
+      Farmer.hasMany(models.ProductionContribution, {
+        foreignKey: 'farmer_id',
+        as: 'productionContributions',
+      });
     }
   }
 

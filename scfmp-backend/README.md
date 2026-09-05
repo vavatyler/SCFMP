@@ -1,4 +1,6 @@
-# SCFMP Backend — Sprint 0, 1, 2 & 3
+# AgriBridge Backend API
+
+This is the SmartBridge Technologies Ltd backend. Legacy `scfmp-*` package names, JWT identifiers, tables, and API routes remain unchanged for compatibility.
 
 ## What's included so far
 

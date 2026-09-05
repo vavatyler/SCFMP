@@ -1,4 +1,6 @@
-# SCFMP Frontend — Sprint 1 & 2
+# AgriBridge Frontend
+
+AgriBridge is the SmartBridge Technologies Ltd product delivered from the legacy `scfmp-frontend` package. Internal package and route identifiers retain their existing names for compatibility.
 
 ## What's included so far
 
@@ -117,14 +119,14 @@ This is a significant upgrade: the platform now properly supports **many coopera
 
 - **Cooperative switcher** — a dropdown in the top-left of every page (visible only to `super_admin`) showing which cooperative you're currently viewing. Every page — Members, Farmers, Production, Finance, Inventory, Documents, Dashboard — now reflects whichever cooperative is selected. This replaces the old hardcoded "cooperative #1" behavior entirely.
 - **Cooperatives page** (`/cooperatives`, super_admin only) — register new cooperatives, see them all in one table, and jump into any of them with one click.
-- **Team page** (`/team`, super_admin and cooperative_manager) — this is the account-creation flow: create `cooperative_manager`, `accountant`, or `field_officer` accounts, scoped automatically to the right cooperative. A `cooperative_manager` can only ever create staff for their own cooperative — enforced on the backend, not just hidden in the UI. Deactivate/reactivate accounts with one click.
+- **Staff Accounts page** (`/staff`, super_admin and cooperative_manager) — this is the account-creation flow: create `cooperative_manager`, `accountant`, or `field_officer` accounts, scoped automatically to the right cooperative. A `cooperative_manager` can only ever create staff for their own cooperative — enforced on the backend, not just hidden in the UI. Deactivate/reactivate accounts with one click.
 - Two small fixes: the notification dropdown now has a subtle backdrop so it clearly reads as an overlay instead of looking like cut-off cards, and tiny file sizes in Documents now show as "24 B" instead of a confusing "0.0 KB".
 
 ### How to register your second cooperative and its manager
 
 1. Log in as `admin@smartnyamagabe.rw`
 2. Go to **Cooperatives** → **Add cooperative** → fill in the name and location, save. You'll automatically switch into it.
-3. Go to **Team** → **Add team member** → set role to **Cooperative Manager**, give them a temporary password
+3. Go to **Staff Accounts** → **Add team member** → set role to **Cooperative Manager**, give them a temporary password
 4. Log out, log in as that new manager — they'll only ever see their own cooperative's data, with no cooperative switcher (they don't need one)
 
 ### Backend change required
@@ -141,7 +143,7 @@ From here: deploying both frontend and backend to a real server for your pilot c
 
 **Password management:**
 - **Change password** — new option at the bottom of the sidebar for every logged-in user. Requires your current password, matching what you'd expect from any real app.
-- **Reset password** — on the Team page, `super_admin` and `cooperative_manager` can reset a staff member's password without knowing their old one (for when someone's locked out). A temporary password is shown to share with them directly.
+- **Reset password** — on the Staff Accounts page, `super_admin` and `cooperative_manager` can reset a staff member's password without knowing their old one (for when someone's locked out). A temporary password is shown to share with them directly.
 
 **Edit and delete, added across every module that was missing it:**
 - **Members** — Edit and Delete buttons on the member detail page; editing is inline (no separate page), deleting asks for confirmation first
@@ -158,8 +160,8 @@ Every delete asks for confirmation first, and every edit form pre-fills with the
 Every password field in the app now has an eye icon to show/hide what you've typed — a small `PasswordInput` component (`src/components/PasswordInput.jsx`) wraps a plain input and handles the toggle, so it's consistent everywhere:
 
 - **Login page**
-- **Team → Add team member** (the temporary password field)
-- **Team → Reset password** (admin-set password field)
+- **Staff Accounts → Add team member** (the temporary password field)
+- **Staff Accounts → Reset password** (admin-set password field)
 - **Change password** modal (all three fields: current, new, confirm)
 
 No backend changes needed — this is purely a frontend/UX improvement. Accessible via keyboard and screen readers (`aria-label` and `aria-pressed` on the toggle button), and it never submits the form when clicked.

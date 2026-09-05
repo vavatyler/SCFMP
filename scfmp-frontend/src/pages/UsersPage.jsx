@@ -149,11 +149,11 @@ const UsersPage = () => {
 
   return (
     <DashboardLayout
-      title={t('common.team')}
+      title={t('common.staffAccounts')}
       subtitle={
         isSuperAdmin && activeCooperative
           ? `Staff accounts for ${activeCooperative.name}.`
-          : t('modules.teamSubtitle')
+          : t('modules.staffSubtitle')
       }
     >
       {canManage && (
@@ -184,7 +184,7 @@ const UsersPage = () => {
         ) : users.length === 0 ? (
           <div className="p-10 text-center text-sm text-ink-soft">No team members yet.</div>
         ) : (
-          <table className="w-full text-left text-sm">
+          <div className="overflow-x-auto"><table className="w-full min-w-[820px] text-left text-sm">
             <thead className="border-b border-sand bg-sand/30 text-xs uppercase tracking-wide text-ink-soft">
               <tr>
                 <th className="px-5 py-3 font-medium">Name</th>
@@ -243,7 +243,7 @@ const UsersPage = () => {
                 </tr>
               ))}
             </tbody>
-          </table>
+          </table></div>
         )}
       </div>
 
@@ -255,7 +255,7 @@ const UsersPage = () => {
             </div>
           )}
 
-          <div className="mb-4 grid grid-cols-2 gap-3">
+          <div className="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div>
               <label className="mb-1.5 block text-xs font-medium uppercase tracking-wide text-ink-soft">
                 First name

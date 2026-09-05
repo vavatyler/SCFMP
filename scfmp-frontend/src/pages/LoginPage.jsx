@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
 import PasswordInput from '../components/PasswordInput';
 import LanguageSwitcher from '../components/LanguageSwitcher';
+import { COMPANY_NAME, PRODUCT_NAME } from '../config/company';
 
 const LoginPage = () => {
   const { t } = useTranslation();
@@ -39,8 +40,8 @@ const LoginPage = () => {
         <div className="mb-4 flex justify-end"><LanguageSwitcher compact /></div>
         <div className="mb-8 flex flex-col items-center text-center">
           <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-gold/15"><Sprout className="h-6 w-6 text-gold" strokeWidth={1.75} /></div>
-          <h1 className="font-display text-2xl font-semibold text-paper">SCFMP</h1>
-          <p className="mt-1 text-sm text-paper/60">Smart Cooperative &amp; Farmer Management Platform</p>
+          <h1 className="font-display text-2xl font-semibold text-paper">{PRODUCT_NAME}</h1>
+          <p className="mt-1 text-sm text-paper/60">{t('branding.productTagline')}</p>
         </div>
         <form onSubmit={handleSubmit} className="rounded-2xl bg-paper p-6 shadow-2xl shadow-black/20 sm:p-8">
           <h2 className="mb-6 font-display text-lg font-medium text-ink">{t('auth.signIn')}</h2>
@@ -56,7 +57,7 @@ const LoginPage = () => {
             {isSubmitting && <Loader2 className="h-4 w-4 animate-spin" />}{isSubmitting ? t('auth.signingIn') : t('auth.signIn')}
           </button>
         </form>
-        <p className="mt-6 text-center text-xs text-paper/50">SmartBridge Technologies Ltd</p>
+        <p className="mt-6 text-center text-xs text-paper/50">{COMPANY_NAME}</p>
       </div>
     </div>
   );
