@@ -576,7 +576,7 @@ en.team = {
   title: 'TEAM', subtitle: 'Meet the Team Behind SmartBridge Technologies', add: 'Add member', edit: 'Edit member',
   emptyTitle: 'No team members configured', emptyBody: 'Real names, biographies, photos, and contact details have not been provided. A Super Admin can add verified personnel without fabricated information.',
   fullName: 'Full name', position: 'Position', biography: 'Short biography', responsibilities: 'Responsibilities', skills: 'Skills / expertise',
-  photoUrl: 'Profile photo URL', email: 'Email', displayOrder: 'Display order', onePerLine: 'One item per line', loadError: 'Could not load team members.',
+  photoUrl: 'Profile photo URL', choosePhoto: 'Upload photo', uploadingPhoto: 'Uploading...', photoUploadError: 'Could not upload the profile photo.', email: 'Email', displayOrder: 'Display order', onePerLine: 'One item per line', loadError: 'Could not load team members.',
   saveError: 'Could not save this team member.', deleteConfirm: 'Delete {{name}}?', deleteError: 'Could not delete this team member.',
 };
 rw.team = {

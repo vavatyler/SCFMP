@@ -31,6 +31,8 @@ const ALLOWED_MIME_TYPES = [
 ];
 
 const ALLOWED_EXTENSIONS = new Set(['.pdf', '.jpg', '.jpeg', '.png', '.webp', '.doc', '.docx', '.xls', '.xlsx', '.txt']);
+const IMAGE_MIME_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
+const IMAGE_EXTENSIONS = new Set(['.jpg', '.jpeg', '.png', '.webp']);
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
@@ -67,6 +69,20 @@ const upload = multer({
   limits: { fileSize: MAX_DOCUMENT_UPLOAD_BYTES },
 });
 
+const imageUpload = multer({
+  storage,
+  fileFilter: (req, file, cb) => {
+    const extension = path.extname(file.originalname).toLowerCase();
+    if (IMAGE_MIME_TYPES.has(file.mimetype) && IMAGE_EXTENSIONS.has(extension)) {
+      return cb(null, true);
+    }
+    const error = new Error('Unsupported image type. Allowed: JPG, PNG, WEBP');
+    error.code = 'DOCUMENT_FILE_TYPE_UNSUPPORTED';
+    return cb(error);
+  },
+  limits: { fileSize: MAX_DOCUMENT_UPLOAD_BYTES },
+});
+
 const handleUploadError = (error, req, res, next) => {
   if (!error) return next();
 
@@ -99,6 +115,7 @@ const handleUploadError = (error, req, res, next) => {
 
 module.exports = {
   upload,
+  imageUpload,
   handleUploadError,
   UPLOAD_DIR,
   MAX_DOCUMENT_UPLOAD_BYTES,

@@ -7,6 +7,18 @@ const validate = require('../middleware/validateMiddleware');
 const { TEAM_ROLE_VALUES } = require('../config/teamRoles');
 const { ALL_PERMISSIONS } = require('../config/accessControl');
 const { PLATFORM_ROLES } = require('../config/accountRoles');
+const { imageUpload, handleUploadError } = require('../middleware/uploadMiddleware');
+
+const isAllowedPhotoUrl = (value) => {
+  try {
+    const url = new URL(value);
+    return url.protocol === 'https:' || (
+      url.protocol === 'http:' && ['localhost', '127.0.0.1', '::1'].includes(url.hostname)
+    );
+  } catch {
+    return false;
+  }
+};
 
 const router = express.Router();
 router.use(verifyToken);
@@ -17,7 +29,8 @@ const validators = [
   body('biography').optional({ nullable: true }).trim().isLength({ max: 3000 }),
   body('responsibilities').optional({ nullable: true }).trim().isLength({ max: 3000 }),
   body('skills').optional({ nullable: true }).trim().isLength({ max: 2000 }),
-  body('photo_url').optional({ checkFalsy: true }).isURL({ protocols: ['https'], require_protocol: true }),
+  body('photo_url').optional({ checkFalsy: true }).custom(isAllowedPhotoUrl)
+    .withMessage('Profile photo URL must use HTTPS, or HTTP on localhost'),
   body('linkedin_url').optional({ checkFalsy: true }).isURL({ protocols: ['https'], require_protocol: true }),
   body('github_url').optional({ checkFalsy: true }).isURL({ protocols: ['https'], require_protocol: true }),
   body('email').optional({ checkFalsy: true }).isEmail().normalizeEmail(),
@@ -37,6 +50,7 @@ router.get('/', [
   query('include_inactive').optional().isBoolean(),
   query('include_hidden').optional().isBoolean(),
 ], validate, controller.list);
+router.post('/photo', checkRole('super_admin'), imageUpload.single('file'), handleUploadError, controller.uploadPhoto);
 router.get('/:id', [param('id').isInt({ min: 1 })], validate, controller.getById);
 router.post('/', checkRole('super_admin'), [
   body('full_name').trim().isLength({ min: 1, max: 150 }),

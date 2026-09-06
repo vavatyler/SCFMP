@@ -7,6 +7,7 @@ const {
 } = require('../config/accessControl');
 const { isOfficialTeamRole } = require('../config/teamRoles');
 const { ACCOUNT_SCOPES, PLATFORM_ROLES } = require('../config/accountRoles');
+const { saveTeamPhoto } = require('../services/teamPhotoStorageService');
 
 const cleanOptional = (value) => String(value || '').trim() || null;
 const accountAttributes = [
@@ -222,6 +223,16 @@ const getById = async (req, res) => {
   }
 };
 
+const uploadPhoto = async (req, res) => {
+  if (!req.file) return res.status(400).json({ success: false, message: 'An image file is required' });
+  try {
+    const photo_url = await saveTeamPhoto(req.file, req);
+    return res.status(201).json({ success: true, data: { photo_url } });
+  } catch (error) {
+    return respondWithError(res, error);
+  }
+};
+
 const create = async (req, res) => {
   const transaction = await sequelize.transaction();
   try {
@@ -330,4 +341,4 @@ const remove = async (req, res) => {
   }
 };
 
-module.exports = { list, getById, create, update, remove };
+module.exports = { list, getById, uploadPhoto, create, update, remove };

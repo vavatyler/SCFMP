@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Archive,
   Eye,
@@ -16,7 +16,7 @@ import DashboardLayout from '../components/DashboardLayout';
 import Modal from '../components/Modal';
 import Badge from '../components/Badge';
 import { useAuth } from '../context/AuthContext';
-import { createTeamMember, deleteTeamMember, listTeamMembers, updateTeamMember } from '../api/teamMembers';
+import { createTeamMember, deleteTeamMember, listTeamMembers, updateTeamMember, uploadTeamMemberPhoto } from '../api/teamMembers';
 import { listUsers } from '../api/users';
 import { TEAM_ROLES } from '../config/teamRoles';
 import {
@@ -58,7 +58,10 @@ const splitItems = (value) => String(value || '')
 const validOptionalHttpsUrl = (value) => {
   if (!String(value || '').trim()) return true;
   try {
-    return new URL(value).protocol === 'https:';
+    const url = new URL(value);
+    return url.protocol === 'https:' || (
+      url.protocol === 'http:' && ['localhost', '127.0.0.1', '[::1]'].includes(url.hostname)
+    );
   } catch {
     return false;
   }
@@ -108,6 +111,8 @@ const TeamPage = () => {
   const [form, setForm] = useState(null);
   const [formError, setFormError] = useState('');
   const [isSaving, setIsSaving] = useState(false);
+  const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
+  const photoInputRef = useRef(null);
 
   const load = useCallback(async () => {
     setIsLoading(true);
@@ -239,6 +244,22 @@ const TeamPage = () => {
     }
   };
 
+  const choosePhoto = async (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    setFormError('');
+    setIsUploadingPhoto(true);
+    try {
+      const photo_url = await uploadTeamMemberPhoto(file);
+      setForm((current) => ({ ...current, photo_url }));
+    } catch (requestError) {
+      setFormError(requestError.response?.data?.message || t('team.photoUploadError'));
+    } finally {
+      setIsUploadingPhoto(false);
+      if (photoInputRef.current) photoInputRef.current.value = '';
+    }
+  };
+
   const archive = async (member) => {
     if (!window.confirm(t('team.archiveConfirm', { name: member.full_name }))) return;
     try {
@@ -363,7 +384,13 @@ const TeamPage = () => {
                   <input required maxLength={150} value={form.full_name} onChange={(event) => setForm({ ...form, full_name: event.target.value })} className={fieldClass} />
                 </label>
                 <label className={labelClass}>{t('team.photoUrl')}
-                  <input type="url" inputMode="url" placeholder="https://" value={form.photo_url || ''} onChange={(event) => setForm({ ...form, photo_url: event.target.value })} className={fieldClass} />
+                  <div className="mt-1.5 flex gap-2">
+                    <input type="url" inputMode="url" placeholder="https://" value={form.photo_url || ''} onChange={(event) => setForm({ ...form, photo_url: event.target.value })} className={fieldClass.replace('mt-1.5 ', '')} />
+                    <button type="button" onClick={() => photoInputRef.current?.click()} disabled={isUploadingPhoto || isSaving} className="focus-ring shrink-0 rounded-lg border border-sand px-3 text-sm font-medium text-forest disabled:opacity-60">
+                      {isUploadingPhoto ? t('team.uploadingPhoto') : t('team.choosePhoto')}
+                    </button>
+                  </div>
+                  <input ref={photoInputRef} type="file" accept="image/jpeg,image/png,image/webp" onChange={choosePhoto} className="sr-only" />
                 </label>
               </div>
               <label className={`block ${labelClass}`}>{t('team.biography')}

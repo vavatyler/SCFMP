@@ -21,6 +21,7 @@ const locationRoutes = require('./routes/locationRoutes');
 const farmerGroupRoutes = require('./routes/farmerGroupRoutes');
 const teamMemberRoutes = require('./routes/teamMemberRoutes');
 const subscriptionRoutes = require('./routes/subscriptionRoutes');
+const { UPLOAD_DIR } = require('./middleware/uploadMiddleware');
 
 const app = express();
 
@@ -42,6 +43,7 @@ app.use(cors({
 app.use(morgan('dev'));
 app.use(express.json({ limit: '1mb' }));
 app.use(express.urlencoded({ extended: false, limit: '1mb' }));
+app.use('/uploads', express.static(UPLOAD_DIR, { maxAge: '1d' }));
 
 app.get('/api/health', (req, res) => {
   res.status(200).json({ success: true, message: 'AgriBridge API is running' });
