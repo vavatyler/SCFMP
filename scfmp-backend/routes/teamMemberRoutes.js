@@ -29,7 +29,9 @@ const validators = [
   body('biography').optional({ nullable: true }).trim().isLength({ max: 3000 }),
   body('responsibilities').optional({ nullable: true }).trim().isLength({ max: 3000 }),
   body('skills').optional({ nullable: true }).trim().isLength({ max: 2000 }),
-  body('photo_url').optional({ checkFalsy: true }).custom(isAllowedPhotoUrl)
+  body('photo_url').optional({ checkFalsy: true }).isLength({ max: 500 })
+    .withMessage('Profile photo URL must be 500 characters or fewer')
+    .bail().custom(isAllowedPhotoUrl)
     .withMessage('Profile photo URL must use HTTPS, or HTTP on localhost'),
   body('linkedin_url').optional({ checkFalsy: true }).isURL({ protocols: ['https'], require_protocol: true }),
   body('github_url').optional({ checkFalsy: true }).isURL({ protocols: ['https'], require_protocol: true }),

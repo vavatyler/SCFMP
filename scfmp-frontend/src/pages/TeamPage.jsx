@@ -227,11 +227,28 @@ const TeamPage = () => {
     setIsSaving(true);
     try {
       const payload = {
-        ...form,
+        full_name: form.full_name,
+        position: form.position,
+        biography: form.biography,
+        responsibilities: form.responsibilities,
+        skills: form.skills,
+        photo_url: form.photo_url,
+        linkedin_url: form.linkedin_url,
+        github_url: form.github_url,
+        email: form.email,
+        status: form.status,
+        profile_visibility: form.profile_visibility,
         display_order: Number(form.display_order) || 0,
         linked_user_id: form.linked_user_id ? Number(form.linked_user_id) : null,
       };
-      if (!form.linked_user_id) delete payload.access;
+      if (form.linked_user_id) {
+        payload.access = {
+          system_access_enabled: form.access.system_access_enabled,
+          account_status: form.access.account_status,
+          platform_role: form.access.platform_role,
+          permissions: form.access.permissions,
+        };
+      }
       if (editing) await updateTeamMember(editing.id, payload);
       else await createTeamMember(payload);
       closeForm();
