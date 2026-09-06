@@ -45,16 +45,25 @@ export const ALL_PERMISSIONS = Object.freeze(
   PERMISSION_MODULES.flatMap((module) => [module.view, module.manage].filter(Boolean))
 );
 
-export const SYSTEM_ROLES = Object.freeze([
+export const PLATFORM_ROLES = Object.freeze([
   'super_admin',
+  'platform_admin',
+  'technical_admin',
+]);
+
+export const ORGANIZATION_ROLES = Object.freeze([
   'cooperative_manager',
   'accountant',
   'field_officer',
   'farmer',
 ]);
 
+export const SYSTEM_ROLES = Object.freeze([...PLATFORM_ROLES, ...ORGANIZATION_ROLES]);
+
 export const SYSTEM_ROLE_LABELS = Object.freeze({
   super_admin: 'Super Admin',
+  platform_admin: 'Platform Administrator',
+  technical_admin: 'Technical Administrator',
   cooperative_manager: 'Cooperative Manager',
   accountant: 'Accountant',
   field_officer: 'Field Officer',
@@ -63,6 +72,17 @@ export const SYSTEM_ROLE_LABELS = Object.freeze({
 
 const ROLE_PERMISSIONS = Object.freeze({
   super_admin: ALL_PERMISSIONS,
+  platform_admin: [
+    PERMISSIONS.DASHBOARD_VIEW,
+    PERMISSIONS.TEAM_VIEW,
+    PERMISSIONS.SETTINGS_VIEW,
+    PERMISSIONS.SETTINGS_MANAGE,
+  ],
+  technical_admin: [
+    PERMISSIONS.DASHBOARD_VIEW,
+    PERMISSIONS.TEAM_VIEW,
+    PERMISSIONS.SETTINGS_VIEW,
+  ],
   cooperative_manager: ALL_PERMISSIONS.filter((permission) => (
     !permission.startsWith('payroll.') && permission !== PERMISSIONS.TEAM_MANAGE
   )),

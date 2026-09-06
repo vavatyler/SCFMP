@@ -15,6 +15,12 @@ const { recordAuditEvent } = require('../services/auditService');
 const { validatePasswordStrength } = require('../utils/passwordPolicy');
 const { normalizeRwandaPhone } = require('../utils/rwandaPhone');
 const { getEffectivePermissions, getAccessibleModules } = require('../config/accessControl');
+const {
+  ACCOUNT_SCOPES,
+  ORGANIZATION_ROLES,
+  isPlatformRole,
+  accountScopeForRole,
+} = require('../config/accountRoles');
 
 const RESET_TOKEN_EXPIRES_MINUTES = Number(process.env.RESET_TOKEN_EXPIRES_MINUTES) || 30;
 const JWT_ISSUER = process.env.JWT_ISSUER || 'scfmp-api';
@@ -102,9 +108,15 @@ const register = async (req, res) => {
       return res.status(403).json({ success: false, message: 'Managers can only create cooperative staff or farmer accounts' });
     }
 
-    const cooperative_id =
-      req.user.role === 'super_admin' ? req.body.cooperative_id : req.user.cooperative_id;
-    if (role !== 'super_admin' && !cooperative_id) {
+    if (isPlatformRole(role) && req.user.role !== 'super_admin') {
+      return res.status(403).json({ success: false, message: 'Only Super Admin can create platform accounts' });
+    }
+
+    const account_scope = accountScopeForRole(role);
+    const cooperative_id = account_scope === ACCOUNT_SCOPES.ORGANIZATION
+      ? (req.user.role === 'super_admin' ? req.body.cooperative_id : req.user.cooperative_id)
+      : null;
+    if (ORGANIZATION_ROLES.includes(role) && !cooperative_id) {
       return res.status(400).json({ success: false, message: 'cooperative_id is required' });
     }
 
@@ -136,8 +148,9 @@ const register = async (req, res) => {
         phone: normalizeRwandaPhone(phone),
         password_hash: password,
         role,
+        account_scope,
         preferred_language,
-        cooperative_id: role === 'super_admin' ? null : cooperative_id,
+        cooperative_id,
       }, { transaction });
       if (targetMember) {
         targetMember.user_id = user.id;
@@ -154,7 +167,7 @@ const register = async (req, res) => {
       action: 'user.created',
       entityType: 'user',
       entityId: user.id,
-      metadata: { cooperative_id: user.cooperative_id, role: user.role },
+      metadata: { cooperative_id: user.cooperative_id, role: user.role, account_scope: user.account_scope },
     });
     return res.status(201).json({ success: true, data: user });
   } catch (err) {

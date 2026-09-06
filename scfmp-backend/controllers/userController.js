@@ -3,6 +3,12 @@ const { User, Cooperative, RefreshToken, AuditLog } = require('../models');
 const { recordAuditEvent } = require('../services/auditService');
 const { validatePasswordStrength } = require('../utils/passwordPolicy');
 const { getEffectivePermissions, getAccessibleModules } = require('../config/accessControl');
+const {
+  ACCOUNT_SCOPES,
+  PLATFORM_ROLES,
+  ORGANIZATION_ROLES,
+  accountScopeForRole,
+} = require('../config/accountRoles');
 
 const presentListedUser = (user, includeAccess) => {
   const values = user.toJSON();
@@ -31,9 +37,15 @@ const list = async (req, res) => {
     const where = {};
 
     if (req.user.role !== 'super_admin') {
+      where.account_scope = ACCOUNT_SCOPES.ORGANIZATION;
       where.cooperative_id = req.user.cooperative_id;
     } else if (req.query.cooperative_id) {
+      where.account_scope = ACCOUNT_SCOPES.ORGANIZATION;
       where.cooperative_id = req.query.cooperative_id;
+    }
+    if (req.user.role === 'super_admin' && req.query.account_scope) {
+      where.account_scope = req.query.account_scope;
+      if (req.query.account_scope === ACCOUNT_SCOPES.PLATFORM) delete where.cooperative_id;
     }
     if (req.query.role) where.role = req.query.role;
     if (req.query.search) {
@@ -159,13 +171,16 @@ const update = async (req, res) => {
     });
     if (req.body.role !== undefined) {
       const allowed = req.user.role === 'super_admin'
-        ? ['super_admin', 'cooperative_manager', 'accountant', 'field_officer', 'farmer']
+        ? (user.account_scope === ACCOUNT_SCOPES.PLATFORM ? PLATFORM_ROLES : ORGANIZATION_ROLES)
         : ['accountant', 'field_officer', 'farmer'];
       if (!allowed.includes(req.body.role)) {
         return res.status(403).json({ success: false, message: 'You cannot assign that role' });
       }
+      if (accountScopeForRole(req.body.role) !== user.account_scope) {
+        return res.status(400).json({ success: false, message: 'Platform and organization accounts cannot be converted into each other' });
+      }
       updates.role = req.body.role;
-      if (req.body.role === 'super_admin') updates.cooperative_id = null;
+      if (user.account_scope === ACCOUNT_SCOPES.PLATFORM) updates.cooperative_id = null;
     }
     await user.update(updates);
     if (oldRole !== user.role) {

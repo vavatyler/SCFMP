@@ -1,69 +1,83 @@
-import { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { useAuth } from './AuthContext';
 import { getCooperative, listCooperatives } from '../api/cooperatives';
+import { ACTIVE_ORGANIZATION_STORAGE_KEY } from '../config/organizationContext';
 
 const CooperativeContext = createContext(null);
 
+const savedOrganizationId = () => {
+  const saved = Number(localStorage.getItem(ACTIVE_ORGANIZATION_STORAGE_KEY));
+  return Number.isInteger(saved) && saved > 0 ? saved : null;
+};
+
 export const CooperativeProvider = ({ children }) => {
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, isLoading: isAuthLoading } = useAuth();
   const [cooperatives, setCooperatives] = useState([]);
-  const [activeCooperativeId, setActiveCooperativeId] = useState(() => {
-    const saved = localStorage.getItem('scfmp_active_cooperative_id');
-    return saved ? Number(saved) : null;
-  });
-  const [isLoading, setIsLoading] = useState(false);
+  const [activeCooperativeId, setActiveCooperativeId] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
+  const [isSelectorOpen, setIsSelectorOpen] = useState(false);
 
   const isSuperAdmin = user?.role === 'super_admin';
 
+  const selectCooperative = useCallback((nextId) => {
+    const normalizedId = Number(nextId);
+    const authorizedId = Number.isInteger(normalizedId)
+      && cooperatives.some((cooperative) => cooperative.id === normalizedId)
+      ? normalizedId
+      : null;
+    setActiveCooperativeId(authorizedId);
+    if (authorizedId) localStorage.setItem(ACTIVE_ORGANIZATION_STORAGE_KEY, String(authorizedId));
+    else localStorage.removeItem(ACTIVE_ORGANIZATION_STORAGE_KEY);
+  }, [cooperatives]);
+
   const fetchCooperatives = useCallback(async () => {
-    if (!isAuthenticated || !user) return;
+    if (!isAuthenticated || !user) {
+      setCooperatives([]);
+      setActiveCooperativeId(null);
+      setLoadError('');
+      setIsLoading(false);
+      localStorage.removeItem(ACTIVE_ORGANIZATION_STORAGE_KEY);
+      return;
+    }
+
+    const persistedId = savedOrganizationId();
+    // Authorization discovery must never carry a stale persisted organization header.
+    localStorage.removeItem(ACTIVE_ORGANIZATION_STORAGE_KEY);
     setIsLoading(true);
+    setLoadError('');
+    setActiveCooperativeId(null);
     try {
-      if (isSuperAdmin) {
-        const data = await listCooperatives();
-        setCooperatives(data);
-        setActiveCooperativeId((current) => {
-          const stillValid = data.some((c) => c.id === current);
-          return stillValid ? current : data[0]?.id || null;
-        });
-      } else if (user.cooperative_id) {
-        const cooperative = await getCooperative(user.cooperative_id);
-        setCooperatives([cooperative]);
-        setActiveCooperativeId(cooperative.id);
-      } else {
-        setCooperatives([]);
-        setActiveCooperativeId(null);
-      }
+      const data = isSuperAdmin
+        ? await listCooperatives()
+        : user.cooperative_id
+          ? [await getCooperative(user.cooperative_id)]
+          : [];
+      const activeOrganizations = data.filter((organization) => organization.status !== 'inactive' && organization.status !== 'suspended');
+      const restoredId = activeOrganizations.some((organization) => organization.id === persistedId)
+        ? persistedId
+        : null;
+      setCooperatives(activeOrganizations);
+      setActiveCooperativeId(restoredId);
+      if (restoredId) localStorage.setItem(ACTIVE_ORGANIZATION_STORAGE_KEY, String(restoredId));
     } catch {
-      // If this fails, pages will show the empty organization state.
+      setCooperatives([]);
+      setActiveCooperativeId(null);
+      setLoadError('organizationsLoadError');
+      localStorage.removeItem(ACTIVE_ORGANIZATION_STORAGE_KEY);
     } finally {
       setIsLoading(false);
     }
   }, [isAuthenticated, isSuperAdmin, user]);
 
-  useEffect(() => {
-    if (isAuthenticated) {
-      fetchCooperatives();
-    } else {
-      setCooperatives([]);
-    }
-  }, [isAuthenticated, fetchCooperatives]);
+  useEffect(() => { fetchCooperatives(); }, [fetchCooperatives]);
 
-  useEffect(() => {
-    if (activeCooperativeId) {
-      localStorage.setItem('scfmp_active_cooperative_id', String(activeCooperativeId));
-    }
-  }, [activeCooperativeId]);
-
-  // What every page should spread into its API params:
-  // - super_admin: whichever organization is currently selected (or {} if none exist yet)
-  // - everyone else: {} — the backend already scopes them to their own cooperative automatically
+  const activeCooperative = cooperatives.find((cooperative) => cooperative.id === activeCooperativeId) || null;
+  const requestOrganizationSelection = useCallback(() => setIsSelectorOpen(true), []);
   const cooperativeScope = useMemo(
-    () => (isSuperAdmin && activeCooperativeId ? { cooperative_id: activeCooperativeId } : {}),
-    [activeCooperativeId, isSuperAdmin]
+    () => (activeCooperative ? { cooperative_id: activeCooperative.id } : {}),
+    [activeCooperative]
   );
-
-  const activeCooperative = cooperatives.find((c) => c.id === activeCooperativeId) || null;
 
   return (
     <CooperativeContext.Provider
@@ -71,10 +85,16 @@ export const CooperativeProvider = ({ children }) => {
         cooperatives,
         activeCooperativeId,
         activeCooperative,
-        setActiveCooperativeId,
         cooperativeScope,
+        hasOrganizationContext: Boolean(activeCooperative),
         isSuperAdmin,
-        isLoading,
+        isLoading: isAuthLoading || isLoading,
+        loadError,
+        isSelectorOpen,
+        setIsSelectorOpen,
+        requestOrganizationSelection,
+        selectCooperative,
+        setActiveCooperativeId: selectCooperative,
         refetchCooperatives: fetchCooperatives,
       }}
     >

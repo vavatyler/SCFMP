@@ -6,6 +6,7 @@ const { checkRole } = require('../middleware/roleMiddleware');
 const validate = require('../middleware/validateMiddleware');
 const { TEAM_ROLE_VALUES } = require('../config/teamRoles');
 const { ALL_PERMISSIONS } = require('../config/accessControl');
+const { PLATFORM_ROLES } = require('../config/accountRoles');
 
 const router = express.Router();
 router.use(verifyToken);
@@ -27,7 +28,7 @@ const validators = [
   body('access').optional().isObject(),
   body('access.system_access_enabled').optional().isBoolean().toBoolean(),
   body('access.account_status').optional().isIn(['active', 'inactive']),
-  body('access.system_role').optional().isIn(['super_admin', 'cooperative_manager', 'accountant', 'field_officer', 'farmer']),
+  body('access.platform_role').optional().isIn(PLATFORM_ROLES),
   body('access.permissions').optional().isArray({ max: ALL_PERMISSIONS.length }),
   body('access.permissions.*').optional().isIn(ALL_PERMISSIONS),
 ];

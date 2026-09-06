@@ -22,7 +22,7 @@ import { TEAM_ROLES } from '../config/teamRoles';
 import {
   PERMISSION_MODULES,
   PERMISSIONS,
-  SYSTEM_ROLES,
+  PLATFORM_ROLES,
   SYSTEM_ROLE_LABELS,
   accessibleModules,
   permissionsForRole,
@@ -45,8 +45,8 @@ const emptyForm = {
   access: {
     system_access_enabled: false,
     account_status: 'active',
-    system_role: 'field_officer',
-    permissions: permissionsForRole('field_officer'),
+    platform_role: 'technical_admin',
+    permissions: permissionsForRole('technical_admin'),
   },
 };
 
@@ -116,7 +116,7 @@ const TeamPage = () => {
       if (canManage) {
         const [team, accounts] = await Promise.all([
           listTeamMembers({ include_inactive: true, include_hidden: true }),
-          listUsers(),
+          listUsers({ account_scope: 'platform' }),
         ]);
         setMembers(team);
         setUserAccounts(accounts);
@@ -177,14 +177,15 @@ const TeamPage = () => {
       access: {
         system_access_enabled: account.system_access_enabled !== false,
         account_status: account.status,
-        system_role: account.role,
+        platform_role: account.role,
+        last_login_at: account.last_login_at || null,
         permissions: [...(account.effective_permissions || permissionsForRole(account.role))],
       },
     });
   };
 
-  const chooseSystemRole = (role) => updateAccess({
-    system_role: role,
+  const choosePlatformRole = (role) => updateAccess({
+    platform_role: role,
     permissions: permissionsForRole(role),
   });
 
@@ -420,9 +421,10 @@ const TeamPage = () => {
               <section className="space-y-4 rounded-xl border border-sand bg-sand/10 p-4 sm:p-5">
                 <div className="flex items-center gap-2">
                   <ShieldCheck className="h-5 w-5 text-forest" />
-                  <SectionHeading>{t('team.systemAccess')}</SectionHeading>
+                  <SectionHeading>{t('team.manageSystemAccess')}</SectionHeading>
                 </div>
                 <p className="text-sm text-ink-soft">{t('team.systemAccessHelp')}</p>
+                <p className="text-xs text-ink-soft">{t('team.platformAccountsOnly')}</p>
                 <label className={`block ${labelClass}`}>{t('team.linkedAccount')}
                   <select value={form.linked_user_id} onChange={(event) => chooseAccount(event.target.value)} className={fieldClass}>
                     <option value="">{t('team.noLinkedAccount')}</option>
@@ -447,16 +449,19 @@ const TeamPage = () => {
                         <option value="disabled">{t('team.disabled')}</option>
                       </select>
                     </label>
-                    <label className={labelClass}>{t('team.accountStatus')}
+                    <label className={labelClass}>{t('team.accountActivationStatus')}
                       <select disabled={isOwnAccount} value={form.access.account_status} onChange={(event) => updateAccess({ account_status: event.target.value })} className={fieldClass}>
                         <option value="active">{t('common.active')}</option>
                         <option value="inactive">{t('common.inactive')}</option>
                       </select>
                     </label>
-                    <label className={labelClass}>{t('team.assignedSystemRole')}
-                      <select disabled={isOwnAccount} value={form.access.system_role} onChange={(event) => chooseSystemRole(event.target.value)} className={fieldClass}>
-                        {SYSTEM_ROLES.map((role) => <option key={role} value={role}>{SYSTEM_ROLE_LABELS[role]}</option>)}
+                    <label className={labelClass}>{t('team.platformRole')}
+                      <select disabled={isOwnAccount} value={form.access.platform_role} onChange={(event) => choosePlatformRole(event.target.value)} className={fieldClass}>
+                        {PLATFORM_ROLES.map((role) => <option key={role} value={role}>{SYSTEM_ROLE_LABELS[role]}</option>)}
                       </select>
+                    </label>
+                    <label className={labelClass}>{t('team.lastLogin')}
+                      <input readOnly value={form.access.last_login_at ? new Date(form.access.last_login_at).toLocaleString() : t('team.neverSignedIn')} className={`${fieldClass} bg-sand/20`} />
                     </label>
                   </div>
 

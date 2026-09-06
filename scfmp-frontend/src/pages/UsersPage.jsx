@@ -49,7 +49,7 @@ const UsersPage = () => {
       setUsers(data);
       setAvailableMembers(memberResult.data.filter((member) => !member.user_id));
     } catch (err) {
-      setError('Could not load team members. Is the backend server running?');
+      setError(t('organizationStaff.loadError'));
     } finally {
       setIsLoading(false);
     }
@@ -145,8 +145,8 @@ const UsersPage = () => {
     <DashboardLayout
       title={t('common.staffAccounts')}
       subtitle={
-        isSuperAdmin && activeCooperative
-          ? `Staff accounts for ${activeCooperative.name}.`
+        activeCooperative
+          ? t('organizationStaff.subtitle', { name: activeCooperative.name })
           : t('modules.staffSubtitle')
       }
     >
@@ -162,7 +162,7 @@ const UsersPage = () => {
             className="focus-ring flex items-center gap-2 rounded-lg bg-forest px-4 py-2 text-sm font-medium text-paper hover:bg-forest-light disabled:opacity-50"
           >
             <Plus className="h-4 w-4" />
-            Add team member
+            {t('organizationStaff.add')}
           </button>
         </div>
       )}
@@ -171,20 +171,19 @@ const UsersPage = () => {
         {isLoading ? (
           <div className="flex h-40 items-center justify-center text-ink-soft">
             <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-            Loading team…
+            {t('organizationStaff.loading')}
           </div>
         ) : error ? (
           <div className="p-6 text-sm text-clay">{error}</div>
         ) : users.length === 0 ? (
-          <div className="p-10 text-center text-sm text-ink-soft">No team members yet.</div>
+          <div className="p-10 text-center text-sm text-ink-soft">{t('organizationStaff.empty')}</div>
         ) : (
           <div className="overflow-x-auto"><table className="w-full min-w-[920px] text-left text-sm">
             <thead className="border-b border-sand bg-sand/30 text-xs uppercase tracking-wide text-ink-soft">
               <tr>
                 <th className="px-5 py-3 font-medium">Name</th>
                 <th className="px-5 py-3 font-medium">Email</th>
-                <th className="px-5 py-3 font-medium">{t('team.officialRole')}</th>
-                <th className="px-5 py-3 font-medium">{t('team.systemRole')}</th>
+                <th className="px-5 py-3 font-medium">{t('organizationStaff.organizationRole')}</th>
                 {isSuperAdmin && <th className="px-5 py-3 font-medium">Organization</th>}
                 <th className="px-5 py-3 font-medium">{t('common.status')}</th>
                 <th className="px-5 py-3 font-medium"></th>
@@ -202,7 +201,6 @@ const UsersPage = () => {
                     </div>
                   </td>
                   <td className="px-5 py-3.5 text-ink-soft">{u.email}</td>
-                  <td className="px-5 py-3.5 text-ink-soft">{u.official_role || '—'}</td>
                   <td className="px-5 py-3.5 text-ink-soft">{SYSTEM_ROLE_LABELS[u.role] || u.role}</td>
                   {isSuperAdmin && (
                     <td className="px-5 py-3.5 text-ink-soft">{u.cooperative?.name || '—'}</td>
@@ -243,7 +241,7 @@ const UsersPage = () => {
         )}
       </div>
 
-      <Modal title="Add team member" isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}>
+      <Modal title={t('organizationStaff.add')} isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}>
         <form onSubmit={handleCreate}>
           {formError && (
             <div className="mb-4 rounded-lg bg-clay/10 px-3.5 py-2.5 text-sm text-clay">

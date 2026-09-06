@@ -1,5 +1,6 @@
 const { DataTypes, Model } = require('sequelize');
 const bcrypt = require('bcryptjs');
+const { ACCOUNT_SCOPES, ALL_ACCOUNT_ROLES, accountScopeForRole } = require('../config/accountRoles');
 
 module.exports = (sequelize) => {
   class User extends Model {
@@ -78,14 +79,14 @@ module.exports = (sequelize) => {
         allowNull: false,
       },
       role: {
-        type: DataTypes.ENUM(
-          'super_admin',
-          'cooperative_manager',
-          'accountant',
-          'field_officer',
-          'farmer'
-        ),
+        type: DataTypes.ENUM(...ALL_ACCOUNT_ROLES),
         allowNull: false,
+      },
+      account_scope: {
+        type: DataTypes.STRING(20),
+        allowNull: false,
+        defaultValue: ACCOUNT_SCOPES.ORGANIZATION,
+        validate: { isIn: [Object.values(ACCOUNT_SCOPES)] },
       },
       status: {
         type: DataTypes.ENUM('active', 'inactive'),
@@ -118,6 +119,10 @@ module.exports = (sequelize) => {
       tableName: 'users',
       underscored: true,
       hooks: {
+        beforeValidate: (user) => {
+          user.account_scope = accountScopeForRole(user.role);
+          if (user.account_scope === ACCOUNT_SCOPES.PLATFORM) user.cooperative_id = null;
+        },
         // Hash the password automatically whenever it's set or changed
         beforeCreate: async (user) => {
           if (user.password_hash) {

@@ -3,6 +3,7 @@ const productionMigration = require('../migrations/20260905000022-expand-product
 const documentMigration = require('../migrations/20260905000023-expand-document-metadata');
 const platformMigration = require('../migrations/20260905000024-create-team-and-subscriptions');
 const teamAccessMigration = require('../migrations/20260906000025-add-team-access-management');
+const accountSeparationMigration = require('../migrations/20260906000026-separate-platform-and-organization-accounts');
 
 describe('AgriBridge expansion migrations', () => {
   let sequelize;
@@ -17,6 +18,8 @@ describe('AgriBridge expansion migrations', () => {
     await queryInterface.createTable('users', {
       id: { type: DataTypes.INTEGER, primaryKey: true },
       email: { type: DataTypes.STRING(150), allowNull: false },
+      cooperative_id: { type: DataTypes.INTEGER, allowNull: true },
+      role: { type: DataTypes.ENUM('super_admin', 'cooperative_manager', 'accountant', 'field_officer', 'farmer'), allowNull: false },
     });
     await queryInterface.createTable('farmers', {
       id: { type: DataTypes.INTEGER, primaryKey: true },
@@ -106,7 +109,7 @@ describe('AgriBridge expansion migrations', () => {
 
   it('adds optional Team/User access fields without changing legacy records', async () => {
     await platformMigration.up(queryInterface, Sequelize);
-    await queryInterface.bulkInsert('users', [{ id: 41, email: 'legacy@example.test' }]);
+    await queryInterface.bulkInsert('users', [{ id: 41, email: 'legacy@example.test', cooperative_id: 7, role: 'cooperative_manager' }]);
     await queryInterface.bulkInsert('team_members', [{
       id: 51,
       full_name: 'Legacy Team Member',
@@ -140,5 +143,22 @@ describe('AgriBridge expansion migrations', () => {
       profile_visibility: 'visible',
       linked_user_id: null,
     }));
+  });
+
+  it('separates platform accounts from organization staff without changing IDs or assignments', async () => {
+    await queryInterface.bulkInsert('users', [
+      { id: 61, email: 'platform@example.test', cooperative_id: null, role: 'super_admin' },
+      { id: 62, email: 'staff@example.test', cooperative_id: 7, role: 'accountant' },
+    ]);
+
+    await accountSeparationMigration.up(queryInterface, Sequelize);
+
+    const columns = await queryInterface.describeTable('users');
+    const [records] = await sequelize.query('SELECT id, cooperative_id, role, account_scope FROM users ORDER BY id');
+    expect(columns.account_scope).toEqual(expect.objectContaining({ allowNull: false }));
+    expect(records).toEqual([
+      expect.objectContaining({ id: 61, cooperative_id: null, role: 'super_admin', account_scope: 'platform' }),
+      expect.objectContaining({ id: 62, cooperative_id: 7, role: 'accountant', account_scope: 'organization' }),
+    ]);
   });
 });

@@ -18,6 +18,7 @@ const { verifyToken } = require('../middleware/authMiddleware');
 const { checkRole } = require('../middleware/roleMiddleware');
 const { isRwandaPhone } = require('../utils/rwandaPhone');
 const validate = require('../middleware/validateMiddleware');
+const { ALL_ACCOUNT_ROLES } = require('../config/accountRoles');
 
 // Prevents someone from spamming reset emails at an account, or brute-forcing tokens
 const forgotPasswordLimiter = rateLimit({
@@ -57,7 +58,7 @@ router.post(
     body('preferred_language').optional().isIn(['en', 'rw', 'fr']),
     body('member_id').if(body('role').equals('farmer')).isInt({ min: 1 }).withMessage('member_id is required for farmer accounts'),
     body('role')
-      .isIn(['super_admin', 'cooperative_manager', 'accountant', 'field_officer', 'farmer'])
+      .isIn(ALL_ACCOUNT_ROLES)
       .withMessage('Invalid role'),
   ],
   validate,

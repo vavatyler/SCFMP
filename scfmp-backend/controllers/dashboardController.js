@@ -10,10 +10,8 @@ const {
 } = require('../models');
 
 const resolveCooperativeScope = (req) => {
-  if (req.user.role === 'super_admin') {
-    return req.query.cooperative_id || null;
-  }
-  return req.user.cooperative_id;
+  if (req.organizationId) return req.organizationId;
+  return req.user.role === 'super_admin' ? null : req.user.cooperative_id;
 };
 
 /**
@@ -152,12 +150,13 @@ const buildSummary = async (cooperativeId, { from, to, user } = {}) => {
 /**
  * GET /api/dashboard/summary
  * Optional ?from= &to= to scope to a reporting period.
- * super_admin can pass ?cooperative_id= to view a specific cooperative; omitting it
- * gives a platform-wide summary for super_admin, or the caller's own cooperative otherwise.
+ * Organization data always requires an explicit Super Admin organization context.
+ * Organization accounts remain locked to their assigned cooperative.
  */
 const summary = async (req, res) => {
   try {
     const cooperativeId = resolveCooperativeScope(req);
+    if (!cooperativeId) return res.status(400).json({ success: false, message: 'Select an organization to view dashboard data' });
     const { from, to } = req.query;
     const data = await buildSummary(cooperativeId, { from, to, user: req.user });
     return res.status(200).json({ success: true, data });
@@ -173,6 +172,7 @@ const summary = async (req, res) => {
 const exportCsv = async (req, res) => {
   try {
     const cooperativeId = resolveCooperativeScope(req);
+    if (!cooperativeId) return res.status(400).json({ success: false, message: 'Select an organization to export dashboard data' });
     const { from, to } = req.query;
     const data = await buildSummary(cooperativeId, { from, to, user: req.user });
 

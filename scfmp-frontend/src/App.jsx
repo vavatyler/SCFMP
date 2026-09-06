@@ -20,6 +20,7 @@ import SettingsPage from './pages/SettingsPage';
 import NotFoundPage from './pages/NotFoundPage';
 import ContactPage from './pages/ContactPage';
 import ProtectedRoute from './components/ProtectedRoute';
+import OrganizationRoute from './components/OrganizationRoute';
 import { PERMISSIONS } from './config/permissions';
 
 function App() {
@@ -41,7 +42,7 @@ function App() {
         path="/members"
         element={
           <ProtectedRoute permission={PERMISSIONS.MEMBERS_VIEW}>
-            <MembersPage />
+            <OrganizationRoute titleKey="common.members" descriptionKey="membersDescription"><MembersPage /></OrganizationRoute>
           </ProtectedRoute>
         }
       />
@@ -49,7 +50,7 @@ function App() {
         path="/members/:id"
         element={
           <ProtectedRoute permission={PERMISSIONS.MEMBERS_VIEW}>
-            <MemberDetailPage />
+            <OrganizationRoute titleKey="common.members" descriptionKey="membersDescription"><MemberDetailPage /></OrganizationRoute>
           </ProtectedRoute>
         }
       />
@@ -57,7 +58,7 @@ function App() {
         path="/farmers"
         element={
           <ProtectedRoute permission={PERMISSIONS.FARMERS_VIEW}>
-            <FarmersPage />
+            <OrganizationRoute titleKey="common.farmers" descriptionKey="farmersDescription"><FarmersPage /></OrganizationRoute>
           </ProtectedRoute>
         }
       />
@@ -65,18 +66,18 @@ function App() {
         path="/production"
         element={
           <ProtectedRoute permission={PERMISSIONS.PRODUCTION_VIEW}>
-            <ProductionPage />
+            <OrganizationRoute titleKey="common.production" descriptionKey="productionDescription"><ProductionPage /></OrganizationRoute>
           </ProtectedRoute>
         }
       />
-      <Route path="/production/individual" element={<ProtectedRoute permission={PERMISSIONS.PRODUCTION_VIEW}><ProductionPage forcedMode="individual" /></ProtectedRoute>} />
-      <Route path="/production/group" element={<ProtectedRoute permission={PERMISSIONS.PRODUCTION_VIEW}><ProductionPage forcedMode="group" /></ProtectedRoute>} />
-      <Route path="/farmer-groups" element={<ProtectedRoute permission={PERMISSIONS.FARMERS_VIEW}><FarmerGroupsPage /></ProtectedRoute>} />
+      <Route path="/production/individual" element={<ProtectedRoute permission={PERMISSIONS.PRODUCTION_VIEW}><OrganizationRoute titleKey="common.individualProduction" descriptionKey="productionDescription"><ProductionPage forcedMode="individual" /></OrganizationRoute></ProtectedRoute>} />
+      <Route path="/production/group" element={<ProtectedRoute permission={PERMISSIONS.PRODUCTION_VIEW}><OrganizationRoute titleKey="common.groupProduction" descriptionKey="productionDescription"><ProductionPage forcedMode="group" /></OrganizationRoute></ProtectedRoute>} />
+      <Route path="/farmer-groups" element={<ProtectedRoute permission={PERMISSIONS.FARMERS_VIEW}><OrganizationRoute titleKey="common.farmerGroups" descriptionKey="groupsDescription"><FarmerGroupsPage /></OrganizationRoute></ProtectedRoute>} />
       <Route
         path="/finance"
         element={
           <ProtectedRoute permission={PERMISSIONS.FINANCE_VIEW}>
-            <FinancePage />
+            <OrganizationRoute titleKey="common.finance" descriptionKey="financeDescription"><FinancePage /></OrganizationRoute>
           </ProtectedRoute>
         }
       />
@@ -84,7 +85,7 @@ function App() {
         path="/inventory"
         element={
           <ProtectedRoute permission={PERMISSIONS.INVENTORY_VIEW}>
-            <InventoryPage />
+            <OrganizationRoute titleKey="common.inventory" descriptionKey="inventoryDescription"><InventoryPage /></OrganizationRoute>
           </ProtectedRoute>
         }
       />
@@ -92,7 +93,7 @@ function App() {
         path="/documents"
         element={
           <ProtectedRoute permission={PERMISSIONS.DOCUMENTS_VIEW}>
-            <DocumentsPage />
+            <OrganizationRoute titleKey="common.documents" descriptionKey="documentsDescription"><DocumentsPage /></OrganizationRoute>
           </ProtectedRoute>
         }
       />
@@ -112,8 +113,8 @@ function App() {
           </ProtectedRoute>
         }
       />
-      <Route path="/documents/categories" element={<ProtectedRoute permission={PERMISSIONS.DOCUMENTS_VIEW}><DocumentsPage forcedView="categories" /></ProtectedRoute>} />
-      <Route path="/documents/expiring" element={<ProtectedRoute permission={PERMISSIONS.DOCUMENTS_VIEW}><DocumentsPage forcedStatus="expiring_soon" /></ProtectedRoute>} />
+      <Route path="/documents/categories" element={<ProtectedRoute permission={PERMISSIONS.DOCUMENTS_VIEW}><OrganizationRoute titleKey="common.documentCategories" descriptionKey="documentsDescription"><DocumentsPage forcedView="categories" /></OrganizationRoute></ProtectedRoute>} />
+      <Route path="/documents/expiring" element={<ProtectedRoute permission={PERMISSIONS.DOCUMENTS_VIEW}><OrganizationRoute titleKey="common.expiringDocuments" descriptionKey="documentsDescription"><DocumentsPage forcedStatus="expiring_soon" /></OrganizationRoute></ProtectedRoute>} />
       <Route
         path="/contact"
         element={
@@ -122,9 +123,9 @@ function App() {
           </ProtectedRoute>
         }
       />
-      <Route path="/staff" element={<ProtectedRoute permission={PERMISSIONS.USERS_VIEW}><UsersPage /></ProtectedRoute>} />
+      <Route path="/staff" element={<ProtectedRoute permission={PERMISSIONS.USERS_VIEW}><OrganizationRoute titleKey="common.staffAccounts" descriptionKey="staffDescription"><UsersPage /></OrganizationRoute></ProtectedRoute>} />
       <Route path="/subscription" element={<ProtectedRoute permission={PERMISSIONS.SETTINGS_VIEW}><SubscriptionPage /></ProtectedRoute>} />
-      <Route path="/reports" element={<ProtectedRoute permission={PERMISSIONS.REPORTS_VIEW}><ReportsPage /></ProtectedRoute>} />
+      <Route path="/reports" element={<ProtectedRoute permission={PERMISSIONS.REPORTS_VIEW}><OrganizationRoute titleKey="common.reports" descriptionKey="reportsDescription"><ReportsPage /></OrganizationRoute></ProtectedRoute>} />
       <Route path="/settings" element={<ProtectedRoute permission={PERMISSIONS.SETTINGS_VIEW}><SettingsPage /></ProtectedRoute>} />
       <Route path="*" element={<NotFoundPage />} />
     </Routes>

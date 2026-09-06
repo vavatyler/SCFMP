@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { ACTIVE_ORGANIZATION_STORAGE_KEY } from '../config/organizationContext';
 
 const API_URL = import.meta.env.VITE_API_URL
   || (import.meta.env.DEV ? 'http://localhost:5000/api' : '/api');
@@ -10,6 +11,10 @@ apiClient.interceptors.request.use((config) => {
   const token = localStorage.getItem('scfmp_access_token');
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
+  }
+  const organizationId = Number(localStorage.getItem(ACTIVE_ORGANIZATION_STORAGE_KEY));
+  if (Number.isInteger(organizationId) && organizationId > 0) {
+    config.headers['X-Organization-Id'] = String(organizationId);
   }
   return config;
 });

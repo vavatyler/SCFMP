@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { AlertTriangle, Loader2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import DashboardLayout from '../components/DashboardLayout';
+import NoOrganizationSelectedState from '../components/NoOrganizationSelectedState';
 import StatCard from '../components/StatCard';
 import { getDashboardSummary } from '../api/dashboard';
 import { useAuth } from '../context/AuthContext';
@@ -11,13 +12,23 @@ import { getDashboardGreeting } from '../utils/dashboardGreeting';
 const DashboardPage = () => {
   const { t } = useTranslation();
   const { user } = useAuth();
-  const { cooperativeScope, isSuperAdmin, activeCooperativeId, activeCooperative } = useCooperative();
+  const {
+    cooperativeScope,
+    isSuperAdmin,
+    activeCooperativeId,
+    activeCooperative,
+    isLoading: isOrganizationLoading,
+  } = useCooperative();
   const [summary, setSummary] = useState(null);
+  const [summaryOrganizationId, setSummaryOrganizationId] = useState(null);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    if (isSuperAdmin && !activeCooperativeId) {
+    setSummary(null);
+    setSummaryOrganizationId(null);
+    setError('');
+    if (!activeCooperativeId) {
       setIsLoading(false);
       return;
     }
@@ -26,6 +37,7 @@ const DashboardPage = () => {
       setError('');
       try {
         setSummary(await getDashboardSummary(cooperativeScope));
+        setSummaryOrganizationId(activeCooperativeId);
       } catch {
         setError(t('dashboard.loadError'));
       } finally {
@@ -33,9 +45,9 @@ const DashboardPage = () => {
       }
     };
     fetchSummary();
-  }, [user, activeCooperativeId, t]);
+  }, [activeCooperativeId, cooperativeScope, t]);
 
-  if (isLoading || (!summary && !error && !(isSuperAdmin && !activeCooperativeId))) {
+  if (isOrganizationLoading || isLoading || (activeCooperativeId && summaryOrganizationId !== activeCooperativeId && !error)) {
     return <DashboardLayout><div className="flex h-64 items-center justify-center text-ink-soft"><Loader2 className="mr-2 h-5 w-5 animate-spin" />{t('common.loading')}</div></DashboardLayout>;
   }
 
@@ -43,8 +55,12 @@ const DashboardPage = () => {
     return <DashboardLayout><div className="flex items-center gap-3 rounded-xl border border-clay/20 bg-clay/5 p-5 text-clay" role="alert"><AlertTriangle className="h-5 w-5 shrink-0" /><p className="text-sm">{error}</p></div></DashboardLayout>;
   }
 
-  if (isSuperAdmin && !activeCooperativeId) {
-    return <DashboardLayout title={t('common.welcome', { name: user?.first_name })}><div className="rounded-xl border border-sand bg-white p-8 text-center shadow-card"><p className="text-sm text-ink-soft">{t('dashboard.noCooperative')}</p></div></DashboardLayout>;
+  if (!activeCooperativeId || !activeCooperative) {
+    return (
+      <DashboardLayout title={t('common.dashboard')} subtitle={t('organizationContext.noCurrentOrganization')}>
+        <NoOrganizationSelectedState descriptionKey="dashboardDescription" showModules />
+      </DashboardLayout>
+    );
   }
 
   const dashboardGreeting = getDashboardGreeting({
@@ -54,7 +70,10 @@ const DashboardPage = () => {
   });
 
   return (
-    <DashboardLayout title={t(dashboardGreeting.key, dashboardGreeting.values)} subtitle={t('dashboard.subtitle')}>
+    <DashboardLayout
+      title={t(dashboardGreeting.key, dashboardGreeting.values)}
+      subtitle={t('organizationContext.currentOrganization', { name: activeCooperative.name })}
+    >
       <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
         <StatCard label={t('dashboard.totalMembers')} value={summary.members.total} accent="forest" />
         <StatCard label={t('dashboard.activeFarmers')} value={summary.farmers.total} accent="forest" />

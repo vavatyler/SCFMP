@@ -6,8 +6,8 @@ const {
   validatePermissions,
 } = require('../config/accessControl');
 const { isOfficialTeamRole } = require('../config/teamRoles');
+const { ACCOUNT_SCOPES, PLATFORM_ROLES } = require('../config/accountRoles');
 
-const SYSTEM_ROLES = ['super_admin', 'cooperative_manager', 'accountant', 'field_officer', 'farmer'];
 const cleanOptional = (value) => String(value || '').trim() || null;
 const accountAttributes = [
   'id',
@@ -15,7 +15,9 @@ const accountAttributes = [
   'last_name',
   'email',
   'role',
+  'account_scope',
   'status',
+  'last_login_at',
   'system_access_enabled',
   'permissions',
 ];
@@ -55,7 +57,9 @@ const managementProfile = (member) => {
     access: {
       system_access_enabled: account ? account.system_access_enabled !== false : false,
       account_status: account?.status || 'not_linked',
-      system_role: account?.role || null,
+      platform_role: account?.role || null,
+      account_scope: account?.account_scope || null,
+      last_login_at: account?.last_login_at || null,
       custom_permissions: account?.permissions ?? null,
       permissions: effectivePermissions,
       accessible_modules: getAccessibleModules(effectivePermissions),
@@ -89,6 +93,9 @@ const auditAccessEvents = async (req, user, events) => {
 const updateAccountAccess = async ({ req, account, access, transaction }) => {
   if (!access || Object.keys(access).length === 0) return [];
   if (!account) throw httpError(400, 'Link a user account before configuring system access');
+  if (account.account_scope !== ACCOUNT_SCOPES.PLATFORM) {
+    throw httpError(400, 'Only independent platform accounts can receive Team platform access');
+  }
 
   const events = [];
   const updates = {};
@@ -120,18 +127,16 @@ const updateAccountAccess = async ({ req, account, access, transaction }) => {
     }
   }
 
-  if (access.system_role !== undefined) {
-    if (!SYSTEM_ROLES.includes(access.system_role)) throw httpError(400, 'Unsupported system role');
-    if (account.id === req.user.id && access.system_role !== 'super_admin') {
+  if (access.platform_role !== undefined) {
+    if (!PLATFORM_ROLES.includes(access.platform_role)) throw httpError(400, 'Unsupported platform role');
+    if (account.id === req.user.id && access.platform_role !== 'super_admin') {
       throw httpError(400, 'You cannot remove your own Super Admin role');
     }
-    if (access.system_role !== 'super_admin' && !account.cooperative_id) {
-      throw httpError(400, 'Assign this account to an organization before using that system role');
-    }
-    if (access.system_role !== account.role) {
-      events.push({ action: 'team_access.system_role_changed', metadata: { from: account.role, to: access.system_role } });
-      updates.role = access.system_role;
-      updates.cooperative_id = access.system_role === 'super_admin' ? null : account.cooperative_id;
+    if (access.platform_role !== account.role) {
+      events.push({ action: 'team_access.platform_role_changed', metadata: { from: account.role, to: access.platform_role } });
+      updates.role = access.platform_role;
+      updates.account_scope = ACCOUNT_SCOPES.PLATFORM;
+      updates.cooperative_id = null;
       revokeSessions = true;
     }
   }
@@ -164,6 +169,9 @@ const resolveLinkedAccount = async (linkedUserId, memberId, transaction) => {
   if (linkedUserId === null || linkedUserId === '' || linkedUserId === undefined) return null;
   const account = await User.findByPk(linkedUserId, { transaction });
   if (!account) throw httpError(400, 'Linked user account was not found');
+  if (account.account_scope !== ACCOUNT_SCOPES.PLATFORM || !PLATFORM_ROLES.includes(account.role)) {
+    throw httpError(400, 'Only independent platform accounts can be linked to Team profiles');
+  }
   const alreadyLinked = await TeamMember.findOne({
     where: { linked_user_id: account.id },
     transaction,

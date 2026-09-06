@@ -35,6 +35,7 @@ describe('Team profiles and linked-account access management', () => {
   let superAdmin;
   let manager;
   let restrictedAccount;
+  let platformAccount;
 
   beforeAll(async () => {
     process.env.JWT_SECRET = JWT_SECRET;
@@ -66,10 +67,18 @@ describe('Team profiles and linked-account access management', () => {
       password_hash: 'SecurePassword123',
       role: 'field_officer',
     });
+    platformAccount = await models.User.create({
+      first_name: 'Platform',
+      last_name: 'Administrator',
+      email: 'platform-team@example.test',
+      password_hash: 'SecurePassword123',
+      role: 'platform_admin',
+    });
 
     app = express();
     app.use(express.json());
     app.use('/api/auth', require('../routes/authRoutes'));
+    app.use('/api/users', require('../routes/userRoutes'));
     app.use('/api/team-members', require('../routes/teamMemberRoutes'));
     app.use('/api/transactions', require('../routes/transactionRoutes'));
   });
@@ -103,7 +112,7 @@ describe('Team profiles and linked-account access management', () => {
       position: 'Volunteer — AgriBridge & Field Systems Support',
       status: 'active',
       profile_visibility: 'hidden',
-      linked_user_id: manager.id,
+      linked_user_id: superAdmin.id,
     });
 
     const ordinary = await authenticated(request(app).get('/api/team-members'), manager).expect(200);
@@ -118,9 +127,9 @@ describe('Team profiles and linked-account access management', () => {
     const hidden = management.body.data.find((profile) => profile.full_name === 'Hidden Person');
     expect(hidden).toEqual(expect.objectContaining({
       profile_visibility: 'hidden',
-      linked_user_id: manager.id,
+      linked_user_id: superAdmin.id,
     }));
-    expect(hidden.access.account.email).toBe(manager.email);
+    expect(hidden.access.account.email).toBe(superAdmin.email);
   });
 
   it('rejects direct non-Super-Admin management and applies granular backend permissions', async () => {
@@ -138,11 +147,11 @@ describe('Team profiles and linked-account access management', () => {
     const founder = await models.TeamMember.findOne({ where: { position: 'Founder & CEO' } });
     const update = await authenticated(request(app).put(`/api/team-members/${founder.id}`), superAdmin)
       .send({
-        linked_user_id: restrictedAccount.id,
+        linked_user_id: platformAccount.id,
         access: {
           system_access_enabled: false,
           account_status: 'active',
-          system_role: 'field_officer',
+          platform_role: 'platform_admin',
           permissions: [PERMISSIONS.TEAM_VIEW],
         },
       })
@@ -153,11 +162,12 @@ describe('Team profiles and linked-account access management', () => {
       accessible_modules: ['team'],
     }));
 
-    await restrictedAccount.reload();
-    expect(restrictedAccount.system_access_enabled).toBe(false);
-    await authenticated(request(app).get('/api/team-members'), restrictedAccount).expect(401);
+    expect(update.body.data.access.platform_role).toBe('platform_admin');
+    await platformAccount.reload();
+    expect(platformAccount.system_access_enabled).toBe(false);
+    await authenticated(request(app).get('/api/team-members'), platformAccount).expect(401);
     await request(app).post('/api/auth/login').send({
-      email: restrictedAccount.email,
+      email: platformAccount.email,
       password: 'SecurePassword123',
     }).expect(401);
 
@@ -166,17 +176,64 @@ describe('Team profiles and linked-account access management', () => {
         access: {
           system_access_enabled: true,
           account_status: 'inactive',
-          system_role: 'field_officer',
+          platform_role: 'platform_admin',
           permissions: [PERMISSIONS.TEAM_VIEW],
         },
       })
       .expect(200);
-    await restrictedAccount.reload();
-    expect(restrictedAccount.status).toBe('inactive');
+    await platformAccount.reload();
+    expect(platformAccount.status).toBe('inactive');
     await request(app).post('/api/auth/login').send({
-      email: restrictedAccount.email,
+      email: platformAccount.email,
       password: 'SecurePassword123',
     }).expect(401);
+  });
+
+  it('does not allow organization staff accounts to be linked to the platform Team', async () => {
+    const volunteer = await models.TeamMember.findOne({
+      where: { position: 'Volunteer — AgriBridge & Field Systems Support' },
+    });
+    await authenticated(request(app).put(`/api/team-members/${volunteer.id}`), superAdmin)
+      .send({ linked_user_id: manager.id })
+      .expect(400);
+    await volunteer.reload();
+    expect(volunteer.linked_user_id).toBeNull();
+  });
+
+  it('creates platform login accounts through authentication without an organization assignment', async () => {
+    await authenticated(request(app).post('/api/auth/register'), manager)
+      .send({
+        first_name: 'Unauthorized',
+        last_name: 'Platform User',
+        email: 'unauthorized-platform@example.test',
+        password: 'SecurePassword123',
+        role: 'technical_admin',
+      })
+      .expect(403);
+
+    const created = await authenticated(request(app).post('/api/auth/register'), superAdmin)
+      .send({
+        first_name: 'Technical',
+        last_name: 'Administrator',
+        email: 'technical-platform@example.test',
+        password: 'SecurePassword123',
+        role: 'technical_admin',
+        cooperative_id: manager.cooperative_id,
+      })
+      .expect(201);
+    expect(created.body.data).toEqual(expect.objectContaining({
+      role: 'technical_admin',
+      account_scope: 'platform',
+      cooperative_id: null,
+    }));
+    expect(created.body.data.password_hash).toBeUndefined();
+
+    const platformAccounts = await authenticated(
+      request(app).get('/api/users').query({ account_scope: 'platform' }),
+      superAdmin
+    ).expect(200);
+    expect(platformAccounts.body.data.map((account) => account.id)).toContain(created.body.data.id);
+    expect(platformAccounts.body.data.map((account) => account.id)).not.toContain(manager.id);
   });
 
   it('keeps archived Team records while hiding them from showcase results', async () => {

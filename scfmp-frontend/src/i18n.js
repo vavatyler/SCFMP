@@ -736,6 +736,60 @@ fr.documents.types = {
   cooperative_registration_certificate: 'Certificat d’enregistrement de la coopérative', certificates: 'Certificats', cooperative_bylaws_constitution: 'Statuts / Constitution de la coopérative', policies: 'Politiques', general_assembly_minutes: 'Procès-verbal de l’Assemblée générale', board_meeting_minutes: 'Procès-verbal du Conseil', management_meeting_minutes: 'Procès-verbal de la direction', meeting_agenda: 'Ordre du jour', annual_general_meeting_documents: 'Documents de l’Assemblée générale annuelle', member_register: 'Registre des membres', membership_documents: 'Documents d’adhésion', financial_reports: 'Rapports financiers', audit_reports: 'Rapports d’audit', annual_reports: 'Rapports annuels', strategic_plan: 'Plan stratégique', business_plan: 'Plan d’affaires', production_reports: 'Rapports de production', contracts_agreements: 'Contrats / Accords', government_correspondence: 'Correspondance gouvernementale', group_registration: 'Enregistrement du groupe', group_constitution: 'Constitution du groupe', group_rules: 'Règles du groupe', meeting_minutes: 'Procès-verbal de réunion', attendance_records: 'Registres de présence', financial_records: 'Dossiers financiers', production_records: 'Dossiers de production', training_documents: 'Documents de formation', agreements: 'Accords', business_registration: 'Enregistrement commercial', business_license: 'Licence commerciale', company_policies: 'Politiques de l’entreprise', board_minutes: 'Procès-verbal du Conseil', financial_statements: 'États financiers', invoices: 'Factures', tax_documents: 'Documents fiscaux', contracts: 'Contrats', compliance_documents: 'Documents de conformité', employee_documents: 'Documents des employés', registration_certificate: 'Certificat d’enregistrement', constitution: 'Constitution', project_documents: 'Documents de projet', monitoring_evaluation_reports: 'Rapports de suivi et évaluation', donor_agreements: 'Accords avec les donateurs', registration_documents: 'Documents d’enregistrement', school_policies: 'Politiques scolaires', academic_reports: 'Rapports académiques', student_records: 'Dossiers des élèves', staff_documents: 'Documents du personnel', bylaws: 'Règlements', other: 'Autre',
 };
 
+en.organizationContext = {
+  organization: 'Organization', noneSelected: 'No Organization Selected', noCurrentOrganization: 'Current organization: none',
+  currentOrganization: 'Current Organization: {{name}}', selectOrganization: 'Select Organization', loading: 'Loading organizations…',
+  organizationsLoadError: 'Authorized organizations could not be loaded.', noAuthorizedOrganizations: 'No authorized organizations are available.',
+  genericDescription: 'Select an organization to view this information.', dashboardDescription: 'Select an organization to view its dashboard data.',
+  dashboardModules: 'Organization context controls farmers, members, groups, production, inventory, finance, documents, and reports.',
+  farmersDescription: 'Select an organization to view and manage farmers.', membersDescription: 'Select an organization to view and manage members.',
+  groupsDescription: 'Select an organization to view and manage farmer groups.', productionDescription: 'Select an organization to view production records.',
+  inventoryDescription: 'Select an organization to view inventory.', financeDescription: 'Select an organization to view finance data.',
+  documentsDescription: 'Select an organization to view organization documents.', reportsDescription: 'Select an organization to view reports.',
+  staffDescription: 'Select an organization to view and manage its staff accounts.',
+};
+rw.organizationContext = {
+  organization: 'Umuryango', noneSelected: 'Nta Muryango Wahiswemo', noCurrentOrganization: 'Umuryango uri gukorerwamo: nta wo',
+  currentOrganization: 'Umuryango Uri Gukorerwamo: {{name}}', selectOrganization: 'Hitamo Umuryango', loading: 'Imiryango irimo gutangizwa…',
+  organizationsLoadError: 'Ntibyashobotse kubona imiryango wemerewe.', noAuthorizedOrganizations: 'Nta muryango wemerewe gukoresha uhari.',
+  genericDescription: 'Hitamo umuryango kugira ngo ubone aya makuru.', dashboardDescription: 'Hitamo umuryango kugira ngo ubone amakuru y’imbonerahamwe yawo.',
+  dashboardModules: 'Umuryango wahiswemo ugena abahinzi, abanyamuryango, amatsinda, umusaruro, ububiko, imari, inyandiko na raporo.',
+  farmersDescription: 'Hitamo umuryango kugira ngo urebe kandi ucunge abahinzi.', membersDescription: 'Hitamo umuryango kugira ngo urebe kandi ucunge abanyamuryango.',
+  groupsDescription: 'Hitamo umuryango kugira ngo urebe kandi ucunge amatsinda y’abahinzi.', productionDescription: 'Hitamo umuryango kugira ngo urebe inyandiko z’umusaruro.',
+  inventoryDescription: 'Hitamo umuryango kugira ngo urebe ububiko.', financeDescription: 'Hitamo umuryango kugira ngo urebe amakuru y’imari.',
+  documentsDescription: 'Hitamo umuryango kugira ngo urebe inyandiko zawo.', reportsDescription: 'Hitamo umuryango kugira ngo urebe raporo.',
+  staffDescription: 'Hitamo umuryango kugira ngo urebe kandi ucunge konti z’abakozi bawo.',
+};
+fr.organizationContext = {
+  organization: 'Organisation', noneSelected: 'Aucune organisation sélectionnée', noCurrentOrganization: 'Organisation actuelle : aucune',
+  currentOrganization: 'Organisation actuelle : {{name}}', selectOrganization: 'Sélectionner une organisation', loading: 'Chargement des organisations…',
+  organizationsLoadError: 'Impossible de charger les organisations autorisées.', noAuthorizedOrganizations: 'Aucune organisation autorisée n’est disponible.',
+  genericDescription: 'Sélectionnez une organisation pour afficher ces informations.', dashboardDescription: 'Sélectionnez une organisation pour afficher les données de son tableau de bord.',
+  dashboardModules: 'Le contexte d’organisation contrôle les agriculteurs, membres, groupes, productions, stocks, finances, documents et rapports.',
+  farmersDescription: 'Sélectionnez une organisation pour afficher et gérer ses agriculteurs.', membersDescription: 'Sélectionnez une organisation pour afficher et gérer ses membres.',
+  groupsDescription: 'Sélectionnez une organisation pour afficher et gérer ses groupements.', productionDescription: 'Sélectionnez une organisation pour afficher ses productions.',
+  inventoryDescription: 'Sélectionnez une organisation pour afficher son inventaire.', financeDescription: 'Sélectionnez une organisation pour afficher ses finances.',
+  documentsDescription: 'Sélectionnez une organisation pour afficher ses documents.', reportsDescription: 'Sélectionnez une organisation pour afficher ses rapports.',
+  staffDescription: 'Sélectionnez une organisation pour afficher et gérer les comptes de son personnel.',
+};
+
+Object.assign(en.team, {
+  manageSystemAccess: 'Manage System Access', platformRole: 'Platform role', lastLogin: 'Last login', neverSignedIn: 'Never signed in',
+  accountActivationStatus: 'Account activation status', platformAccountsOnly: 'Only independent platform accounts can be linked to the SmartBridge Team.',
+});
+Object.assign(rw.team, {
+  manageSystemAccess: 'Gucunga Uburenganzira bwa Sisitemu', platformRole: 'Uruhare ku rubuga', lastLogin: 'Igihe yaherukaga kwinjira', neverSignedIn: 'Ntarinjira',
+  accountActivationStatus: 'Imimerere yo gufungura konti', platformAccountsOnly: 'Konti zigenga z’urubuga ni zo zonyine zishobora guhuzwa n’Itsinda rya SmartBridge.',
+});
+Object.assign(fr.team, {
+  manageSystemAccess: 'Gérer l’accès au système', platformRole: 'Rôle de plateforme', lastLogin: 'Dernière connexion', neverSignedIn: 'Jamais connecté',
+  accountActivationStatus: 'Statut d’activation du compte', platformAccountsOnly: 'Seuls les comptes de plateforme indépendants peuvent être liés à l’équipe SmartBridge.',
+});
+
+en.organizationStaff = { add: 'Add staff account', loading: 'Loading organization staff…', empty: 'No staff accounts yet.', loadError: 'Could not load organization staff.', subtitle: 'Staff accounts for {{name}}.', organizationRole: 'Organization role' };
+rw.organizationStaff = { add: 'Ongeraho konti y’umukozi', loading: 'Konti z’abakozi zirimo gutangizwa…', empty: 'Nta konti z’abakozi zirashyirwaho.', loadError: 'Ntibyashobotse kubona abakozi b’umuryango.', subtitle: 'Konti z’abakozi ba {{name}}.', organizationRole: 'Uruhare mu muryango' };
+fr.organizationStaff = { add: 'Ajouter un compte du personnel', loading: 'Chargement du personnel…', empty: 'Aucun compte du personnel.', loadError: 'Impossible de charger le personnel de l’organisation.', subtitle: 'Comptes du personnel de {{name}}.', organizationRole: 'Rôle dans l’organisation' };
+
 const savedLanguage = localStorage.getItem('scfmp_language') || 'en';
 
 i18n.use(initReactI18next).init({

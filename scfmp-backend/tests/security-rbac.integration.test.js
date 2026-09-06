@@ -313,6 +313,34 @@ describe('Task 17 authentication, RBAC, and organization isolation', () => {
         cooperative_id: organizationB.id,
       })
       .expect(403);
+
+    await withBearer(
+      request(app).get('/api/members').set('X-Organization-Id', String(organizationB.id)),
+      managerToken
+    ).expect(403);
+    await withBearer(
+      request(app)
+        .get('/api/members')
+        .set('X-Organization-Id', String(organizationA.id))
+        .query({ cooperative_id: organizationB.id }),
+      managerToken
+    ).expect(400);
+    await withBearer(
+      request(app)
+        .get('/api/members')
+        .set('X-Organization-Id', String(organizationA.id))
+        .query({ cooperative_id: organizationA.id }),
+      managerToken
+    ).expect(200);
+
+    await withBearer(request(app).get('/api/dashboard/summary'), superToken).expect(400);
+    const scopedDashboard = await withBearer(
+      request(app)
+        .get('/api/dashboard/summary')
+        .set('X-Organization-Id', String(organizationA.id)),
+      superToken
+    ).expect(200);
+    expect(scopedDashboard.body.data.members.total).toBeGreaterThan(0);
   });
 
   it('matches the existing write-role matrix across protected modules', async () => {
@@ -345,34 +373,43 @@ describe('Task 17 authentication, RBAC, and organization isolation', () => {
     const managerToken = accessTokenFor(managerA);
     const farmerToken = accessTokenFor(farmerUserA);
 
-    const members = await withBearer(
+    await withBearer(
       request(app).get('/api/members').query({ cooperative_id: organizationB.id }),
       managerToken
-    ).expect(200);
+    ).expect(403);
+    const members = await withBearer(request(app).get('/api/members'), managerToken).expect(200);
     expect(members.body.data.every((member) => member.cooperative_id === organizationA.id)).toBe(true);
     await withBearer(request(app).get(`/api/members/${memberB.id}`), managerToken).expect(403);
     await withBearer(request(app).put(`/api/members/${memberB.id}`), managerToken)
       .send({ first_name: 'Manipulated' })
       .expect(403);
 
-    const createdMember = await withBearer(request(app).post('/api/members'), managerToken)
+    await withBearer(request(app).post('/api/members'), managerToken)
       .send({
         cooperative_id: organizationB.id,
         first_name: 'Scoped',
         last_name: 'Member',
       })
+      .expect(403);
+    const createdMember = await withBearer(request(app).post('/api/members'), managerToken)
+      .send({ first_name: 'Scoped', last_name: 'Member' })
       .expect(201);
     expect(createdMember.body.data.cooperative_id).toBe(organizationA.id);
 
-    const farmers = await withBearer(
+    await withBearer(
       request(app).get('/api/farmers').query({ cooperative_id: organizationB.id }),
       managerToken
-    ).expect(200);
+    ).expect(403);
+    const farmers = await withBearer(request(app).get('/api/farmers'), managerToken).expect(200);
     expect(farmers.body.data.every(
       (farmer) => farmer.member.cooperative_id === organizationA.id
     )).toBe(true);
-    const eligibleMembers = await withBearer(
+    await withBearer(
       request(app).get('/api/farmers/eligible-members').query({ cooperative_id: organizationB.id }),
+      managerToken
+    ).expect(403);
+    const eligibleMembers = await withBearer(
+      request(app).get('/api/farmers/eligible-members'),
       managerToken
     ).expect(200);
     expect(eligibleMembers.body.data.map((member) => member.id)).toContain(createdMember.body.data.id);
@@ -426,10 +463,11 @@ describe('Task 17 authentication, RBAC, and organization isolation', () => {
     const fieldToken = accessTokenFor(fieldOfficerA);
     const farmerToken = accessTokenFor(farmerUserA);
 
-    const production = await withBearer(
+    await withBearer(
       request(app).get('/api/production').query({ cooperative_id: organizationB.id }),
       managerToken
-    ).expect(200);
+    ).expect(403);
+    const production = await withBearer(request(app).get('/api/production'), managerToken).expect(200);
     expect(production.body.data.map((record) => record.id)).toEqual([productionA.id]);
     await withBearer(request(app).get(`/api/production/${productionB.id}`), managerToken).expect(403);
     await withBearer(request(app).put(`/api/production/${productionB.id}`), managerToken)
@@ -439,10 +477,11 @@ describe('Task 17 authentication, RBAC, and organization isolation', () => {
       .send({ farmer_id: farmerA.id, product_name: 'Coffee', quantity: 1, unit_price: 1, production_date: '2026-08-10' })
       .expect(403);
 
-    const transactions = await withBearer(
+    await withBearer(
       request(app).get('/api/transactions').query({ cooperative_id: organizationB.id }),
       managerToken
-    ).expect(200);
+    ).expect(403);
+    const transactions = await withBearer(request(app).get('/api/transactions'), managerToken).expect(200);
     expect(transactions.body.data.map((record) => record.id)).toEqual([transactionA.id]);
     await withBearer(request(app).get(`/api/transactions/${transactionB.id}`), managerToken).expect(403);
     await withBearer(request(app).put(`/api/transactions/${transactionB.id}`), managerToken)
@@ -464,10 +503,11 @@ describe('Task 17 authentication, RBAC, and organization isolation', () => {
     const farmerTransactions = await withBearer(request(app).get('/api/transactions'), farmerToken).expect(200);
     expect(farmerTransactions.body.data.map((record) => record.id)).toEqual([transactionA.id]);
 
-    const inventory = await withBearer(
+    await withBearer(
       request(app).get('/api/inventory').query({ cooperative_id: organizationB.id }),
       managerToken
-    ).expect(200);
+    ).expect(403);
+    const inventory = await withBearer(request(app).get('/api/inventory'), managerToken).expect(200);
     expect(inventory.body.data.map((item) => item.id)).toEqual([inventoryA.id]);
     await withBearer(request(app).get(`/api/inventory/${inventoryB.id}`), managerToken).expect(403);
     await withBearer(request(app).put(`/api/inventory/${inventoryB.id}`), managerToken)
@@ -486,10 +526,11 @@ describe('Task 17 authentication, RBAC, and organization isolation', () => {
     const superToken = accessTokenFor(superAdmin);
     const managerToken = accessTokenFor(managerA);
 
-    const managerList = await withBearer(
+    await withBearer(
       request(app).get('/api/production').query({ cooperative_id: organizationB.id }),
       managerToken
-    ).expect(200);
+    ).expect(403);
+    const managerList = await withBearer(request(app).get('/api/production'), managerToken).expect(200);
     expect(managerList.body.data.map((record) => record.id)).toEqual([productionA.id]);
 
     await withBearer(request(app).get(`/api/production/${productionB.id}`), managerToken).expect(403);
@@ -518,22 +559,31 @@ describe('Task 17 authentication, RBAC, and organization isolation', () => {
         unit_price: 1,
         production_date: '2026-08-10',
       })
-      .expect(400);
+      .expect(403);
 
-    const managerProducts = await withBearer(
+    await withBearer(
       request(app).get('/api/production/products').query({ cooperative_id: organizationB.id }),
+      managerToken
+    ).expect(403);
+    const managerProducts = await withBearer(
+      request(app).get('/api/production/products'),
       managerToken
     ).expect(200);
     expect(managerProducts.body.data.map((product) => product.id)).toEqual([productA.id]);
 
-    const managerFarmers = await withBearer(
+    await withBearer(
       request(app).get('/api/farmers').query({ cooperative_id: organizationB.id }),
       managerToken
-    ).expect(200);
+    ).expect(403);
+    const managerFarmers = await withBearer(request(app).get('/api/farmers'), managerToken).expect(200);
     expect(managerFarmers.body.data.map((farmer) => farmer.id)).toEqual([farmerA.id]);
 
-    const managerAnalytics = await withBearer(
+    await withBearer(
       request(app).get('/api/production/analytics').query({ cooperative_id: organizationB.id }),
+      managerToken
+    ).expect(403);
+    const managerAnalytics = await withBearer(
+      request(app).get('/api/production/analytics'),
       managerToken
     ).expect(200);
     expect(managerAnalytics.body.data.stats).toEqual(expect.objectContaining({
@@ -545,14 +595,22 @@ describe('Task 17 authentication, RBAC, and organization isolation', () => {
     expect(managerAnalytics.body.data.cooperative_comparison.map((item) => item.key))
       .toEqual([organizationA.id]);
 
-    const managerSummary = await withBearer(
+    await withBearer(
       request(app).get('/api/production/summary').query({ cooperative_id: organizationB.id }),
+      managerToken
+    ).expect(403);
+    const managerSummary = await withBearer(
+      request(app).get('/api/production/summary'),
       managerToken
     ).expect(200);
     expect(managerSummary.body.data.map((item) => item.key)).toEqual([productA.id]);
 
-    const managerDashboard = await withBearer(
+    await withBearer(
       request(app).get('/api/dashboard/summary').query({ cooperative_id: organizationB.id }),
+      managerToken
+    ).expect(403);
+    const managerDashboard = await withBearer(
+      request(app).get('/api/dashboard/summary'),
       managerToken
     ).expect(200);
     expect(managerDashboard.body.data.production).toEqual({
@@ -561,9 +619,18 @@ describe('Task 17 authentication, RBAC, and organization isolation', () => {
       record_count: 1,
     });
 
-    const managerCreate = await withBearer(request(app).post('/api/production'), managerToken)
+    await withBearer(request(app).post('/api/production'), managerToken)
       .send({
         cooperative_id: organizationB.id,
+        farmer_id: farmerA.id,
+        product_id: productA.id,
+        quantity: 1,
+        unit_price: 100,
+        production_date: '2026-08-11',
+      })
+      .expect(403);
+    const managerCreate = await withBearer(request(app).post('/api/production'), managerToken)
+      .send({
         farmer_id: farmerA.id,
         product_id: productA.id,
         quantity: 1,
@@ -573,14 +640,18 @@ describe('Task 17 authentication, RBAC, and organization isolation', () => {
       .expect(201);
     expect(managerCreate.body.data.cooperative_id).toBe(organizationA.id);
 
-    const managerUpdate = await withBearer(
+    await withBearer(
       request(app).put(`/api/production/${managerCreate.body.data.id}`),
       managerToken
     ).send({
       cooperative_id: organizationB.id,
       farmer_id: farmerB.id,
       quantity: 2,
-    }).expect(200);
+    }).expect(403);
+    const managerUpdate = await withBearer(
+      request(app).put(`/api/production/${managerCreate.body.data.id}`),
+      managerToken
+    ).send({ quantity: 2 }).expect(200);
     expect(managerUpdate.body.data).toEqual(expect.objectContaining({
       cooperative_id: organizationA.id,
       farmer_id: farmerA.id,
@@ -653,8 +724,12 @@ describe('Task 17 authentication, RBAC, and organization isolation', () => {
       location: 'Huye',
     });
 
-    const managerGroups = await withBearer(
+    await withBearer(
       request(app).get('/api/production/farmer-groups').query({ cooperative_id: organizationB.id }),
+      managerToken
+    ).expect(403);
+    const managerGroups = await withBearer(
+      request(app).get('/api/production/farmer-groups'),
       managerToken
     ).expect(200);
     expect(managerGroups.body.data.map((group) => group.id)).toEqual([groupA.id]);
@@ -706,7 +781,6 @@ describe('Task 17 authentication, RBAC, and organization isolation', () => {
       request(app).post('/api/production'),
       managerToken
     ).send({
-      cooperative_id: organizationB.id,
       production_mode: 'group',
       farmer_group_id: groupA.id,
       product_id: productA.id,
@@ -829,7 +903,7 @@ describe('Task 17 authentication, RBAC, and organization isolation', () => {
       managerToken
     ).expect(200);
 
-    const protectedOwnerUpdate = await withBearer(
+    await withBearer(
       request(app).put(`/api/production/${managerGroupProduction.body.data.id}`),
       managerToken
     ).send({
@@ -838,7 +912,11 @@ describe('Task 17 authentication, RBAC, and organization isolation', () => {
       farmer_id: farmerB.id,
       farmer_group_id: groupB.id,
       actual_harvest: 13,
-    }).expect(200);
+    }).expect(403);
+    const protectedOwnerUpdate = await withBearer(
+      request(app).put(`/api/production/${managerGroupProduction.body.data.id}`),
+      managerToken
+    ).send({ actual_harvest: 13 }).expect(200);
     expect(protectedOwnerUpdate.body.data).toEqual(expect.objectContaining({
       cooperative_id: organizationA.id,
       production_mode: 'group',
@@ -941,12 +1019,8 @@ describe('Task 17 authentication, RBAC, and organization isolation', () => {
     const dashboard = await withBearer(
       request(app).get('/api/dashboard/summary'),
       token
-    ).expect(200);
-    expect(dashboard.body.data).toEqual(expect.objectContaining({
-      members: expect.objectContaining({ total: 0, active: 0 }),
-      farmers: expect.objectContaining({ total: 0 }),
-      production: { total_value: 0, total_quantity: 0, record_count: 0 },
-    }));
+    ).expect(400);
+    expect(dashboard.body.message).toMatch(/organization/i);
 
     const report = await withBearer(
       request(app).get('/api/reports/production').query({ format: 'json' }),
@@ -964,11 +1038,15 @@ describe('Task 17 authentication, RBAC, and organization isolation', () => {
     const managerToken = accessTokenFor(managerA);
     const farmerToken = accessTokenFor(farmerUserA);
 
-    const managerReport = await withBearer(
+    await withBearer(
       request(app).get('/api/reports/members').query({
         format: 'json',
         cooperative_id: organizationB.id,
       }),
+      managerToken
+    ).expect(403);
+    const managerReport = await withBearer(
+      request(app).get('/api/reports/members').query({ format: 'json' }),
       managerToken
     ).expect(200);
     expect(managerReport.body.data.rows.every(
@@ -984,10 +1062,11 @@ describe('Task 17 authentication, RBAC, and organization isolation', () => {
     ).expect(200);
     expect(superReport.body.data.rows.map((row) => row.cooperative)).toEqual([organizationB.name]);
 
-    const managerDocuments = await withBearer(
+    await withBearer(
       request(app).get('/api/documents').query({ cooperative_id: organizationB.id }),
       managerToken
-    ).expect(200);
+    ).expect(403);
+    const managerDocuments = await withBearer(request(app).get('/api/documents'), managerToken).expect(200);
     expect(managerDocuments.body.data.map((document) => document.id)).toEqual([documentA.id]);
     await withBearer(request(app).get(`/api/documents/${documentB.id}/download`), managerToken).expect(403);
 
@@ -1001,8 +1080,12 @@ describe('Task 17 authentication, RBAC, and organization isolation', () => {
     const superToken = accessTokenFor(superAdmin);
     const managerToken = accessTokenFor(managerA);
 
-    const managerTransactions = await withBearer(
+    await withBearer(
       request(app).get('/api/transactions').query({ cooperative_id: organizationB.id }),
+      managerToken
+    ).expect(403);
+    const managerTransactions = await withBearer(
+      request(app).get('/api/transactions'),
       managerToken
     ).expect(200);
     expect(managerTransactions.body.data.map((record) => record.id)).toEqual([transactionA.id]);
@@ -1085,8 +1168,12 @@ describe('Task 17 authentication, RBAC, and organization isolation', () => {
       managerToken
     ).send({ member_id: memberB.id }).expect(400);
 
-    const managerSummary = await withBearer(
+    await withBearer(
       request(app).get('/api/transactions/summary').query({ cooperative_id: organizationB.id }),
+      managerToken
+    ).expect(403);
+    const managerSummary = await withBearer(
+      request(app).get('/api/transactions/summary'),
       managerToken
     ).expect(200);
     expect(managerSummary.body.data).toEqual(expect.objectContaining({
@@ -1095,8 +1182,12 @@ describe('Task 17 authentication, RBAC, and organization isolation', () => {
       net_balance: 6250,
     }));
 
-    const managerDashboard = await withBearer(
+    await withBearer(
       request(app).get('/api/dashboard/summary').query({ cooperative_id: organizationB.id }),
+      managerToken
+    ).expect(403);
+    const managerDashboard = await withBearer(
+      request(app).get('/api/dashboard/summary'),
       managerToken
     ).expect(200);
     expect(managerDashboard.body.data.finance).toEqual(expect.objectContaining({
@@ -1105,28 +1196,37 @@ describe('Task 17 authentication, RBAC, and organization isolation', () => {
       net_balance: 6250,
     }));
 
-    const managerDashboardExport = await withBearer(
+    await withBearer(
       request(app).get('/api/dashboard/export').query({ cooperative_id: organizationB.id }),
+      managerToken
+    ).expect(403);
+    const managerDashboardExport = await withBearer(
+      request(app).get('/api/dashboard/export'),
       managerToken
     ).expect(200);
     expect(managerDashboardExport.text).toContain('"Income (RWF)","6250"');
     expect(managerDashboardExport.text).toContain('"Expenses (RWF)","0"');
 
-    const managerMembers = await withBearer(
+    await withBearer(
       request(app).get('/api/members').query({ cooperative_id: organizationB.id }),
       managerToken
-    ).expect(200);
+    ).expect(403);
+    const managerMembers = await withBearer(request(app).get('/api/members'), managerToken).expect(200);
     expect(managerMembers.body.data.length).toBeGreaterThan(0);
     expect(managerMembers.body.data.every(
       (member) => member.cooperative_id === organizationA.id
     )).toBe(true);
     expect(managerMembers.body.data.map((member) => member.id)).not.toContain(memberB.id);
 
-    const managerFinanceReport = await withBearer(
+    await withBearer(
       request(app).get('/api/reports/finance').query({
         format: 'json',
         cooperative_id: organizationB.id,
       }),
+      managerToken
+    ).expect(403);
+    const managerFinanceReport = await withBearer(
+      request(app).get('/api/reports/finance').query({ format: 'json' }),
       managerToken
     ).expect(200);
     expect(managerFinanceReport.body.data.rows).toHaveLength(2);
@@ -1135,11 +1235,15 @@ describe('Task 17 authentication, RBAC, and organization isolation', () => {
     )).toBe(true);
     expect(managerFinanceReport.body.data.rows.map((row) => row.amount)).not.toContain(2000);
 
-    const managerFinanceCsv = await withBearer(
+    await withBearer(
       request(app).get('/api/reports/finance').query({
         format: 'csv',
         cooperative_id: organizationB.id,
       }),
+      managerToken
+    ).expect(403);
+    const managerFinanceCsv = await withBearer(
+      request(app).get('/api/reports/finance').query({ format: 'csv' }),
       managerToken
     ).expect(200);
     expect(managerFinanceCsv.text).toContain(organizationA.name);
@@ -1204,13 +1308,8 @@ describe('Task 17 authentication, RBAC, and organization isolation', () => {
     const unscopedDashboard = await withBearer(
       request(app).get('/api/dashboard/summary'),
       unscopedToken
-    ).expect(200);
-    expect(unscopedDashboard.body.data.finance).toEqual(expect.objectContaining({
-      income: 0,
-      expense: 0,
-      saving: 0,
-      net_balance: 0,
-    }));
+    ).expect(400);
+    expect(unscopedDashboard.body.message).toMatch(/organization/i);
 
     const unscopedReport = await withBearer(
       request(app).get('/api/reports/finance').query({ format: 'json' }),
@@ -1243,8 +1342,12 @@ describe('Task 17 authentication, RBAC, and organization isolation', () => {
       payment_status: 'not_required',
     });
 
-    const managerSubscription = await withBearer(
+    await withBearer(
       request(app).get('/api/subscriptions').query({ cooperative_id: organizationB.id }),
+      managerToken
+    ).expect(403);
+    const managerSubscription = await withBearer(
+      request(app).get('/api/subscriptions'),
       managerToken
     ).expect(200);
     expect(managerSubscription.body.data.current).toEqual(expect.objectContaining({
@@ -1281,14 +1384,18 @@ describe('Task 17 authentication, RBAC, and organization isolation', () => {
     expect(superTeam.body.data).toEqual([expect.objectContaining({ full_name: 'Configured Person', status: 'inactive' })]);
     await withBearer(request(app).delete(`/api/team-members/${teamMember.body.data.id}`), superToken).expect(200);
 
-    const group = await withBearer(request(app).post('/api/farmer-groups'), managerToken)
+    await withBearer(request(app).post('/api/farmer-groups'), managerToken)
       .send({ cooperative_id: organizationB.id, name: 'Scoped API Group', location: 'Gasaka' })
+      .expect(403);
+    const group = await withBearer(request(app).post('/api/farmer-groups'), managerToken)
+      .send({ name: 'Scoped API Group', location: 'Gasaka' })
       .expect(201);
     expect(group.body.data.cooperative_id).toBe(organizationA.id);
-    const groups = await withBearer(
+    await withBearer(
       request(app).get('/api/farmer-groups').query({ cooperative_id: organizationB.id }),
       managerToken
-    ).expect(200);
+    ).expect(403);
+    const groups = await withBearer(request(app).get('/api/farmer-groups'), managerToken).expect(200);
     expect(groups.body.data).toEqual(expect.arrayContaining([
       expect.objectContaining({ id: group.body.data.id, cooperative_id: organizationA.id }),
     ]));
