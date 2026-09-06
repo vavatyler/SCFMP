@@ -1267,7 +1267,7 @@ describe('Task 17 authentication, RBAC, and organization isolation', () => {
       .send({ full_name: 'Not allowed', position: 'Manager' })
       .expect(403);
     const teamMember = await withBearer(request(app).post('/api/team-members'), superToken)
-      .send({ full_name: 'Configured Person', position: 'Configured Role', display_order: 2 })
+      .send({ full_name: 'Configured Person', position: 'Founder & CEO', display_order: 2 })
       .expect(201);
     await withBearer(request(app).put(`/api/team-members/${teamMember.body.data.id}`), superToken)
       .send({ status: 'inactive' })

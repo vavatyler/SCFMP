@@ -12,15 +12,18 @@ import {
   listFarmerGroups,
   updateFarmerGroup,
 } from '../api/farmerGroups';
+import { PERMISSIONS } from '../config/permissions';
 
 const emptyForm = { name: '', location: '', status: 'active' };
 
 const FarmerGroupsPage = () => {
   const { t } = useTranslation();
-  const { user } = useAuth();
+  const { user, can } = useAuth();
   const { cooperativeScope, activeCooperativeId, isSuperAdmin } = useCooperative();
-  const canManage = ['super_admin', 'cooperative_manager', 'field_officer'].includes(user?.role);
-  const canDelete = ['super_admin', 'cooperative_manager'].includes(user?.role);
+  const canManage = can(PERMISSIONS.FARMERS_MANAGE)
+    && ['super_admin', 'cooperative_manager', 'field_officer'].includes(user?.role);
+  const canDelete = can(PERMISSIONS.FARMERS_MANAGE)
+    && ['super_admin', 'cooperative_manager'].includes(user?.role);
   const [groups, setGroups] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');

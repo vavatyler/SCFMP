@@ -31,6 +31,7 @@ import {
   getDocumentFileValidationKey,
   getDocumentUploadErrorKey,
 } from '../utils/documentUpload';
+import { PERMISSIONS } from '../config/permissions';
 
 const emptyForm = {
   title: '', category: '', document_type: '', owner_type: 'cooperative', owner_id: '',
@@ -49,15 +50,15 @@ const compact = (value) => Object.fromEntries(Object.entries(value).filter(([, i
 
 const DocumentsPage = ({ forcedView = '', forcedStatus = '' }) => {
   const { t } = useTranslation();
-  const { user } = useAuth();
+  const { user, can } = useAuth();
   const { cooperativeScope, activeCooperativeId, activeCooperative } = useCooperative();
   const [searchParams] = useSearchParams();
   const routeView = forcedView || searchParams.get('view') || 'all';
   const routeStatus = forcedStatus || searchParams.get('status') || '';
-  const canUpload = DOCUMENT_UPLOAD_ROLES.includes(user?.role);
+  const canUpload = can(PERMISSIONS.DOCUMENTS_MANAGE) && DOCUMENT_UPLOAD_ROLES.includes(user?.role);
   const canEdit = canUpload;
-  const canArchive = DOCUMENT_DELETE_ROLES.includes(user?.role);
-  const canDelete = DOCUMENT_DELETE_ROLES.includes(user?.role);
+  const canArchive = can(PERMISSIONS.DOCUMENTS_MANAGE) && DOCUMENT_DELETE_ROLES.includes(user?.role);
+  const canDelete = can(PERMISSIONS.DOCUMENTS_MANAGE) && DOCUMENT_DELETE_ROLES.includes(user?.role);
   const [documents, setDocuments] = useState([]);
   const [members, setMembers] = useState([]);
   const [classification, setClassification] = useState(null);

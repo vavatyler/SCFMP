@@ -11,6 +11,7 @@ import { useAuth } from '../context/AuthContext';
 import { useCooperative } from '../context/CooperativeContext';
 import { useTranslation } from 'react-i18next';
 import { isValidEmail, isValidRwandaLocalPhone, normalizeRwandaPhone, toLocalRwandaPhone } from '../utils/validation';
+import { PERMISSIONS, SYSTEM_ROLE_LABELS } from '../config/permissions';
 
 const emptyForm = {
   first_name: '',
@@ -22,17 +23,9 @@ const emptyForm = {
   member_id: '',
 };
 
-const ROLE_LABELS = {
-  super_admin: 'Super Admin',
-  cooperative_manager: 'Cooperative Manager',
-  accountant: 'Accountant',
-  field_officer: 'Field Officer',
-  farmer: 'Farmer',
-};
-
 const UsersPage = () => {
   const { t } = useTranslation();
-  const { user: currentUser } = useAuth();
+  const { user: currentUser, can } = useAuth();
   const { cooperativeScope, activeCooperativeId, activeCooperative, isSuperAdmin } = useCooperative();
 
   const [users, setUsers] = useState([]);
@@ -117,7 +110,8 @@ const UsersPage = () => {
     }
   };
 
-  const canManage = isSuperAdmin || currentUser?.role === 'cooperative_manager';
+  const canManage = can(PERMISSIONS.USERS_MANAGE)
+    && (isSuperAdmin || currentUser?.role === 'cooperative_manager');
   const emailState = form.email ? isValidEmail(form.email) ? 'valid' : 'invalid' : 'empty';
 
   const [resettingUser, setResettingUser] = useState(null);
@@ -184,14 +178,15 @@ const UsersPage = () => {
         ) : users.length === 0 ? (
           <div className="p-10 text-center text-sm text-ink-soft">No team members yet.</div>
         ) : (
-          <div className="overflow-x-auto"><table className="w-full min-w-[820px] text-left text-sm">
+          <div className="overflow-x-auto"><table className="w-full min-w-[920px] text-left text-sm">
             <thead className="border-b border-sand bg-sand/30 text-xs uppercase tracking-wide text-ink-soft">
               <tr>
                 <th className="px-5 py-3 font-medium">Name</th>
                 <th className="px-5 py-3 font-medium">Email</th>
-                <th className="px-5 py-3 font-medium">Role</th>
+                <th className="px-5 py-3 font-medium">{t('team.officialRole')}</th>
+                <th className="px-5 py-3 font-medium">{t('team.systemRole')}</th>
                 {isSuperAdmin && <th className="px-5 py-3 font-medium">Organization</th>}
-                <th className="px-5 py-3 font-medium">Status</th>
+                <th className="px-5 py-3 font-medium">{t('common.status')}</th>
                 <th className="px-5 py-3 font-medium"></th>
               </tr>
             </thead>
@@ -207,7 +202,8 @@ const UsersPage = () => {
                     </div>
                   </td>
                   <td className="px-5 py-3.5 text-ink-soft">{u.email}</td>
-                  <td className="px-5 py-3.5 text-ink-soft">{ROLE_LABELS[u.role] || u.role}</td>
+                  <td className="px-5 py-3.5 text-ink-soft">{u.official_role || '—'}</td>
+                  <td className="px-5 py-3.5 text-ink-soft">{SYSTEM_ROLE_LABELS[u.role] || u.role}</td>
                   {isSuperAdmin && (
                     <td className="px-5 py-3.5 text-ink-soft">{u.cooperative?.name || '—'}</td>
                   )}

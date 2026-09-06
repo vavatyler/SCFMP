@@ -20,10 +20,11 @@ import {
 } from '../utils/organizationForm';
 import { hasAnyLocation, hasCompleteLocation, hasLocationChanged } from '../utils/locationHierarchy';
 import { isValidEmail, isValidRwandaLocalPhone } from '../utils/validation';
+import { PERMISSIONS } from '../config/permissions';
 
 const CooperativesPage = () => {
   const { t } = useTranslation();
-  const { user } = useAuth();
+  const { user, can } = useAuth();
   const {
     cooperatives,
     isLoading,
@@ -43,9 +44,10 @@ const CooperativesPage = () => {
   const [deletingId, setDeletingId] = useState(null);
   const submitLockRef = useRef(false);
 
-  const canCreateOrganization = isSuperAdmin;
-  const canEditOrganization = isSuperAdmin || user?.role === 'cooperative_manager';
-  const canDeleteOrganization = isSuperAdmin;
+  const canCreateOrganization = isSuperAdmin && can(PERMISSIONS.ORGANIZATIONS_MANAGE);
+  const canEditOrganization = can(PERMISSIONS.ORGANIZATIONS_MANAGE)
+    && (isSuperAdmin || user?.role === 'cooperative_manager');
+  const canDeleteOrganization = isSuperAdmin && can(PERMISSIONS.ORGANIZATIONS_MANAGE);
   const canSwitchOrganization = isSuperAdmin;
   const organizationTypeLabel = (type) => {
     const storedType = type || 'cooperative';

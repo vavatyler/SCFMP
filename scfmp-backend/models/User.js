@@ -24,6 +24,10 @@ module.exports = (sequelize) => {
         foreignKey: 'actor_user_id',
         as: 'auditLogs',
       });
+      User.hasOne(models.TeamMember, {
+        foreignKey: 'linked_user_id',
+        as: 'teamProfile',
+      });
     }
 
     // Instance method: compare a plain password against the stored hash
@@ -35,6 +39,8 @@ module.exports = (sequelize) => {
     toJSON() {
       const values = { ...this.get() };
       delete values.password_hash;
+      delete values.token_version;
+      delete values.permissions;
       return values;
     }
   }
@@ -84,6 +90,15 @@ module.exports = (sequelize) => {
       status: {
         type: DataTypes.ENUM('active', 'inactive'),
         defaultValue: 'active',
+      },
+      system_access_enabled: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: true,
+      },
+      permissions: {
+        type: DataTypes.JSON,
+        allowNull: true,
       },
       preferred_language: {
         type: DataTypes.ENUM('en', 'rw', 'fr'),

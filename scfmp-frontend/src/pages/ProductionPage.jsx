@@ -29,6 +29,7 @@ import {
 import { listFarmers } from '../api/farmers';
 import { useAuth } from '../context/AuthContext';
 import { useCooperative } from '../context/CooperativeContext';
+import { PERMISSIONS } from '../config/permissions';
 
 const emptyForm = {
   production_mode: 'individual', farmer_id: '', farmer_group_id: '',
@@ -50,11 +51,14 @@ const cleanParams = (value) => Object.fromEntries(
 
 const ProductionPage = ({ forcedMode = '' }) => {
   const { t } = useTranslation();
-  const { user } = useAuth();
+  const { user, can } = useAuth();
   const { cooperativeScope, activeCooperativeId, activeCooperative } = useCooperative();
-  const canManage = ['super_admin', 'cooperative_manager', 'field_officer'].includes(user?.role);
-  const canVerify = ['super_admin', 'cooperative_manager'].includes(user?.role);
-  const canDelete = ['super_admin', 'cooperative_manager'].includes(user?.role);
+  const canManage = can(PERMISSIONS.PRODUCTION_MANAGE)
+    && ['super_admin', 'cooperative_manager', 'field_officer'].includes(user?.role);
+  const canVerify = can(PERMISSIONS.PRODUCTION_MANAGE)
+    && ['super_admin', 'cooperative_manager'].includes(user?.role);
+  const canDelete = can(PERMISSIONS.PRODUCTION_MANAGE)
+    && ['super_admin', 'cooperative_manager'].includes(user?.role);
   const [records, setRecords] = useState([]);
   const [farmers, setFarmers] = useState([]);
   const [farmerGroups, setFarmerGroups] = useState([]);

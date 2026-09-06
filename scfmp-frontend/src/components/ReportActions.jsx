@@ -2,9 +2,12 @@ import { useState } from 'react';
 import { Download, FileSpreadsheet, FileText, Loader2, Printer } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { downloadReportCsv, getReport } from '../api/reports';
+import { useAuth } from '../context/AuthContext';
+import { PERMISSIONS } from '../config/permissions';
 
 const ReportActions = ({ moduleName, filters = {} }) => {
   const { t, i18n } = useTranslation();
+  const { can } = useAuth();
   const [busy, setBusy] = useState('');
   const [error, setError] = useState('');
   const params = { ...filters, language: i18n.resolvedLanguage || i18n.language };
@@ -41,6 +44,8 @@ const ReportActions = ({ moduleName, filters = {} }) => {
     ['pdf', FileText, t('reports.pdf')],
     ['print', Printer, t('reports.print')],
   ];
+
+  if (!can(PERMISSIONS.REPORTS_VIEW)) return null;
 
   return (
     <div className="mb-5 rounded-xl border border-sand bg-white p-3 shadow-sm">

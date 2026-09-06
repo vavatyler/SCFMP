@@ -44,10 +44,11 @@ import {
   getDocumentFileValidationKey,
   getDocumentUploadErrorKey,
 } from '../utils/documentUpload';
+import { PERMISSIONS } from '../config/permissions';
 
 const MemberDetailPage = () => {
   const { t } = useTranslation();
-  const { user } = useAuth();
+  const { user, can } = useAuth();
   const { id } = useParams();
   const navigate = useNavigate();
   const [member, setMember] = useState(null);
@@ -76,11 +77,11 @@ const MemberDetailPage = () => {
   const documentSubmitLockRef = useRef(false);
   const documentInputRef = useRef(null);
 
-  const canEditMember = MEMBER_WRITE_ROLES.includes(user?.role);
-  const canDeleteMember = MEMBER_DELETE_ROLES.includes(user?.role);
-  const canEditFarmer = FARMER_WRITE_ROLES.includes(user?.role);
-  const canUploadDocument = DOCUMENT_UPLOAD_ROLES.includes(user?.role);
-  const canDeleteDocument = DOCUMENT_DELETE_ROLES.includes(user?.role);
+  const canEditMember = can(PERMISSIONS.MEMBERS_MANAGE) && MEMBER_WRITE_ROLES.includes(user?.role);
+  const canDeleteMember = can(PERMISSIONS.MEMBERS_MANAGE) && MEMBER_DELETE_ROLES.includes(user?.role);
+  const canEditFarmer = can(PERMISSIONS.FARMERS_MANAGE) && FARMER_WRITE_ROLES.includes(user?.role);
+  const canUploadDocument = can(PERMISSIONS.DOCUMENTS_MANAGE) && DOCUMENT_UPLOAD_ROLES.includes(user?.role);
+  const canDeleteDocument = can(PERMISSIONS.DOCUMENTS_MANAGE) && DOCUMENT_DELETE_ROLES.includes(user?.role);
 
   const fetchDocuments = async () => {
     try {

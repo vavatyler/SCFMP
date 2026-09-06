@@ -594,6 +594,44 @@ fr.team = {
   saveError: 'Impossible d’enregistrer ce membre.', deleteConfirm: 'Supprimer {{name}} ?', deleteError: 'Impossible de supprimer ce membre.',
 };
 
+Object.assign(en.team, {
+  personalInformation: 'Personal information', professionalInformation: 'Professional information', officialRole: 'Official role',
+  selectOfficialRole: 'Select an official role…', profileVisibility: 'Profile visibility', profileStatus: 'Profile status', visible: 'Visible', hidden: 'Hidden',
+  viewProfile: 'View profile', systemAccess: 'System access', systemAccessHelp: 'A Team profile can exist without a login. Link an existing account only when this person needs application access.',
+  linkedAccount: 'Linked user account', noLinkedAccount: 'No linked account — profile only', notLinked: 'Not linked', enabled: 'Enabled', disabled: 'Disabled',
+  accountStatus: 'Account status', assignedSystemRole: 'Assigned system role', systemRole: 'System role', permissions: 'Permissions', accessibleModules: 'Accessible modules',
+  accessStatus: 'Access status', viewPermission: 'View', managePermission: 'Manage', noAccessibleModules: 'No modules selected',
+  photoUrlInvalid: 'Profile Photo URL must be a valid HTTPS image URL.', accessChangeConfirm: 'This change reduces or disables account access. Continue?',
+  archive: 'Archive profile', archiveConfirm: 'Archive {{name}}? The record will be retained but hidden and marked inactive.', archiveError: 'Could not archive this Team profile.',
+  modules: { dashboard: 'Dashboard', team: 'Team', organizations: 'Organizations', farmers: 'Farmers', members: 'Members', production: 'Production', inventory: 'Inventory', finance: 'Finance', payroll: 'Payroll', documents: 'Documents', reports: 'Reports', settings: 'Settings', users: 'User management' },
+});
+Object.assign(rw.team, {
+  personalInformation: 'Amakuru bwite', professionalInformation: 'Amakuru y’umwuga', officialRole: 'Inshingano yemewe',
+  selectOfficialRole: 'Hitamo inshingano yemewe…', profileVisibility: 'Kugaragara k’umwirondoro', profileStatus: 'Imimerere y’umwirondoro', visible: 'Uragaragara', hidden: 'Uhishwe',
+  viewProfile: 'Reba umwirondoro', systemAccess: 'Uburenganzira bwa sisitemu', systemAccessHelp: 'Umwirondoro w’ugize itsinda ushobora kubaho nta konti. Huza konti iriho gusa igihe uyu muntu akeneye gukoresha porogaramu.',
+  linkedAccount: 'Konti ihujwe', noLinkedAccount: 'Nta konti ihujwe — umwirondoro gusa', notLinked: 'Ntiyahujwe', enabled: 'Burafunguye', disabled: 'Burafunze',
+  accountStatus: 'Imimerere ya konti', assignedSystemRole: 'Uruhare rwa sisitemu', systemRole: 'Uruhare rwa sisitemu', permissions: 'Uburenganzira', accessibleModules: 'Ibice byemewe',
+  accessStatus: 'Imimerere y’uburenganzira', viewPermission: 'Kureba', managePermission: 'Gucunga', noAccessibleModules: 'Nta gice cyatoranyijwe',
+  photoUrlInvalid: 'Ihuza ry’ifoto rigomba kuba URL ya HTTPS yemewe.', accessChangeConfirm: 'Iri hinduka riragabanya cyangwa rigafunga uburenganzira bwa konti. Komeza?',
+  archive: 'Bika umwirondoro', archiveConfirm: 'Bika umwirondoro wa {{name}}? Amakuru azagumaho ariko ahishwe kandi adakora.', archiveError: 'Ntibyashobotse kubika uyu mwirondoro.',
+  modules: { dashboard: 'Imbonerahamwe', team: 'Itsinda', organizations: 'Imiryango', farmers: 'Abahinzi', members: 'Abanyamuryango', production: 'Umusaruro', inventory: 'Ububiko', finance: 'Imari', payroll: 'Imishahara', documents: 'Inyandiko', reports: 'Raporo', settings: 'Igenamiterere', users: 'Imicungire y’abakoresha' },
+});
+Object.assign(fr.team, {
+  personalInformation: 'Informations personnelles', professionalInformation: 'Informations professionnelles', officialRole: 'Rôle officiel',
+  selectOfficialRole: 'Sélectionner un rôle officiel…', profileVisibility: 'Visibilité du profil', profileStatus: 'Statut du profil', visible: 'Visible', hidden: 'Masqué',
+  viewProfile: 'Voir le profil', systemAccess: 'Accès au système', systemAccessHelp: 'Un profil d’équipe peut exister sans connexion. Liez un compte existant uniquement si cette personne doit accéder à l’application.',
+  linkedAccount: 'Compte utilisateur lié', noLinkedAccount: 'Aucun compte lié — profil uniquement', notLinked: 'Non lié', enabled: 'Activé', disabled: 'Désactivé',
+  accountStatus: 'Statut du compte', assignedSystemRole: 'Rôle système attribué', systemRole: 'Rôle système', permissions: 'Autorisations', accessibleModules: 'Modules accessibles',
+  accessStatus: 'Statut d’accès', viewPermission: 'Voir', managePermission: 'Gérer', noAccessibleModules: 'Aucun module sélectionné',
+  photoUrlInvalid: 'L’URL de la photo doit être une URL d’image HTTPS valide.', accessChangeConfirm: 'Cette modification réduit ou désactive l’accès au compte. Continuer ?',
+  archive: 'Archiver le profil', archiveConfirm: 'Archiver {{name}} ? Le dossier sera conservé, masqué et marqué inactif.', archiveError: 'Impossible d’archiver ce profil.',
+  modules: { dashboard: 'Tableau de bord', team: 'Équipe', organizations: 'Organisations', farmers: 'Agriculteurs', members: 'Membres', production: 'Production', inventory: 'Stock', finance: 'Finance', payroll: 'Paie', documents: 'Documents', reports: 'Rapports', settings: 'Paramètres', users: 'Gestion des utilisateurs' },
+});
+
+en.access = { deniedTitle: 'Access restricted', deniedBody: 'Your account does not have permission to open this module.' };
+rw.access = { deniedTitle: 'Uburenganzira burabujijwe', deniedBody: 'Konti yawe ntiyemerewe gufungura iki gice.' };
+fr.access = { deniedTitle: 'Accès restreint', deniedBody: 'Votre compte n’est pas autorisé à ouvrir ce module.' };
+
 en.subscription = {
   title: 'Subscription / Plans', subtitle: 'Review plan options and billing readiness for your organization.', loading: 'Loading subscription…', loadError: 'Could not load subscription information.',
   current: 'Current subscription', plan: 'Plan', billingCycle: 'Billing cycle', monthly: 'Monthly', yearly: 'Yearly', nextBilling: 'Next billing date', renewal: 'Renewal', ends: 'Ends after current period', paymentStatus: 'Payment status',

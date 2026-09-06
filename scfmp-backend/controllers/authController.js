@@ -3,6 +3,7 @@ const crypto = require('crypto');
 const { Op } = require('sequelize');
 const {
   User,
+  TeamMember,
   Cooperative,
   Member,
   PasswordResetToken,
@@ -13,12 +14,31 @@ const { sendPasswordResetEmail } = require('../services/emailService');
 const { recordAuditEvent } = require('../services/auditService');
 const { validatePasswordStrength } = require('../utils/passwordPolicy');
 const { normalizeRwandaPhone } = require('../utils/rwandaPhone');
+const { getEffectivePermissions, getAccessibleModules } = require('../config/accessControl');
 
 const RESET_TOKEN_EXPIRES_MINUTES = Number(process.env.RESET_TOKEN_EXPIRES_MINUTES) || 30;
 const JWT_ISSUER = process.env.JWT_ISSUER || 'scfmp-api';
 const JWT_AUDIENCE = process.env.JWT_AUDIENCE || 'scfmp-web';
 
 const hashToken = (rawToken) => crypto.createHash('sha256').update(rawToken).digest('hex');
+
+const presentAuthenticatedUser = async (user) => {
+  const values = typeof user.toJSON === 'function' ? user.toJSON() : { ...user };
+  const teamProfile = await TeamMember.findOne({
+    where: { linked_user_id: user.id },
+    attributes: ['id', 'position', 'photo_url', 'status', 'profile_visibility'],
+  });
+  const effectivePermissions = getEffectivePermissions(user);
+  delete values.permissions;
+  return {
+    ...values,
+    official_role: teamProfile?.position || null,
+    team_profile_id: teamProfile?.id || null,
+    profile_photo_url: teamProfile?.photo_url || null,
+    effective_permissions: effectivePermissions,
+    accessible_modules: getAccessibleModules(effectivePermissions),
+  };
+};
 
 const generateAccessToken = (user) =>
   jwt.sign(
@@ -147,8 +167,9 @@ const login = async (req, res) => {
   const email = String(req.body.email || '').trim().toLowerCase();
   try {
     const user = await User.findOne({ where: { email } });
-    const isMatch = user?.status === 'active' ? await user.comparePassword(req.body.password) : false;
-    if (!user || user.status !== 'active' || !isMatch) {
+    const mayAuthenticate = user?.status === 'active' && user.system_access_enabled !== false;
+    const isMatch = mayAuthenticate ? await user.comparePassword(req.body.password) : false;
+    if (!user || !mayAuthenticate || !isMatch) {
       await recordAuditEvent({
         req,
         actor: user || null,
@@ -167,7 +188,10 @@ const login = async (req, res) => {
     const refreshToken = await createRefreshToken(user, req);
     await recordAuditEvent({ req, actor: user, action: 'auth.login', entityType: 'user', entityId: user.id });
 
-    return res.status(200).json({ success: true, data: { user, accessToken, refreshToken } });
+    return res.status(200).json({
+      success: true,
+      data: { user: await presentAuthenticatedUser(user), accessToken, refreshToken },
+    });
   } catch (err) {
     console.error('Login failed:', err.message);
     return res.status(500).json({ success: false, message: 'Unable to sign in right now' });
@@ -199,7 +223,12 @@ const refresh = async (req, res) => {
     }
 
     const user = await User.findByPk(decoded.id, { transaction, lock: transaction.LOCK.UPDATE });
-    if (!user || user.status !== 'active' || decoded.token_version !== user.token_version) {
+    if (
+      !user ||
+      user.status !== 'active' ||
+      user.system_access_enabled === false ||
+      decoded.token_version !== user.token_version
+    ) {
       await transaction.rollback();
       return res.status(401).json({ success: false, message: 'Invalid refresh token' });
     }
@@ -233,13 +262,16 @@ const logout = async (req, res) => {
   }
 };
 
-const getProfile = async (req, res) => res.status(200).json({ success: true, data: req.user });
+const getProfile = async (req, res) => res.status(200).json({
+  success: true,
+  data: await presentAuthenticatedUser(req.user),
+});
 
 const updatePreferredLanguage = async (req, res) => {
   try {
     req.user.preferred_language = req.body.preferred_language;
     await req.user.save();
-    return res.status(200).json({ success: true, data: req.user });
+    return res.status(200).json({ success: true, data: await presentAuthenticatedUser(req.user) });
   } catch (err) {
     console.error('Language preference update failed:', err.message);
     return res.status(500).json({ success: false, message: 'Unable to update language preference' });

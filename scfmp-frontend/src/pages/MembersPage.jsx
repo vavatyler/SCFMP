@@ -18,10 +18,11 @@ import {
   MEMBER_WRITE_ROLES,
 } from '../utils/memberForm';
 import { isValidRwandaLocalPhone, isValidRwandaNationalId } from '../utils/validation';
+import { PERMISSIONS } from '../config/permissions';
 
 const MembersPage = () => {
   const { t } = useTranslation();
-  const { user } = useAuth();
+  const { user, can } = useAuth();
   const { cooperativeScope, activeCooperativeId } = useCooperative();
   const [members, setMembers] = useState([]);
   const [search, setSearch] = useState('');
@@ -35,7 +36,7 @@ const MembersPage = () => {
   const [isSaving, setIsSaving] = useState(false);
   const submitLockRef = useRef(false);
 
-  const canCreateMember = MEMBER_WRITE_ROLES.includes(user?.role)
+  const canCreateMember = can(PERMISSIONS.MEMBERS_MANAGE) && MEMBER_WRITE_ROLES.includes(user?.role)
     && (user?.role !== 'super_admin' || Boolean(activeCooperativeId));
 
   const fetchMembers = async (searchTerm = '') => {

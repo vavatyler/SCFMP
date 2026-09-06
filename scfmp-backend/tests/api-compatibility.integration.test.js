@@ -484,14 +484,17 @@ describe('Tasks 1-15 API compatibility matrix', () => {
     ).expect(200);
     expect(response.body).toEqual({
       success: true,
-      data: {
+      data: expect.objectContaining({
         id: 101,
         role: 'cooperative_manager',
         cooperative_id: organizationA.id,
         first_name: 'API',
         last_name: 'Tester',
         preferred_language: 'en',
-      },
+        official_role: null,
+        team_profile_id: null,
+        effective_permissions: expect.arrayContaining(['dashboard.view', 'team.view']),
+      }),
     });
   });
 });

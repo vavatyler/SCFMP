@@ -2,6 +2,24 @@ const { Op } = require('sequelize');
 const { User, Cooperative, RefreshToken, AuditLog } = require('../models');
 const { recordAuditEvent } = require('../services/auditService');
 const { validatePasswordStrength } = require('../utils/passwordPolicy');
+const { getEffectivePermissions, getAccessibleModules } = require('../config/accessControl');
+
+const presentListedUser = (user, includeAccess) => {
+  const values = user.toJSON();
+  const officialRole = values.teamProfile?.position || null;
+  delete values.teamProfile;
+  delete values.token_version;
+  if (includeAccess) {
+    const effectivePermissions = getEffectivePermissions(user);
+    values.custom_permissions = user.permissions ?? null;
+    values.effective_permissions = effectivePermissions;
+    values.accessible_modules = getAccessibleModules(effectivePermissions);
+    values.system_access_enabled = user.system_access_enabled !== false;
+  } else {
+    delete values.system_access_enabled;
+  }
+  return { ...values, official_role: officialRole };
+};
 
 /**
  * GET /api/users
@@ -28,11 +46,17 @@ const list = async (req, res) => {
 
     const users = await User.findAll({
       where,
-      include: [{ model: Cooperative, as: 'cooperative', attributes: ['id', 'name'] }],
+      include: [
+        { model: Cooperative, as: 'cooperative', attributes: ['id', 'name'] },
+        { association: 'teamProfile', attributes: ['id', 'position', 'photo_url', 'profile_visibility', 'status'] },
+      ],
       order: [['created_at', 'DESC']],
     });
 
-    return res.status(200).json({ success: true, data: users });
+    return res.status(200).json({
+      success: true,
+      data: users.map((user) => presentListedUser(user, req.user.role === 'super_admin')),
+    });
   } catch (err) {
     return res.status(500).json({ success: false, message: err.message });
   }

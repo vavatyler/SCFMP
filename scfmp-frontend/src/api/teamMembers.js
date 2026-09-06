@@ -5,6 +5,11 @@ export const listTeamMembers = async (params = {}) => {
   return data.data;
 };
 
+export const getTeamMember = async (id) => {
+  const { data } = await apiClient.get(`/team-members/${id}`);
+  return data.data;
+};
+
 export const createTeamMember = async (payload) => {
   const { data } = await apiClient.post('/team-members', payload);
   return data.data;

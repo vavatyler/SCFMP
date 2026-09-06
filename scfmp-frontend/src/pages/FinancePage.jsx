@@ -20,6 +20,7 @@ import { listMembers } from '../api/members';
 import { useAuth } from '../context/AuthContext';
 import { useCooperative } from '../context/CooperativeContext';
 import { useTranslation } from 'react-i18next';
+import { PERMISSIONS } from '../config/permissions';
 
 const emptyTxnForm = {
   type: 'income',
@@ -39,8 +40,12 @@ const emptyLoanForm = {
 
 const FinancePage = () => {
   const { t } = useTranslation();
-  const { user } = useAuth();
+  const { user, can } = useAuth();
   const { cooperativeScope, activeCooperativeId } = useCooperative();
+  const canManage = can(PERMISSIONS.FINANCE_MANAGE)
+    && ['super_admin', 'cooperative_manager', 'accountant'].includes(user?.role);
+  const canDelete = can(PERMISSIONS.FINANCE_MANAGE)
+    && ['super_admin', 'cooperative_manager'].includes(user?.role);
 
   const [tab, setTab] = useState('transactions'); // 'transactions' | 'loans'
   const [summary, setSummary] = useState(null);
@@ -282,7 +287,7 @@ const FinancePage = () => {
           </button>
         </div>
 
-        {tab === 'transactions' ? (
+        {canManage && (tab === 'transactions' ? (
           <button
             onClick={openCreateTxnModal}
             className="focus-ring flex items-center gap-2 rounded-lg bg-forest px-4 py-2 text-sm font-medium text-paper hover:bg-forest-light"
@@ -299,7 +304,7 @@ const FinancePage = () => {
             <Plus className="h-4 w-4" />
             Issue loan
           </button>
-        )}
+        ))}
       </div>
 
       {tab === 'transactions' && (
@@ -345,7 +350,7 @@ const FinancePage = () => {
                     </td>
                     <td className="px-5 py-3.5 text-ink-soft">{txn.transaction_date}</td>
                     <td className="px-5 py-3.5 text-right">
-                      {!txn.loan_id && (
+                      {!txn.loan_id && canManage && (
                         <div className="flex justify-end gap-2">
                           <button
                             onClick={() => openEditTxnModal(txn)}
@@ -354,14 +359,16 @@ const FinancePage = () => {
                           >
                             <Pencil className="h-3.5 w-3.5" />
                           </button>
-                          <button
-                            onClick={() => handleDeleteTransaction(txn)}
-                            disabled={isDeletingTxn}
-                            title="Delete"
-                            className="focus-ring rounded-lg border border-sand p-1.5 text-ink-soft hover:bg-clay/10 hover:text-clay disabled:opacity-50"
-                          >
-                            <Trash2 className="h-3.5 w-3.5" />
-                          </button>
+                          {canDelete && (
+                            <button
+                              onClick={() => handleDeleteTransaction(txn)}
+                              disabled={isDeletingTxn}
+                              title="Delete"
+                              className="focus-ring rounded-lg border border-sand p-1.5 text-ink-soft hover:bg-clay/10 hover:text-clay disabled:opacity-50"
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </button>
+                          )}
                         </div>
                       )}
                     </td>
@@ -420,7 +427,7 @@ const FinancePage = () => {
                     </td>
                     <td className="px-5 py-3.5 text-ink-soft">{loan.issue_date}</td>
                     <td className="px-5 py-3.5 text-right">
-                      {loan.status === 'active' && (
+                      {loan.status === 'active' && canManage && (
                         <button
                           onClick={() => setRepayingLoan(loan)}
                           className="focus-ring rounded-lg border border-sand px-3 py-1.5 text-xs font-medium text-forest hover:bg-forest/5"

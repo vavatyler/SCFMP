@@ -24,10 +24,11 @@ import {
   isValidFarmSizeUnit,
 } from '../utils/farmerForm';
 import { hasAnyLocation, hasCompleteLocation } from '../utils/locationHierarchy';
+import { PERMISSIONS } from '../config/permissions';
 
 const FarmersPage = () => {
   const { t } = useTranslation();
-  const { user } = useAuth();
+  const { user, can } = useAuth();
   const { cooperativeScope, activeCooperativeId } = useCooperative();
   const [farmers, setFarmers] = useState([]);
   const [eligibleMembers, setEligibleMembers] = useState([]);
@@ -42,7 +43,7 @@ const FarmersPage = () => {
   const [isSaving, setIsSaving] = useState(false);
   const submitLockRef = useRef(false);
 
-  const canCreateFarmer = FARMER_WRITE_ROLES.includes(user?.role)
+  const canCreateFarmer = can(PERMISSIONS.FARMERS_MANAGE) && FARMER_WRITE_ROLES.includes(user?.role)
     && (user?.role !== 'super_admin' || Boolean(activeCooperativeId));
 
   const fetchPageData = async () => {

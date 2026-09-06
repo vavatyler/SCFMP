@@ -8,6 +8,7 @@ import LanguageSwitcher from './LanguageSwitcher';
 import ChangePasswordModal from './ChangePasswordModal';
 import { useAuth } from '../context/AuthContext';
 import { COMPANY_NAME, PRODUCT_NAME } from '../config/company';
+import { SYSTEM_ROLE_LABELS } from '../config/permissions';
 
 const DashboardLayout = ({ title, subtitle, children }) => {
   const { t } = useTranslation();
@@ -66,7 +67,8 @@ const DashboardLayout = ({ title, subtitle, children }) => {
                 <div className="absolute right-0 mt-2 w-60 overflow-hidden rounded-xl border border-sand bg-white shadow-lg" role="menu">
                   <div className="border-b border-sand px-4 py-3">
                     <p className="truncate text-sm font-medium text-ink">{user?.first_name} {user?.last_name}</p>
-                    <p className="truncate text-xs capitalize text-ink-soft">{user?.role?.replaceAll('_', ' ')}</p>
+                    {user?.official_role && <p className="truncate text-xs text-forest">{user.official_role}</p>}
+                    <p className="truncate text-xs text-ink-soft">{t('team.systemRole')}: {SYSTEM_ROLE_LABELS[user?.role] || user?.role}</p>
                   </div>
                   <button
                     role="menuitem"

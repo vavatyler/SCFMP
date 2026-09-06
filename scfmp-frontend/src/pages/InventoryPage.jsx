@@ -13,6 +13,7 @@ import {
 import { useAuth } from '../context/AuthContext';
 import { useCooperative } from '../context/CooperativeContext';
 import { useTranslation } from 'react-i18next';
+import { PERMISSIONS } from '../config/permissions';
 
 const emptyItemForm = {
   item_name: '',
@@ -32,8 +33,12 @@ const CATEGORY_LABELS = {
 
 const InventoryPage = () => {
   const { t } = useTranslation();
-  const { user } = useAuth();
+  const { user, can } = useAuth();
   const { cooperativeScope, activeCooperativeId } = useCooperative();
+  const canManage = can(PERMISSIONS.INVENTORY_MANAGE)
+    && ['super_admin', 'cooperative_manager', 'field_officer'].includes(user?.role);
+  const canDelete = can(PERMISSIONS.INVENTORY_MANAGE)
+    && ['super_admin', 'cooperative_manager'].includes(user?.role);
 
   const [items, setItems] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -163,7 +168,7 @@ const InventoryPage = () => {
   return (
     <DashboardLayout title={t('common.inventory')} subtitle={t('modules.inventorySubtitle')}>
       <ReportActions moduleName="inventory" filters={cooperativeScope} />
-      <div className="mb-5 flex items-center justify-end">
+      {canManage && <div className="mb-5 flex items-center justify-end">
         <button
           onClick={openCreateItemModal}
           className="focus-ring flex items-center gap-2 rounded-lg bg-forest px-4 py-2 text-sm font-medium text-paper hover:bg-forest-light"
@@ -171,7 +176,7 @@ const InventoryPage = () => {
           <Plus className="h-4 w-4" />
           Add item
         </button>
-      </div>
+      </div>}
 
       <div className="overflow-x-auto rounded-xl bg-white shadow-card">
         {isLoading ? (
@@ -224,7 +229,7 @@ const InventoryPage = () => {
                       {item.reorder_level} {item.unit}
                     </td>
                     <td className="px-5 py-3.5">
-                      <div className="flex justify-end gap-2">
+                      {canManage && <div className="flex justify-end gap-2">
                         <button
                           onClick={() => openMoveModal(item, 'in')}
                           className="focus-ring rounded-lg border border-sand px-3 py-1.5 text-xs font-medium text-forest hover:bg-forest/5"
@@ -244,15 +249,17 @@ const InventoryPage = () => {
                         >
                           <Pencil className="h-3.5 w-3.5" />
                         </button>
-                        <button
-                          onClick={() => handleDeleteItem(item)}
-                          disabled={isDeleting}
-                          title="Delete item"
-                          className="focus-ring rounded-lg border border-sand p-1.5 text-ink-soft hover:bg-clay/10 hover:text-clay disabled:opacity-50"
-                        >
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </button>
-                      </div>
+                        {canDelete && (
+                          <button
+                            onClick={() => handleDeleteItem(item)}
+                            disabled={isDeleting}
+                            title="Delete item"
+                            className="focus-ring rounded-lg border border-sand p-1.5 text-ink-soft hover:bg-clay/10 hover:text-clay disabled:opacity-50"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </button>
+                        )}
+                      </div>}
                     </td>
                   </tr>
                 );

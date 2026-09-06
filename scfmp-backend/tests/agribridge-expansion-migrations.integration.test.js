@@ -2,6 +2,7 @@ const { DataTypes, Sequelize } = require('sequelize');
 const productionMigration = require('../migrations/20260905000022-expand-production-details-and-contributions');
 const documentMigration = require('../migrations/20260905000023-expand-document-metadata');
 const platformMigration = require('../migrations/20260905000024-create-team-and-subscriptions');
+const teamAccessMigration = require('../migrations/20260906000025-add-team-access-management');
 
 describe('AgriBridge expansion migrations', () => {
   let sequelize;
@@ -12,6 +13,10 @@ describe('AgriBridge expansion migrations', () => {
     queryInterface = sequelize.getQueryInterface();
     await queryInterface.createTable('cooperatives', {
       id: { type: DataTypes.INTEGER, primaryKey: true },
+    });
+    await queryInterface.createTable('users', {
+      id: { type: DataTypes.INTEGER, primaryKey: true },
+      email: { type: DataTypes.STRING(150), allowNull: false },
     });
     await queryInterface.createTable('farmers', {
       id: { type: DataTypes.INTEGER, primaryKey: true },
@@ -97,5 +102,43 @@ describe('AgriBridge expansion migrations', () => {
 
     await platformMigration.up(queryInterface, Sequelize);
     expect((await queryInterface.showAllTables()).filter((name) => name === 'subscriptions')).toHaveLength(1);
+  });
+
+  it('adds optional Team/User access fields without changing legacy records', async () => {
+    await platformMigration.up(queryInterface, Sequelize);
+    await queryInterface.bulkInsert('users', [{ id: 41, email: 'legacy@example.test' }]);
+    await queryInterface.bulkInsert('team_members', [{
+      id: 51,
+      full_name: 'Legacy Team Member',
+      position: 'Legacy title requiring review',
+      status: 'active',
+      display_order: 4,
+      created_at: new Date(),
+      updated_at: new Date(),
+    }]);
+
+    await teamAccessMigration.up(queryInterface, Sequelize);
+    await teamAccessMigration.up(queryInterface, Sequelize);
+
+    const userColumns = await queryInterface.describeTable('users');
+    const teamColumns = await queryInterface.describeTable('team_members');
+    const [[legacyUser]] = await sequelize.query('SELECT * FROM users WHERE id = 41');
+    const [[legacyTeamMember]] = await sequelize.query('SELECT * FROM team_members WHERE id = 51');
+
+    expect(userColumns).toEqual(expect.objectContaining({
+      system_access_enabled: expect.objectContaining({ allowNull: false }),
+      permissions: expect.any(Object),
+    }));
+    expect(teamColumns).toEqual(expect.objectContaining({
+      profile_visibility: expect.objectContaining({ allowNull: false }),
+      linked_user_id: expect.any(Object),
+    }));
+    expect(legacyUser.system_access_enabled).toBe(1);
+    expect(legacyTeamMember).toEqual(expect.objectContaining({
+      full_name: 'Legacy Team Member',
+      position: 'Legacy title requiring review',
+      profile_visibility: 'visible',
+      linked_user_id: null,
+    }));
   });
 });

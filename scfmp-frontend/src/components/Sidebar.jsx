@@ -23,36 +23,39 @@ import {
 import { useAuth } from '../context/AuthContext';
 import ChangePasswordModal from './ChangePasswordModal';
 import { PRODUCT_NAME } from '../config/company';
+import { PERMISSIONS, SYSTEM_ROLE_LABELS } from '../config/permissions';
 
-// `roles: null` means every logged-in role can see it.
+// Permission-gated navigation mirrors backend module authorization.
 const NAV_ITEMS = [
-  { to: '/dashboard', labelKey: 'common.dashboard', icon: LayoutDashboard, roles: null },
-  { to: '/cooperatives', labelKey: 'common.organizations', icon: Building2, roles: ['super_admin', 'cooperative_manager'] },
-  { to: '/members', labelKey: 'common.members', icon: Users, roles: null },
-  { to: '/farmers', labelKey: 'common.farmers', icon: Wheat, roles: null },
-  { to: '/farmer-groups', labelKey: 'common.farmerGroups', icon: UsersRound, roles: null },
-  { to: '/production', labelKey: 'common.production', icon: TrendingUp, roles: null },
-  { to: '/production/individual', labelKey: 'common.individualProduction', icon: Sprout, roles: null, child: true },
-  { to: '/production/group', labelKey: 'common.groupProduction', icon: UsersRound, roles: null, child: true },
-  { to: '/finance', labelKey: 'common.finance', icon: Wallet, roles: null },
-  { to: '/inventory', labelKey: 'common.inventory', icon: Boxes, roles: null },
-  { to: '/documents', labelKey: 'common.documents', icon: FileText, roles: null },
-  { to: '/documents/categories', labelKey: 'common.documentCategories', icon: FileText, roles: null, child: true },
-  { to: '/documents/expiring', labelKey: 'common.expiringDocuments', icon: FileText, roles: null, child: true },
-  { to: '/reports', labelKey: 'common.reports', icon: BarChart3, roles: null },
-  { to: '/team', labelKey: 'common.team', icon: UserCog, roles: null },
-  { to: '/staff', labelKey: 'common.staffAccounts', icon: UsersRound, roles: ['super_admin', 'cooperative_manager'] },
+  { to: '/dashboard', labelKey: 'common.dashboard', icon: LayoutDashboard, permission: PERMISSIONS.DASHBOARD_VIEW },
+  { to: '/cooperatives', labelKey: 'common.organizations', icon: Building2, permission: PERMISSIONS.ORGANIZATIONS_VIEW },
+  { to: '/members', labelKey: 'common.members', icon: Users, permission: PERMISSIONS.MEMBERS_VIEW },
+  { to: '/farmers', labelKey: 'common.farmers', icon: Wheat, permission: PERMISSIONS.FARMERS_VIEW },
+  { to: '/farmer-groups', labelKey: 'common.farmerGroups', icon: UsersRound, permission: PERMISSIONS.FARMERS_VIEW },
+  { to: '/production', labelKey: 'common.production', icon: TrendingUp, permission: PERMISSIONS.PRODUCTION_VIEW },
+  { to: '/production/individual', labelKey: 'common.individualProduction', icon: Sprout, permission: PERMISSIONS.PRODUCTION_VIEW, child: true },
+  { to: '/production/group', labelKey: 'common.groupProduction', icon: UsersRound, permission: PERMISSIONS.PRODUCTION_VIEW, child: true },
+  { to: '/finance', labelKey: 'common.finance', icon: Wallet, permission: PERMISSIONS.FINANCE_VIEW },
+  { to: '/inventory', labelKey: 'common.inventory', icon: Boxes, permission: PERMISSIONS.INVENTORY_VIEW },
+  { to: '/documents', labelKey: 'common.documents', icon: FileText, permission: PERMISSIONS.DOCUMENTS_VIEW },
+  { to: '/documents/categories', labelKey: 'common.documentCategories', icon: FileText, permission: PERMISSIONS.DOCUMENTS_VIEW, child: true },
+  { to: '/documents/expiring', labelKey: 'common.expiringDocuments', icon: FileText, permission: PERMISSIONS.DOCUMENTS_VIEW, child: true },
+  { to: '/reports', labelKey: 'common.reports', icon: BarChart3, permission: PERMISSIONS.REPORTS_VIEW },
+  { to: '/team', labelKey: 'common.team', icon: UserCog, permission: PERMISSIONS.TEAM_VIEW },
+  { to: '/staff', labelKey: 'common.staffAccounts', icon: UsersRound, permission: PERMISSIONS.USERS_VIEW },
   { to: '/subscription', labelKey: 'common.subscription', icon: CreditCard, roles: ['super_admin', 'cooperative_manager'] },
-  { to: '/settings', labelKey: 'common.settings', icon: Settings, roles: null },
+  { to: '/settings', labelKey: 'common.settings', icon: Settings, permission: PERMISSIONS.SETTINGS_VIEW },
   { to: '/contact', labelKey: 'common.contact', icon: ContactRound, roles: null },
 ];
 
 const Sidebar = ({ isOpen = false, onClose = () => {} }) => {
-  const { user, logout } = useAuth();
+  const { user, logout, can } = useAuth();
   const { t } = useTranslation();
   const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
 
-  const visibleItems = NAV_ITEMS.filter((item) => !item.roles || item.roles.includes(user?.role));
+  const visibleItems = NAV_ITEMS.filter((item) => (
+    (!item.roles || item.roles.includes(user?.role)) && (!item.permission || can(item.permission))
+  ));
 
   return (
     <aside className={`fixed inset-y-0 left-0 z-40 flex h-screen w-64 flex-col bg-forest text-paper shadow-xl transition-transform lg:sticky lg:top-0 lg:w-60 lg:translate-x-0 lg:shadow-none ${isOpen ? 'translate-x-0' : '-translate-x-full'}`}>
@@ -89,8 +92,9 @@ const Sidebar = ({ isOpen = false, onClose = () => {} }) => {
           <p className="truncate text-sm font-medium text-paper">
             {user?.first_name} {user?.last_name}
           </p>
-          <p className="truncate text-xs capitalize text-paper/50">
-            {user?.role?.replace('_', ' ')}
+          {user?.official_role && <p className="truncate text-xs text-paper/65">{user.official_role}</p>}
+          <p className="truncate text-[11px] text-paper/45">
+            {t('team.systemRole')}: {SYSTEM_ROLE_LABELS[user?.role] || user?.role}
           </p>
         </div>
         <button

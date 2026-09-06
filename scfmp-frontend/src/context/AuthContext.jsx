@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import * as authApi from '../api/auth';
 import i18n from '../i18n';
+import { hasPermission } from '../config/permissions';
 
 const AuthContext = createContext(null);
 
@@ -62,8 +63,10 @@ export const AuthProvider = ({ children }) => {
     localStorage.setItem('scfmp_user', JSON.stringify(updatedUser));
   };
 
+  const can = (permission) => hasPermission(user, permission);
+
   return (
-    <AuthContext.Provider value={{ user, isLoading, login, logout, updateUser, isAuthenticated: !!user }}>
+    <AuthContext.Provider value={{ user, isLoading, login, logout, updateUser, can, isAuthenticated: !!user }}>
       {children}
     </AuthContext.Provider>
   );

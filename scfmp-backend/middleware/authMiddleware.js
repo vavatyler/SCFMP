@@ -1,5 +1,6 @@
 const jwt = require('jsonwebtoken');
 const { User } = require('../models');
+const { getEffectivePermissions, requestPermissions } = require('../config/accessControl');
 
 /**
  * Verifies the Bearer token, attaches the authenticated user to req.user.
@@ -27,12 +28,20 @@ const verifyToken = async (req, res, next) => {
     if (
       !user ||
       user.status !== 'active' ||
+      user.system_access_enabled === false ||
       decoded.token_version !== user.token_version
     ) {
-      return res.status(401).json({ success: false, message: 'User not found or inactive' });
+      return res.status(401).json({ success: false, message: 'Account access is unavailable' });
+    }
+
+    const permissions = getEffectivePermissions(user);
+    const requiredPermissions = requestPermissions(req);
+    if (requiredPermissions.some((permission) => !permissions.includes(permission))) {
+      return res.status(403).json({ success: false, message: 'You do not have permission to perform this action' });
     }
 
     req.user = user; // full user instance, cooperative_id + role available downstream
+    req.userPermissions = permissions;
     next();
   } catch (err) {
     if (err.name === 'TokenExpiredError') {
