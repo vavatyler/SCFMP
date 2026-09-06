@@ -9,6 +9,8 @@ const { ALL_PERMISSIONS } = require('../config/accessControl');
 const { PLATFORM_ROLES } = require('../config/accountRoles');
 const { imageUpload, handleUploadError } = require('../middleware/uploadMiddleware');
 
+router.get('/:id/photo', [param('id').isInt({ min: 1 })], validate, controller.photo);
+
 const isAllowedPhotoUrl = (value) => {
   try {
     const url = new URL(value);

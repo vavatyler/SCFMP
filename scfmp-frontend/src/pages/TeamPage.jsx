@@ -78,9 +78,12 @@ const ProfileImage = ({ member, large = false }) => {
       </div>
     );
   }
+  const imageSrc = member.photo_url.includes('.blob.vercel-storage.com/') || member.photo_url.includes('/uploads/')
+    ? `/api/team-members/${member.id}/photo`
+    : member.photo_url;
   return (
     <img
-      src={member.photo_url}
+      src={imageSrc}
       alt={member.full_name}
       onError={() => setFailed(true)}
       className={`${sizeClass} bg-sand/30 object-cover object-center`}

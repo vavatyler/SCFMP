@@ -18,9 +18,7 @@ export const createTeamMember = async (payload) => {
 export const uploadTeamMemberPhoto = async (file) => {
   const formData = new FormData();
   formData.append('file', file);
-  const { data } = await apiClient.post('/team-members/photo', formData, {
-    headers: { 'Content-Type': 'multipart/form-data' },
-  });
+  const { data } = await apiClient.post('/team-members/photo', formData);
   return data.data.photo_url;
 };
 

@@ -6,7 +6,7 @@ const os = require('os');
 
 // Multipart overhead also counts toward Vercel Functions' 4.5 MB request-body
 // ceiling, so keep the file itself at 4 MB for this server-upload architecture.
-const MAX_DOCUMENT_UPLOAD_BYTES = 4 * 1024 * 1024;
+const MAX_DOCUMENT_UPLOAD_BYTES = 3.5 * 1024 * 1024;
 
 const UPLOAD_DIR = process.env.UPLOAD_DIR
   || (process.env.VERCEL
@@ -90,7 +90,7 @@ const handleUploadError = (error, req, res, next) => {
     return res.status(413).json({
       success: false,
       code: 'DOCUMENT_FILE_TOO_LARGE',
-      message: 'The file exceeds the 4 MB upload limit',
+      message: 'The file exceeds the 3.5 MB upload limit',
     });
   }
 

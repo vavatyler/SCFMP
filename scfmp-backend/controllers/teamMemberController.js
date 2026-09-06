@@ -7,7 +7,9 @@ const {
 } = require('../config/accessControl');
 const { isOfficialTeamRole } = require('../config/teamRoles');
 const { ACCOUNT_SCOPES, PLATFORM_ROLES } = require('../config/accountRoles');
-const { saveTeamPhoto } = require('../services/teamPhotoStorageService');
+const { saveTeamPhoto, streamStoredTeamPhoto } = require('../services/teamPhotoStorageService');
+const { UPLOAD_DIR } = require('../middleware/uploadMiddleware');
+const path = require('path');
 
 const cleanOptional = (value) => String(value || '').trim() || null;
 const accountAttributes = [
@@ -234,6 +236,22 @@ const uploadPhoto = async (req, res) => {
   }
 };
 
+const photo = async (req, res) => {
+  try {
+    const member = await TeamMember.findByPk(req.params.id);
+    if (!member?.photo_url) return res.status(404).end();
+    if (await streamStoredTeamPhoto(member.photo_url, res)) return undefined;
+
+    const filename = path.basename(new URL(member.photo_url).pathname);
+    return res.sendFile(path.join(UPLOAD_DIR, filename), {
+      headers: { 'Cache-Control': 'public, max-age=3600' },
+    });
+  } catch {
+    if (res.headersSent) return res.end();
+    return res.status(404).end();
+  }
+};
+
 const create = async (req, res) => {
   const transaction = await sequelize.transaction();
   try {
@@ -344,4 +362,4 @@ const remove = async (req, res) => {
   }
 };
 
-module.exports = { list, getById, uploadPhoto, create, update, remove };
+module.exports = { list, getById, uploadPhoto, photo, create, update, remove };
