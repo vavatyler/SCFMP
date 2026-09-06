@@ -28,6 +28,7 @@ const httpError = (status, message) => Object.assign(new Error(message), { statu
 
 const respondWithError = (res, error) => {
   const status = error.status || (error.name?.startsWith('Sequelize') ? 422 : 500);
+  if (status >= 500) console.error('Team member request failed:', error);
   const message = status >= 500 ? 'Unable to update the Team right now' : error.message;
   return res.status(status).json({ success: false, message });
 };
@@ -265,7 +266,8 @@ const create = async (req, res) => {
       metadata: { official_role: member.position, linked_user_id: member.linked_user_id },
     });
     if (account) await auditAccessEvents(req, account, accessEvents);
-    return res.status(201).json({ success: true, data: managementProfile(await loadMember(member.id)) });
+    const savedMember = account ? await loadMember(member.id) : member;
+    return res.status(201).json({ success: true, data: managementProfile(savedMember) });
   } catch (error) {
     if (!transaction.finished) await transaction.rollback();
     return respondWithError(res, error);
@@ -315,7 +317,8 @@ const update = async (req, res) => {
       metadata: { changed_fields: Object.keys(updates) },
     });
     if (account) await auditAccessEvents(req, account, accessEvents);
-    return res.status(200).json({ success: true, data: managementProfile(await loadMember(member.id)) });
+    const savedMember = account ? await loadMember(member.id) : member;
+    return res.status(200).json({ success: true, data: managementProfile(savedMember) });
   } catch (error) {
     if (!transaction.finished) await transaction.rollback();
     return respondWithError(res, error);
