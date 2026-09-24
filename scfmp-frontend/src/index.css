@@ -75,3 +75,90 @@
     @apply focus:outline-none focus-visible:ring-2 focus-visible:ring-gold focus-visible:ring-offset-2 focus-visible:ring-offset-paper;
   }
 }
+
+/* Landing page theme palette. The light palette remains the default. */
+.landing-page[data-landing-theme="dark"] {
+  color-scheme: dark;
+  background-color: #020617;
+  color: #f8fafc;
+}
+
+.landing-page[data-landing-theme="dark"] .landing-site-header,
+.landing-page[data-landing-theme="dark"] .landing-deep-surface,
+.landing-page[data-landing-theme="dark"] footer {
+  background-color: #020817 !important;
+}
+
+.landing-page[data-landing-theme="dark"] .bg-paper,
+.landing-page[data-landing-theme="dark"] .bg-white,
+.landing-page[data-landing-theme="dark"] .bg-slate-50,
+.landing-page[data-landing-theme="dark"] .bg-sand {
+  background-color: #0b1220 !important;
+}
+
+.landing-page[data-landing-theme="dark"] [class*="bg-blue-50"] {
+  background-color: #0b1b2e !important;
+}
+
+.landing-page[data-landing-theme="dark"] .bg-blue-600 {
+  background-color: #0b1b32 !important;
+}
+
+.landing-page[data-landing-theme="dark"] .landing-site-header .bg-white {
+  background-color: #f8fafc !important;
+  color: #06132a !important;
+}
+
+.landing-page[data-landing-theme="dark"] .landing-hero .bg-white {
+  background-color: #f8fafc !important;
+  color: #06132a !important;
+}
+
+.landing-page[data-landing-theme="dark"] .focus-ring:focus-visible {
+  --tw-ring-offset-color: #020817 !important;
+}
+
+.landing-page[data-landing-theme="dark"] .text-slate-950,
+.landing-page[data-landing-theme="dark"] .text-slate-900,
+.landing-page[data-landing-theme="dark"] .text-ink {
+  color: #f8fafc !important;
+}
+
+.landing-page[data-landing-theme="dark"] .text-slate-700,
+.landing-page[data-landing-theme="dark"] .text-slate-600,
+.landing-page[data-landing-theme="dark"] .text-ink-soft {
+  color: #cbd5e1 !important;
+}
+
+.landing-page[data-landing-theme="dark"] .text-slate-500,
+.landing-page[data-landing-theme="dark"] .text-slate-400 {
+  color: #94a3b8 !important;
+}
+
+.landing-page[data-landing-theme="dark"] .text-blue-700,
+.landing-page[data-landing-theme="dark"] .text-blue-600 {
+  color: #7dd3fc !important;
+}
+
+.landing-page[data-landing-theme="dark"] .border-slate-200,
+.landing-page[data-landing-theme="dark"] .border-sand,
+.landing-page[data-landing-theme="dark"] .border-blue-200 {
+  border-color: #263449 !important;
+}
+
+.landing-page[data-landing-theme="dark"] section.bg-slate-50 > div > .bg-gradient-to-br {
+  background-image: linear-gradient(135deg, #020817 0%, #07182d 52%, #0b1b32 100%) !important;
+}
+
+.landing-slide-copy {
+  animation: landing-slide-copy-in 520ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+
+@keyframes landing-slide-copy-in {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .landing-slide-copy { animation: none; }
+}

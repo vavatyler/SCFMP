@@ -20,12 +20,14 @@ import {
   Mail,
   MapPin,
   Menu,
+  Moon,
   Network,
   Phone,
   Pause,
   Play,
   ShieldCheck,
   Sprout,
+  Sun,
   UsersRound,
   X,
 } from 'lucide-react';
@@ -95,6 +97,17 @@ const homepageSlides = [
   },
 ];
 
+const getInitialLandingTheme = () => {
+  if (typeof window === 'undefined') return 'light';
+  try {
+    const savedTheme = window.localStorage.getItem('smartbridge-landing-theme');
+    if (savedTheme === 'dark' || savedTheme === 'light') return savedTheme;
+  } catch {
+    // Keep the landing page usable when browser storage is unavailable.
+  }
+  return 'light';
+};
+
 const BrandMark = ({ compact = false }) => {
   const [logoAvailable, setLogoAvailable] = useState(true);
   const markSize = compact ? 'h-9 w-9' : 'h-11 w-11';
@@ -113,6 +126,24 @@ const BrandMark = ({ compact = false }) => {
         <span className="mt-1 block text-[9px] font-semibold tracking-[0.2em] text-sky-200">TECHNOLOGIES LTD</span>
       </span>
     </span>
+  );
+};
+
+const ThemeToggle = ({ theme, onToggle }) => {
+  const dark = theme === 'dark';
+  const label = dark ? 'Switch to light mode' : 'Switch to dark mode';
+
+  return (
+    <button
+      type="button"
+      onClick={onToggle}
+      className="focus-ring grid h-10 w-10 place-items-center rounded-xl border border-white/15 bg-white/5 text-white transition hover:bg-white/15"
+      aria-label={label}
+      aria-pressed={dark}
+      title={label}
+    >
+      {dark ? <Sun className="h-4 w-4" aria-hidden="true" /> : <Moon className="h-4 w-4" aria-hidden="true" />}
+    </button>
   );
 };
 
@@ -159,6 +190,7 @@ const PublicProfileImage = ({ member, priority = false }) => {
 const LandingPage = () => {
   const { t } = useTranslation();
   const { isAuthenticated } = useAuth();
+  const [theme, setTheme] = useState(getInitialLandingTheme);
   const [menuOpen, setMenuOpen] = useState(false);
   const [team, setTeam] = useState([]);
   const [teamState, setTeamState] = useState('loading');
@@ -174,6 +206,7 @@ const LandingPage = () => {
 
   const platformDestination = isAuthenticated ? '/dashboard' : '/login';
   const platformLabel = isAuthenticated ? t('landing.openPlatform') : t('landing.accessPlatform');
+  const isDarkTheme = theme === 'dark';
   const shortNav = useMemo(() => landingNav.slice(0, 6), []);
   const navLabel = (item) => t(`landing.nav.${item.key}`);
 
@@ -202,6 +235,14 @@ const LandingPage = () => {
   }, []);
 
   useEffect(() => {
+    try {
+      window.localStorage.setItem('smartbridge-landing-theme', theme);
+    } catch {
+      // Theme switching still works for this visit when storage is unavailable.
+    }
+  }, [theme]);
+
+  useEffect(() => {
     if (!heroAutoplay || heroHovered || heroFocused) return undefined;
     const timer = window.setInterval(() => {
       setActiveHeroSlide((current) => (current + 1) % homepageSlides.length);
@@ -217,26 +258,29 @@ const LandingPage = () => {
   const closeMenu = () => setMenuOpen(false);
 
   return (
-    <div className="min-h-screen overflow-x-clip bg-white text-slate-900">
+    <div className={`landing-page min-h-screen overflow-x-clip bg-white text-slate-900 ${isDarkTheme ? 'landing-dark' : 'landing-light'}`} data-landing-theme={theme}>
       <a href="#main-content" className="focus-ring sr-only fixed left-4 top-4 z-[70] rounded-lg bg-white px-4 py-2 text-sm font-semibold text-blue-950 focus:not-sr-only">Skip to content</a>
 
-      <header className="sticky top-0 z-40 border-b border-white/10 bg-[#102C4C]/95 text-white backdrop-blur-lg">
+      <header className="landing-site-header sticky top-0 z-40 border-b border-white/10 bg-[#102C4C]/95 text-white backdrop-blur-lg">
         <div className="mx-auto flex min-h-[72px] max-w-7xl items-center justify-between gap-4 px-5 sm:px-8">
           <a href="#home" className="focus-ring rounded-lg" aria-label="SmartBridge Technologies home"><BrandMark compact /></a>
           <nav className="hidden items-center gap-5 lg:flex" aria-label="Main navigation">
             {shortNav.map((item) => <a key={item.href} href={item.href} className="focus-ring rounded-md text-sm text-slate-200 transition hover:text-white">{navLabel(item)}</a>)}
             <a href="#contact" className="focus-ring rounded-md text-sm text-slate-200 transition hover:text-white">{t('landing.nav.contact')}</a>
           </nav>
-          <div className="hidden items-center gap-3 lg:flex">
-            <span className="landing-language text-slate-200"><LanguageSwitcher compact /></span>
-            <Cta to={platformDestination} light>{platformLabel}</Cta>
+          <div className="flex items-center gap-2 sm:gap-3">
+            <div className="hidden items-center gap-3 lg:flex">
+              <span className="landing-language text-slate-200"><LanguageSwitcher compact /></span>
+              <Cta to={platformDestination} light>{platformLabel}</Cta>
+            </div>
+            <ThemeToggle theme={theme} onToggle={() => setTheme((current) => (current === 'dark' ? 'light' : 'dark'))} />
+            <button onClick={() => setMenuOpen((open) => !open)} className="focus-ring rounded-lg p-2 lg:hidden" aria-label={menuOpen ? 'Close menu' : 'Open menu'} aria-expanded={menuOpen}>
+              {menuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+            </button>
           </div>
-          <button onClick={() => setMenuOpen((open) => !open)} className="focus-ring rounded-lg p-2 lg:hidden" aria-label={menuOpen ? 'Close menu' : 'Open menu'} aria-expanded={menuOpen}>
-            {menuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
-          </button>
         </div>
         {menuOpen && (
-          <div className="border-t border-white/10 bg-[#102C4C] px-5 py-5 lg:hidden">
+          <div className="landing-site-header border-t border-white/10 bg-[#102C4C] px-5 py-5 lg:hidden">
             <nav className="mx-auto grid max-w-7xl gap-1" aria-label="Mobile navigation">
               {landingNav.map((item) => <a key={item.href} href={item.href} onClick={closeMenu} className="focus-ring rounded-lg px-3 py-3 text-sm font-medium text-slate-100 hover:bg-white/10">{navLabel(item)}</a>)}
               <div className="mt-3 flex flex-wrap items-center gap-3 px-3">
@@ -249,114 +293,112 @@ const LandingPage = () => {
       </header>
 
       <main id="main-content">
-        <section id="home" className="landing-grid relative isolate overflow-hidden bg-[#102C4C] text-white">
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_72%_24%,rgba(165,195,215,.38),transparent_24rem),radial-gradient(circle_at_13%_85%,rgba(22,135,212,.30),transparent_27rem)]" aria-hidden="true" />
-          <div className="absolute -right-32 top-10 h-[38rem] w-[38rem] rounded-full border border-sky-300/15" aria-hidden="true" />
-          <div className="landing-orbit absolute -right-20 top-20 h-[28rem] w-[28rem] rounded-full border border-dashed border-sky-300/30" aria-hidden="true"><span className="absolute -left-2 top-1/2 h-4 w-4 rounded-full bg-sky-300 shadow-[0_0_30px_8px_rgba(125,211,252,.35)]" /></div>
-          <div className="relative mx-auto grid min-h-[660px] max-w-7xl items-center gap-14 px-5 py-20 sm:px-8 lg:grid-cols-[1.05fr_.95fr] lg:py-24">
-            <div className="landing-reveal max-w-2xl">
-              <BrandMark />
-              <p className="mt-10 text-sm font-semibold uppercase tracking-[0.2em] text-sky-300">Practical technology for real-world work</p>
-              <h1 className="mt-4 text-4xl font-semibold leading-[1.04] tracking-[-0.055em] text-white sm:text-5xl lg:text-6xl">Build digital solutions <span className="text-sky-300">for smarter organizations.</span></h1>
-              <p className="mt-6 max-w-xl text-base leading-7 text-slate-200 sm:text-lg">We develop practical technology and digital management solutions that help organizations improve operations, make better decisions, embrace digital transformation, and grow sustainably.</p>
-              <div className="mt-9 flex flex-col gap-3 sm:flex-row"><a href="#agribridge" className="focus-ring inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-white/25 px-5 py-3 text-sm font-semibold text-white transition hover:border-white/60 hover:bg-white/10">Explore AgriBridge <ArrowDownRight className="h-4 w-4" /></a></div>
-              <p className="mt-8 text-sm text-slate-300"><span className="font-semibold text-white">AgriBridge</span> is a digital platform of SmartBridge Technologies Ltd.</p>
-            </div>
-            <div
-              className="relative mx-auto w-full max-w-[560px]"
-              role="region"
-              aria-roledescription="carousel"
-              aria-label="SmartBridge digital solutions"
-              onMouseEnter={() => setHeroHovered(true)}
-              onMouseLeave={() => setHeroHovered(false)}
-              onTouchStart={(event) => setHeroTouchStart(event.changedTouches[0]?.clientX ?? null)}
-              onTouchEnd={(event) => {
-                const touchEndX = event.changedTouches[0]?.clientX;
-                if (heroTouchStart !== null && typeof touchEndX === 'number') {
-                  const distance = heroTouchStart - touchEndX;
-                  if (Math.abs(distance) > 45) moveHeroSlide(distance > 0 ? 1 : -1);
-                }
-                setHeroTouchStart(null);
-              }}
-              onFocusCapture={() => setHeroFocused(true)}
-              onBlurCapture={(event) => {
-                if (!event.currentTarget.contains(event.relatedTarget)) setHeroFocused(false);
-              }}
-            >
-              <div className="absolute -inset-7 rounded-[2rem] bg-sky-400/15 blur-3xl" aria-hidden="true" />
-              <div className="relative overflow-hidden rounded-[1.65rem] border border-white/15 bg-slate-950/70 shadow-2xl shadow-black/30 backdrop-blur">
-                <div className="relative h-[250px] overflow-hidden sm:h-[320px] lg:h-[355px]">
-                  {homepageSlides.map((slide, index) => (
-                    <div
-                      key={slide.image}
-                      aria-hidden="true"
-                      className={`absolute inset-0 transition-transform duration-[8000ms] ease-out motion-reduce:transition-none ${index === activeHeroSlide ? 'scale-100' : 'scale-[1.06]'}`}
-                    >
-                      <img
-                        src={slide.image}
-                        alt=""
-                        className={`h-full w-full object-cover transition-opacity duration-1000 ease-in-out motion-reduce:transition-none ${index === activeHeroSlide ? 'opacity-100' : 'opacity-0'}`}
-                      />
-                    </div>
-                  ))}
-                  <div className="absolute inset-0 bg-gradient-to-t from-[#07182d]/70 via-[#07182d]/5 to-[#07182d]/15" aria-hidden="true" />
-                  <div className="absolute left-5 top-5 inline-flex items-center gap-2 rounded-full border border-white/20 bg-[#07182d]/55 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[.16em] text-sky-100 backdrop-blur-md sm:left-7 sm:top-7">
-                    <span className="h-1.5 w-1.5 rounded-full bg-sky-300" /> SmartBridge Technologies
-                  </div>
-                  <div className="absolute bottom-5 left-5 text-xs font-medium text-white/80 sm:bottom-6 sm:left-7">
-                    {String(activeHeroSlide + 1).padStart(2, '0')} <span className="mx-1 text-sky-200/60">/</span> {String(homepageSlides.length).padStart(2, '0')}
-                  </div>
-                </div>
-                <div className="bg-gradient-to-br from-[#173c67] via-[#10446f] to-[#07577d] p-5 sm:p-7">
-                  <div aria-live={heroAutoplay ? 'off' : 'polite'} aria-atomic="true">
-                    <div key={activeHeroSlide} role="group" aria-roledescription="slide" aria-label={`${activeHeroSlide + 1} of ${homepageSlides.length}: ${currentHeroSlide.eyebrow}`} className="grid min-h-[150px] gap-5 sm:grid-cols-[1fr_auto] sm:items-end">
-                      <div>
-                        <p className="text-[10px] font-bold uppercase tracking-[.19em] text-sky-200">{currentHeroSlide.eyebrow}</p>
-                        <h2 className="mt-2 max-w-md text-2xl font-semibold leading-tight tracking-[-.04em] text-white sm:text-[1.7rem]">{currentHeroSlide.title}</h2>
-                        <p className="mt-2 max-w-lg text-sm leading-6 text-blue-50/85">{currentHeroSlide.description}</p>
-                      </div>
-                      <a href={currentHeroSlide.href} className="focus-ring inline-flex min-h-10 w-fit shrink-0 items-center gap-2 rounded-lg border border-white/20 bg-white/10 px-3.5 py-2 text-xs font-semibold text-white transition hover:border-white/40 hover:bg-white/20">
-                        {currentHeroSlide.action}<ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
-                      </a>
-                    </div>
-                  </div>
-                  <div className="mt-6 flex items-center justify-between border-t border-white/15 pt-4">
-                    <div className="flex items-center gap-2" role="group" aria-label="Choose a slide">
-                      {homepageSlides.map((slide, index) => (
-                        <button
-                          key={slide.image}
-                          type="button"
-                          onClick={() => setActiveHeroSlide(index)}
-                          className={`focus-ring h-2.5 rounded-full transition-all ${index === activeHeroSlide ? 'w-7 bg-white' : 'w-2.5 bg-white/40 hover:bg-white/70'}`}
-                          aria-label={`Show slide ${index + 1}: ${slide.eyebrow}`}
-                          aria-current={index === activeHeroSlide ? 'true' : undefined}
-                        />
-                      ))}
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <button type="button" onClick={() => moveHeroSlide(-1)} className="focus-ring grid h-9 w-9 place-items-center rounded-full border border-white/20 text-white transition hover:bg-white/15" aria-label="Previous slide">
-                        <ChevronLeft className="h-4 w-4" aria-hidden="true" />
-                      </button>
-                      <button type="button" onClick={() => moveHeroSlide(1)} className="focus-ring grid h-9 w-9 place-items-center rounded-full border border-white/20 text-white transition hover:bg-white/15" aria-label="Next slide">
-                        <ChevronRight className="h-4 w-4" aria-hidden="true" />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setHeroAutoplay((playing) => !playing);
-                          setHeroFocused(false);
-                        }}
-                        className="focus-ring grid h-9 w-9 place-items-center rounded-full border border-white/20 text-white transition hover:bg-white/15"
-                        aria-label={heroAutoplay ? 'Pause automatic slides' : 'Play automatic slides'}
-                        aria-pressed={heroAutoplay}
-                        title={heroAutoplay ? 'Pause slides' : 'Play slides'}
-                      >
-                        {heroAutoplay ? <Pause className="h-3.5 w-3.5" aria-hidden="true" /> : <Play className="h-3.5 w-3.5" aria-hidden="true" />}
-                      </button>
-                    </div>
-                  </div>
+        <section
+          id="home"
+          className={`landing-hero relative isolate flex min-h-[calc(100svh-72px)] overflow-hidden ${isDarkTheme ? 'bg-[#020817] text-white' : 'bg-[#f8fafc] text-[#102C4C]'}`}
+          role="region"
+          aria-roledescription="carousel"
+          aria-label="SmartBridge digital solutions"
+          onMouseEnter={() => setHeroHovered(true)}
+          onMouseLeave={() => setHeroHovered(false)}
+          onTouchStart={(event) => setHeroTouchStart(event.changedTouches[0]?.clientX ?? null)}
+          onTouchEnd={(event) => {
+            const touchEndX = event.changedTouches[0]?.clientX;
+            if (heroTouchStart !== null && typeof touchEndX === 'number') {
+              const distance = heroTouchStart - touchEndX;
+              if (Math.abs(distance) > 45) moveHeroSlide(distance > 0 ? 1 : -1);
+            }
+            setHeroTouchStart(null);
+          }}
+          onFocusCapture={() => setHeroFocused(true)}
+          onBlurCapture={(event) => {
+            if (!event.currentTarget.contains(event.relatedTarget)) setHeroFocused(false);
+          }}
+        >
+          <div className="absolute inset-0" aria-hidden="true">
+            {homepageSlides.map((slide, index) => (
+              <div
+                key={slide.image}
+                className={`absolute inset-0 transition-opacity duration-1000 ease-in-out motion-reduce:transition-none ${index === activeHeroSlide ? 'opacity-100' : 'opacity-0'}`}
+              >
+                <img
+                  src={slide.image}
+                  alt=""
+                  loading={index === 0 ? 'eager' : 'lazy'}
+                  className={`h-full w-full object-cover transition-transform duration-[8000ms] ease-out motion-reduce:transition-none ${index === activeHeroSlide ? 'scale-100' : 'scale-[1.06]'}`}
+                />
+              </div>
+            ))}
+          </div>
+          <div className={`absolute inset-0 ${isDarkTheme ? 'bg-gradient-to-r from-[#020817]/95 via-[#06132a]/78 to-[#06132a]/25' : 'bg-gradient-to-r from-white/95 via-white/78 to-white/20'}`} aria-hidden="true" />
+          <div className={`absolute inset-x-0 bottom-0 h-56 ${isDarkTheme ? 'bg-gradient-to-t from-[#020817] to-transparent' : 'bg-gradient-to-t from-white/85 to-transparent'}`} aria-hidden="true" />
+
+          <div className="relative mx-auto grid min-h-[calc(100svh-72px)] w-full max-w-7xl grid-cols-1 items-center gap-10 px-5 pb-28 pt-20 sm:px-8 lg:grid-cols-[minmax(0,1fr)_250px] lg:gap-16 lg:pb-32 lg:pt-14">
+            <div className="landing-reveal max-w-3xl">
+              <p className={`inline-flex items-center gap-2 text-xs font-bold uppercase tracking-[.2em] ${isDarkTheme ? 'text-sky-300' : 'text-blue-700'}`}>
+                <span className={`h-2 w-2 rounded-full ${isDarkTheme ? 'bg-sky-300' : 'bg-blue-600'}`} aria-hidden="true" /> SmartBridge Technologies
+              </p>
+              <div aria-live={heroAutoplay ? 'off' : 'polite'} aria-atomic="true">
+                <div key={activeHeroSlide} className="landing-slide-copy" role="group" aria-roledescription="slide" aria-label={`${activeHeroSlide + 1} of ${homepageSlides.length}: ${currentHeroSlide.eyebrow}`}>
+                  <p className={`mt-7 text-sm font-semibold uppercase tracking-[.17em] ${isDarkTheme ? 'text-sky-100/90' : 'text-blue-900/80'}`}>{currentHeroSlide.eyebrow}</p>
+                  <h1 className={`mt-4 max-w-[850px] text-[2.8rem] font-semibold leading-[.99] tracking-[-.06em] sm:text-6xl md:text-7xl lg:text-[5.35rem] xl:text-[6rem] ${isDarkTheme ? 'text-white' : 'text-[#102C4C]'}`}>
+                    {currentHeroSlide.title}
+                  </h1>
                 </div>
               </div>
+              <p className={`mt-5 max-w-xl text-sm leading-6 lg:hidden sm:text-base ${isDarkTheme ? 'text-slate-200' : 'text-slate-700'}`}>{currentHeroSlide.description}</p>
+              <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+                <a href={currentHeroSlide.href} className={`focus-ring inline-flex min-h-12 items-center justify-center gap-2 rounded-xl px-5 py-3 text-sm font-semibold shadow-lg transition hover:-translate-y-0.5 ${isDarkTheme ? 'bg-white text-[#06132a] shadow-black/25 hover:bg-sky-100' : 'bg-[#102C4C] text-white shadow-blue-950/20 hover:bg-blue-900'}`}>
+                  {currentHeroSlide.action}<ArrowRight className="h-4 w-4" aria-hidden="true" />
+                </a>
+                <a href="#contact" className={`focus-ring inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border px-5 py-3 text-sm font-semibold backdrop-blur-md transition ${isDarkTheme ? 'border-white/25 bg-white/10 text-white hover:bg-white/20' : 'border-[#102C4C]/20 bg-white/45 text-[#102C4C] hover:bg-white/75'}`}>
+                  Talk with our team<ArrowDownRight className="h-4 w-4" aria-hidden="true" />
+                </a>
+              </div>
+              <p className={`mt-7 text-sm ${isDarkTheme ? 'text-slate-200' : 'text-slate-700'}`}><span className={`font-semibold ${isDarkTheme ? 'text-white' : 'text-[#102C4C]'}`}>AgriBridge</span> is a digital platform of SmartBridge Technologies Ltd.</p>
+            </div>
+
+            <aside className={`hidden max-w-[250px] justify-self-end border-l pl-7 lg:block ${isDarkTheme ? 'border-white/25 text-white' : 'border-[#102C4C]/25 text-[#102C4C]'}`} aria-label="Current slide details">
+              <p className={`font-serif text-6xl font-semibold leading-none tracking-[-.05em] ${isDarkTheme ? 'text-white/90' : 'text-[#102C4C]'}`}>{String(activeHeroSlide + 1).padStart(2, '0')}</p>
+              <p className={`mt-3 text-[10px] font-bold uppercase tracking-[.22em] ${isDarkTheme ? 'text-sky-200' : 'text-blue-700'}`}>of {String(homepageSlides.length).padStart(2, '0')}</p>
+              <p className={`mt-6 text-right text-sm leading-6 ${isDarkTheme ? 'text-slate-200' : 'text-slate-700'}`}>{currentHeroSlide.description}</p>
+            </aside>
+          </div>
+
+          <div className="absolute inset-x-0 bottom-5 z-10 mx-auto flex w-full max-w-7xl items-end justify-between gap-4 px-5 sm:bottom-7 sm:px-8">
+            <div className="flex items-center gap-1 sm:gap-2" role="group" aria-label="Choose a slide">
+              {homepageSlides.map((slide, index) => (
+                <button
+                  key={slide.image}
+                  type="button"
+                  onClick={() => setActiveHeroSlide(index)}
+                  className={`focus-ring h-2.5 rounded-full transition-all ${index === activeHeroSlide ? (isDarkTheme ? 'w-7 sm:w-8 bg-sky-300' : 'w-7 sm:w-8 bg-blue-700') : `w-2.5 ${isDarkTheme ? 'bg-white/45 hover:bg-white/80' : 'bg-[#102C4C]/35 hover:bg-[#102C4C]/70'}`}`}
+                  aria-label={`Show slide ${index + 1}: ${slide.eyebrow}`}
+                  aria-current={index === activeHeroSlide ? 'true' : undefined}
+                />
+              ))}
+            </div>
+            <div className="flex items-center gap-1 sm:gap-2">
+              <span className={`mr-0.5 text-[10px] font-semibold tabular-nums lg:hidden sm:mr-1 sm:text-xs ${isDarkTheme ? 'text-white/80' : 'text-[#102C4C]/80'}`}>{String(activeHeroSlide + 1).padStart(2, '0')} / {String(homepageSlides.length).padStart(2, '0')}</span>
+              <button type="button" onClick={() => moveHeroSlide(-1)} className={`focus-ring grid h-8 w-8 place-items-center rounded-lg border backdrop-blur-md transition sm:h-10 sm:w-10 sm:rounded-xl ${isDarkTheme ? 'border-white/20 bg-white/10 text-white hover:bg-white/20' : 'border-[#102C4C]/15 bg-white/60 text-[#102C4C] hover:bg-white'}`} aria-label="Previous slide">
+                <ChevronLeft className="h-4 w-4" aria-hidden="true" />
+              </button>
+              <button type="button" onClick={() => moveHeroSlide(1)} className={`focus-ring grid h-8 w-8 place-items-center rounded-lg transition sm:h-10 sm:w-10 sm:rounded-xl ${isDarkTheme ? 'bg-sky-300 text-[#020817] hover:bg-white' : 'bg-[#102C4C] text-white hover:bg-blue-900'}`} aria-label="Next slide">
+                <ChevronRight className="h-4 w-4" aria-hidden="true" />
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setHeroAutoplay((playing) => !playing);
+                  setHeroFocused(false);
+                }}
+                className={`focus-ring grid h-8 w-8 place-items-center rounded-lg border backdrop-blur-md transition sm:h-10 sm:w-10 sm:rounded-xl ${isDarkTheme ? 'border-white/20 bg-white/10 text-white hover:bg-white/20' : 'border-[#102C4C]/15 bg-white/60 text-[#102C4C] hover:bg-white'}`}
+                aria-label={heroAutoplay ? 'Pause automatic slides' : 'Play automatic slides'}
+                aria-pressed={heroAutoplay}
+                title={heroAutoplay ? 'Pause slides' : 'Play slides'}
+              >
+                {heroAutoplay ? <Pause className="h-3.5 w-3.5" aria-hidden="true" /> : <Play className="h-3.5 w-3.5" aria-hidden="true" />}
+              </button>
             </div>
           </div>
         </section>
@@ -382,7 +424,7 @@ const LandingPage = () => {
           <div className="mx-auto max-w-7xl px-5 sm:px-8"><SectionIntro eyebrow="What we do" title="Digital solutions with a practical point of view."><p>SmartBridge brings together the services below to help organizations make meaningful progress with technology.</p></SectionIntro><div className="mt-12 grid gap-5 md:grid-cols-2 xl:grid-cols-5">{landingServices.map((service) => { const Icon = serviceIcons[service.icon]; return <article key={service.id} className={`group relative overflow-hidden rounded-2xl border p-6 transition duration-300 hover:-translate-y-1 hover:shadow-xl ${service.featured ? 'border-blue-200 bg-blue-600 text-white shadow-lg shadow-blue-200/60' : 'border-slate-200 bg-white text-slate-950'}`}><Icon className={`h-6 w-6 ${service.featured ? 'text-sky-200' : 'text-blue-600'}`} /><h3 className="mt-12 text-lg font-semibold tracking-[-0.025em]">{service.title}</h3><p className={`mt-3 text-sm leading-6 ${service.featured ? 'text-blue-100' : 'text-slate-600'}`}>{service.description}</p>{service.featured && <p className="mt-5 inline-flex rounded-full bg-white/15 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[.16em] text-white">SmartBridge platform</p>}</article>; })}</div></div>
         </section>
 
-        <section id="agribridge" className="bg-[#102C4C] py-20 text-white sm:py-28">
+        <section id="agribridge" className="landing-deep-surface bg-[#102C4C] py-20 text-white sm:py-28">
           <div className="mx-auto max-w-7xl px-5 sm:px-8"><div className="grid gap-14 lg:grid-cols-[.9fr_1.1fr] lg:items-end"><div><p className="text-xs font-bold uppercase tracking-[0.2em] text-sky-300">A SmartBridge Technologies platform</p><h2 className="mt-3 text-3xl font-semibold tracking-[-0.045em] sm:text-4xl">Meet AgriBridge.</h2><p className="mt-5 max-w-xl text-base leading-7 text-slate-200">AgriBridge is a digital management platform developed by SmartBridge Technologies Ltd to help agricultural organizations manage operations, people, production, records, reporting, and organizational activities through one connected system.</p></div><div className="grid gap-3 sm:grid-cols-2">{agribridgeFeatures.map((feature, index) => <article key={feature.title} className={`rounded-2xl border border-white/10 p-5 ${index === 0 ? 'bg-white/12' : 'bg-white/[.055]'}`}><CircleCheck className="h-5 w-5 text-sky-300" /><h3 className="mt-5 text-base font-semibold text-white">{feature.title}</h3><p className="mt-2 text-sm leading-6 text-slate-300">{feature.description}</p></article>)}</div></div></div>
         </section>
 
@@ -419,7 +461,7 @@ const LandingPage = () => {
 
         <section id="testimonials" className="bg-blue-50 py-20 sm:py-28"><div className="mx-auto max-w-3xl px-5 text-center sm:px-8"><p className="text-xs font-bold uppercase tracking-[.2em] text-blue-700">Testimonials</p><h2 className="mt-3 text-3xl font-semibold tracking-[-.045em] text-slate-950 sm:text-4xl">Customer stories will be shared here.</h2><p className="mt-5 text-base leading-7 text-slate-600">SmartBridge will add customer stories and testimonials when organizations choose to share their experience with AgriBridge. No testimonials are presented until they are verified and approved.</p></div></section>
 
-        <section id="contact" className="bg-[#102C4C] py-20 text-white sm:py-28">
+        <section id="contact" className="landing-deep-surface bg-[#102C4C] py-20 text-white sm:py-28">
           <div className="mx-auto max-w-7xl px-5 sm:px-8">
             <div className="grid gap-12 lg:grid-cols-[1fr_.9fr]">
               <div><BrandMark /><h2 className="mt-9 max-w-xl text-3xl font-semibold tracking-[-.045em] sm:text-4xl">Let’s build a smarter way forward.</h2><p className="mt-5 max-w-xl text-base leading-7 text-slate-200">Talk with SmartBridge Technologies Ltd about practical digital solutions for your organization.</p></div>
