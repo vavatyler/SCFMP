@@ -9,6 +9,8 @@ const LoginPage = lazy(() => import('./pages/LoginPage'));
 const ForgotPasswordPage = lazy(() => import('./pages/ForgotPasswordPage'));
 const ResetPasswordPage = lazy(() => import('./pages/ResetPasswordPage'));
 const DashboardPage = lazy(() => import('./pages/DashboardPage'));
+const ProfilePage = lazy(() => import('./pages/ProfilePage'));
+const NotificationsPage = lazy(() => import('./pages/NotificationsPage'));
 const MembersPage = lazy(() => import('./pages/MembersPage'));
 const MemberDetailPage = lazy(() => import('./pages/MemberDetailPage'));
 const FarmersPage = lazy(() => import('./pages/FarmersPage'));
@@ -34,6 +36,8 @@ function App() {
       <Route path="/login" element={<LoginPage />} />
       <Route path="/forgot-password" element={<ForgotPasswordPage />} />
       <Route path="/reset-password" element={<ResetPasswordPage />} />
+      <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
+      <Route path="/notifications" element={<ProtectedRoute><NotificationsPage /></ProtectedRoute>} />
       <Route
         path="/dashboard"
         element={
@@ -104,7 +108,7 @@ function App() {
       <Route
         path="/cooperatives"
         element={
-          <ProtectedRoute permission={PERMISSIONS.ORGANIZATIONS_VIEW}>
+          <ProtectedRoute permission={PERMISSIONS.ORGANIZATIONS_VIEW} roles={['super_admin', 'cooperative_manager']}>
             <CooperativesPage />
           </ProtectedRoute>
         }
@@ -127,8 +131,8 @@ function App() {
           </ProtectedRoute>
         }
       />
-      <Route path="/staff" element={<ProtectedRoute permission={PERMISSIONS.USERS_VIEW}><OrganizationRoute titleKey="common.staffAccounts" descriptionKey="staffDescription"><UsersPage /></OrganizationRoute></ProtectedRoute>} />
-      <Route path="/subscription" element={<ProtectedRoute permission={PERMISSIONS.SETTINGS_VIEW}><SubscriptionPage /></ProtectedRoute>} />
+      <Route path="/staff" element={<ProtectedRoute permission={PERMISSIONS.USERS_VIEW} roles={['super_admin', 'cooperative_manager']}><OrganizationRoute titleKey="common.staffAccounts" descriptionKey="staffDescription"><UsersPage /></OrganizationRoute></ProtectedRoute>} />
+      <Route path="/subscription" element={<ProtectedRoute permission={PERMISSIONS.SETTINGS_VIEW} roles={['super_admin', 'cooperative_manager']}><SubscriptionPage /></ProtectedRoute>} />
       <Route path="/reports" element={<ProtectedRoute permission={PERMISSIONS.REPORTS_VIEW}><OrganizationRoute titleKey="common.reports" descriptionKey="reportsDescription"><ReportsPage /></OrganizationRoute></ProtectedRoute>} />
       <Route path="/settings" element={<ProtectedRoute permission={PERMISSIONS.SETTINGS_VIEW}><SettingsPage /></ProtectedRoute>} />
       <Route path="*" element={<NotFoundPage />} />

@@ -47,6 +47,52 @@
   .landing-reveal {
     animation: landing-reveal 700ms ease-out both;
   }
+
+  .dashboard-recommendation-track {
+    scroll-behavior: smooth;
+    scroll-snap-type: x mandatory;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  .dashboard-recommendation-track::-webkit-scrollbar {
+    display: none;
+  }
+
+  .dashboard-recommendation-card {
+    flex: 0 0 min(88%, 360px);
+    scroll-snap-align: start;
+  }
+
+  .dashboard-recommendation-art {
+    display: none;
+  }
+
+  .dashboard-recommendation-mobile-icon {
+    display: flex;
+  }
+
+  @media (min-width: 640px) {
+    .dashboard-recommendation-card {
+      flex-basis: calc((100% - 1rem) / 2);
+    }
+  }
+
+  @media (min-width: 768px) {
+    .dashboard-recommendation-art {
+      display: flex;
+    }
+
+    .dashboard-recommendation-mobile-icon {
+      display: none;
+    }
+  }
+
+  @media (min-width: 1536px) {
+    .dashboard-recommendation-card {
+      flex-basis: calc((100% - 2rem) / 3);
+    }
+  }
 }
 
 @keyframes landing-orbit {
@@ -65,6 +111,8 @@
 
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
+  .dashboard-recommendation-track { scroll-behavior: auto; }
+  .dashboard-recommendation-card { transition-duration: 0.01ms !important; }
   .landing-orbit,
   .landing-float,
   .landing-reveal { animation: none; }

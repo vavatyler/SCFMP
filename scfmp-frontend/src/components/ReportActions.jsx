@@ -5,7 +5,7 @@ import { downloadReportCsv, getReport } from '../api/reports';
 import { useAuth } from '../context/AuthContext';
 import { PERMISSIONS } from '../config/permissions';
 
-const ReportActions = ({ moduleName, filters = {} }) => {
+const ReportActions = ({ moduleName, filters = {}, disabled = false }) => {
   const { t, i18n } = useTranslation();
   const { can } = useAuth();
   const [busy, setBusy] = useState('');
@@ -56,7 +56,7 @@ const ReportActions = ({ moduleName, filters = {} }) => {
             <button
               key={format}
               onClick={() => handle(format)}
-              disabled={Boolean(busy)}
+              disabled={Boolean(busy) || disabled}
               className="focus-ring flex min-h-10 items-center gap-2 rounded-lg border border-sand px-3 py-2 text-sm font-medium text-ink-soft hover:bg-sand/30 hover:text-ink disabled:cursor-wait disabled:opacity-50"
             >
               {busy === format ? <Loader2 className="h-4 w-4 animate-spin" /> : <Icon className="h-4 w-4" />}

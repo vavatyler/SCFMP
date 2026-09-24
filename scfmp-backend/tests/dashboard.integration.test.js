@@ -1,4 +1,6 @@
 const { buildTestDb } = require('./testDbHelper');
+const mockDashboardModels = {};
+jest.mock('../models', () => mockDashboardModels);
 
 /**
  * Builds a full in-memory SQLite copy of the schema (all models + associations),
@@ -9,9 +11,12 @@ const { buildTestDb } = require('./testDbHelper');
 describe('Dashboard aggregation', () => {
   let sequelize;
   let models;
+  let dashboardController;
 
   beforeAll(async () => {
     ({ sequelize, models } = await buildTestDb());
+    Object.assign(mockDashboardModels, models, { sequelize });
+    dashboardController = require('../controllers/dashboardController');
 
     // Seed: one cooperative, two members, one farmer, some production/finance/inventory
     const coop = await models.Cooperative.create({ name: 'Test Coop', district: 'Nyamagabe' });
@@ -151,5 +156,64 @@ describe('Dashboard aggregation', () => {
     });
 
     expect(lowStockCount).toBe(1);
+  });
+
+  it('returns dashboard totals only for modules the user can view', async () => {
+    const data = await dashboardController.buildSummary(global.__testCoopId, {
+      user: { id: 900, role: 'technical_admin', permissions: ['dashboard.view', 'members.view'] },
+    });
+
+    expect(data.members).toEqual({ total: 2, active: 2 });
+    expect(data.farmers).toBeUndefined();
+    expect(data.production).toBeUndefined();
+    expect(data.finance).toBeUndefined();
+    expect(data.loans).toBeUndefined();
+    expect(data.inventory).toBeUndefined();
+  });
+
+  it('returns scoped dashboard analytics using existing production, location, stock, and transaction data', async () => {
+    let responseBody;
+    const response = {
+      status: jest.fn(() => response),
+      json: jest.fn((body) => { responseBody = body; return body; }),
+    };
+    await dashboardController.analytics({
+      organizationId: global.__testCoopId,
+      query: {},
+      user: { id: 901, role: 'super_admin', permissions: null },
+    }, response);
+
+    expect(response.status).toHaveBeenCalledWith(200);
+    expect(responseBody.success).toBe(true);
+    expect(responseBody.data.production_trend).toEqual(expect.arrayContaining([
+      expect.objectContaining({ quantity: 200, value: 160000, records: 1 }),
+    ]));
+    expect(responseBody.data.farmer_distribution).toEqual([
+      expect.objectContaining({ location: 'Not specified', farmers: 1 }),
+    ]);
+    expect(responseBody.data.inventory_status).toEqual({ total_items: 1, available: 0, low_stock: 1, out_of_stock: 0 });
+    expect(responseBody.data.financial_overview).toEqual(expect.arrayContaining([
+      expect.objectContaining({ income: 160000, expense: 45000 }),
+    ]));
+  });
+
+  it('does not build analytics for modules outside the user’s assigned permissions', async () => {
+    let responseBody;
+    const response = {
+      status: jest.fn(() => response),
+      json: jest.fn((body) => { responseBody = body; return body; }),
+    };
+    await dashboardController.analytics({
+      organizationId: global.__testCoopId,
+      query: {},
+      user: { id: 902, role: 'technical_admin', permissions: ['dashboard.view'] },
+    }, response);
+
+    expect(response.status).toHaveBeenCalledWith(200);
+    expect(responseBody.data.production_trend).toBeUndefined();
+    expect(responseBody.data.farmer_distribution).toBeUndefined();
+    expect(responseBody.data.inventory_status).toBeUndefined();
+    expect(responseBody.data.financial_overview).toBeUndefined();
+    expect(responseBody.data.recent_activity).toEqual([]);
   });
 });

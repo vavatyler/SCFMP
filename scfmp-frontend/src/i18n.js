@@ -216,6 +216,22 @@ Object.assign(en.common, {
   optional: 'Optional', saving: 'Saving...', farmer: 'Farmer',
 });
 Object.assign(en.dashboard, {
+  recommendationsTitle: 'Recommended for you',
+  recommendationsSubtitle: 'A few useful next steps for your cooperative.',
+  recommendationLabel: 'Recommended action',
+  recommendationCount: '{{count}} ideas',
+  recommendMembersTitle: 'Keep member details current',
+  recommendMembersDescription: 'Refresh profiles and keep your cooperative directory ready for everyday work.',
+  recommendMembersAction: 'Open members',
+  recommendProductionTitle: 'Capture each harvest',
+  recommendProductionDescription: 'Record new deliveries and follow production across the season.',
+  recommendProductionAction: 'Explore production',
+  recommendFinanceTitle: 'Stay on top of cash flow',
+  recommendFinanceDescription: "Review income, spending and your cooperative's current balance.",
+  recommendFinanceAction: 'Review finances',
+  recommendInventoryTitle: 'Keep field supplies ready',
+  recommendInventoryDescription: 'Check seed, fertilizer and equipment levels before stock runs low.',
+  recommendInventoryAction: 'Check inventory',
   subtitle: "Here's what's happening across your organization right now.",
   noCooperative: 'No organization is selected yet.',
   organizationWelcome: 'Welcome to {{organization}}',
@@ -319,6 +335,22 @@ Object.assign(rw.common, {
   optional: 'Si ngombwa', saving: 'Birimo kubikwa...', farmer: 'Umuhinzi',
 });
 Object.assign(rw.dashboard, {
+  recommendationsTitle: 'Ibyifuzo bigufitiye akamaro',
+  recommendationsSubtitle: 'Intambwe zagufasha kunoza imikorere ya koperative yawe.',
+  recommendationLabel: 'Intambwe ikurikira',
+  recommendationCount: 'Ibitekerezo {{count}}',
+  recommendMembersTitle: 'Komeza amakuru y’abanyamuryango ari mashya',
+  recommendMembersDescription: 'Vugurura imyirondoro, ukomeze urutonde rwa koperative yawe ruri ku gihe.',
+  recommendMembersAction: 'Reba abanyamuryango',
+  recommendProductionTitle: 'Andika umusaruro wose',
+  recommendProductionDescription: 'Andika umusaruro mushya, ukurikirane ingano n’agaciro byawo.',
+  recommendProductionAction: 'Reba umusaruro',
+  recommendFinanceTitle: 'Kurikirana uko amafaranga agenda',
+  recommendFinanceDescription: 'Genzura ibyinjira, ibyasohotse n’amafaranga asigaye muri koperative.',
+  recommendFinanceAction: 'Reba imari',
+  recommendInventoryTitle: 'Tegura ibikoresho by’ubuhinzi',
+  recommendInventoryDescription: 'Genzura imbuto, ifumbire n’ibikoresho biri mu bubiko.',
+  recommendInventoryAction: 'Reba ububiko',
   subtitle: 'Dore uko ibikorwa by’umuryango wawe bihagaze ubu.', noCooperative: 'Nta muryango wahiswemo.',
   organizationWelcome: 'Murakaza neza muri {{organization}}',
 });
@@ -416,6 +448,22 @@ Object.assign(fr.common, {
   optional: 'Facultatif', saving: 'Enregistrement...', farmer: 'Agriculteur',
 });
 Object.assign(fr.dashboard, {
+  recommendationsTitle: 'Recommandé pour vous',
+  recommendationsSubtitle: 'Quelques actions utiles pour faire avancer votre coopérative.',
+  recommendationLabel: 'Prochaine étape',
+  recommendationCount: '{{count}} idées',
+  recommendMembersTitle: 'Gardez les profils des membres à jour',
+  recommendMembersDescription: 'Actualisez les profils et gardez votre répertoire prêt pour le travail quotidien.',
+  recommendMembersAction: 'Voir les membres',
+  recommendProductionTitle: 'Enregistrez chaque récolte',
+  recommendProductionDescription: 'Ajoutez les nouvelles récoltes et suivez la production de la saison.',
+  recommendProductionAction: 'Voir la production',
+  recommendFinanceTitle: 'Suivez votre trésorerie',
+  recommendFinanceDescription: "Consultez les revenus, les dépenses et le solde de votre coopérative.",
+  recommendFinanceAction: 'Voir les finances',
+  recommendInventoryTitle: 'Gardez les fournitures prêtes',
+  recommendInventoryDescription: 'Vérifiez les semences, les engrais et le matériel avant les ruptures.',
+  recommendInventoryAction: 'Voir le stock',
   subtitle: 'Voici la situation actuelle de votre organisation.', noCooperative: 'Aucune organisation sélectionnée.',
   organizationWelcome: 'Bienvenue à {{organization}}',
 });
@@ -793,6 +841,120 @@ fr.organizationStaff = { add: 'Ajouter un compte du personnel', loading: 'Charge
 en.landing = { accessPlatform: 'Access AgriBridge', openPlatform: 'Open AgriBridge', getStarted: 'Get started with AgriBridge', nav: { home: 'Home', about: 'About', services: 'Services', agribridge: 'AgriBridge', team: 'Team', testimonials: 'Testimonials', contact: 'Contact' } };
 rw.landing = { accessPlatform: 'Injira muri AgriBridge', openPlatform: 'Fungura AgriBridge', getStarted: 'Tangira gukoresha AgriBridge', nav: { home: 'Ahabanza', about: 'Ibyerekeye', services: 'Serivisi', agribridge: 'AgriBridge', team: 'Itsinda', testimonials: 'Ubuhamya', contact: 'Twandikire' } };
 fr.landing = { accessPlatform: 'Accéder à AgriBridge', openPlatform: 'Ouvrir AgriBridge', getStarted: 'Commencer avec AgriBridge', nav: { home: 'Accueil', about: 'À propos', services: 'Services', agribridge: 'AgriBridge', team: 'Équipe', testimonials: 'Témoignages', contact: 'Contact' } };
+
+Object.assign(en.common, {
+  more: 'More', profile: 'Profile', myProfile: 'My Profile', accountSettings: 'Account Settings',
+  notifications: 'Notifications', userManagement: 'User Management', productTagline: 'AgriBridge — Digital Transformation for Cooperatives, Farmers & Organizations.',
+});
+Object.assign(rw.common, {
+  more: 'Ibindi', profile: 'Umwirondoro', myProfile: 'Umwirondoro wanjye', accountSettings: 'Igenamiterere rya konti',
+  notifications: 'Ubutumwa', userManagement: 'Imicungire y’abakoresha', productTagline: 'AgriBridge — Guhindura Imikorere ya Kijyambere ku Makoperative, Abahinzi n’Imiryango.',
+});
+Object.assign(fr.common, {
+  more: 'Plus', profile: 'Profil', myProfile: 'Mon profil', accountSettings: 'Paramètres du compte',
+  notifications: 'Notifications', userManagement: 'Gestion des utilisateurs', productTagline: 'AgriBridge — Transformation numérique pour les coopératives, les agriculteurs et les organisations.',
+});
+
+en.navigation = {
+  primary: 'Primary navigation', mobileMenu: 'Application menu', profileMenu: 'Open profile menu for {{name}}',
+  productionOverview: 'Production Overview', inventoryOverview: 'Inventory Overview', financeOverview: 'Finance Overview',
+  documentsOverview: 'Documents Overview', reportsOverview: 'Reports Overview',
+};
+rw.navigation = {
+  primary: 'Ibikubiyemo by’ingenzi', mobileMenu: 'Ibikubiyemo bya porogaramu', profileMenu: 'Fungura ibikubiyemo by’umwirondoro wa {{name}}',
+  productionOverview: 'Incamake y’umusaruro', inventoryOverview: 'Incamake y’ububiko', financeOverview: 'Incamake y’imari',
+  documentsOverview: 'Incamake y’inyandiko', reportsOverview: 'Incamake ya raporo',
+};
+fr.navigation = {
+  primary: 'Navigation principale', mobileMenu: 'Menu de l’application', profileMenu: 'Ouvrir le menu du profil de {{name}}',
+  productionOverview: 'Vue d’ensemble de la production', inventoryOverview: 'Vue d’ensemble des stocks', financeOverview: 'Vue d’ensemble des finances',
+  documentsOverview: 'Vue d’ensemble des documents', reportsOverview: 'Vue d’ensemble des rapports',
+};
+
+en.profile = {
+  subtitle: 'Your AgriBridge account details.', fullName: 'Full name', email: 'Email address', phone: 'Phone',
+  officialRole: 'Official role', organization: 'Organization', managedNotice: 'To update your account details, contact your organization administrator.',
+};
+rw.profile = {
+  subtitle: 'Amakuru ya konti yawe ya AgriBridge.', fullName: 'Amazina yuzuye', email: 'Imeyili', phone: 'Telefoni',
+  officialRole: 'Inshingano zemewe', organization: 'Umuryango', managedNotice: 'Kugira ngo uhindure amakuru ya konti, hamagara umuyobozi w’umuryango wawe.',
+};
+fr.profile = {
+  subtitle: 'Les informations de votre compte AgriBridge.', fullName: 'Nom complet', email: 'Adresse e-mail', phone: 'Téléphone',
+  officialRole: 'Rôle officiel', organization: 'Organisation', managedNotice: 'Pour modifier les informations de votre compte, contactez votre administrateur.',
+};
+
+en.notifications = {
+  subtitle: 'Updates sent to your account.', inbox: 'Your inbox', unreadCount: '{{count}} unread', markAllRead: 'Mark all as read',
+  emptyTitle: 'You’re all caught up', emptyBody: 'New notifications for your account will appear here.', read: 'Read', unread: 'Unread',
+  markRead: 'Mark as read', loadError: 'Unable to load notifications. Please try again.', updateError: 'Unable to update this notification. Please try again.',
+  pageSummary: 'Page {{page}} of {{pages}} · {{total}} notifications', viewAll: 'View all',
+};
+rw.notifications = {
+  subtitle: 'Amakuru yoherejwe kuri konti yawe.', inbox: 'Ubutumwa bwawe', unreadCount: '{{count}} butarasomwa', markAllRead: 'Shyira bwose ko wasomye',
+  emptyTitle: 'Nta butumwa bushya ufite', emptyBody: 'Ubutumwa bushya buzajya bugaragara hano.', read: 'Wasomwe', unread: 'Nturasomwa',
+  markRead: 'Shyira ko wasomye', loadError: 'Ntibyashobotse kubona ubutumwa. Ongera ugerageze.', updateError: 'Ntibyashobotse guhindura ubutumwa. Ongera ugerageze.',
+  pageSummary: 'Urupapuro {{page}} kuri {{pages}} · ubutumwa {{total}}', viewAll: 'Reba bwose',
+};
+fr.notifications = {
+  subtitle: 'Les mises à jour envoyées à votre compte.', inbox: 'Votre boîte de réception', unreadCount: '{{count}} non lues', markAllRead: 'Tout marquer comme lu',
+  emptyTitle: 'Vous êtes à jour', emptyBody: 'Les nouvelles notifications de votre compte apparaîtront ici.', read: 'Lue', unread: 'Non lue',
+  markRead: 'Marquer comme lue', loadError: 'Impossible de charger les notifications. Veuillez réessayer.', updateError: 'Impossible de modifier cette notification. Veuillez réessayer.',
+  pageSummary: 'Page {{page}} sur {{pages}} · {{total}} notifications', viewAll: 'Tout voir',
+};
+
+Object.assign(en.dashboard, {
+  analyticsTitle: 'Your organization at a glance', analyticsSubtitle: 'Recent trends and operational status from your available records.',
+  productionTrendTitle: 'Production trends', farmerDistributionTitle: 'Farmers by district',
+  inventoryStatusTitle: 'Inventory status', financialOverviewTitle: 'Financial overview', recentActivityTitle: 'Recent activity',
+  noProductionAnalytics: 'Production trends will appear when harvest records are available.',
+  noFarmerAnalytics: 'Farmer distribution will appear when farmer location records are available.',
+  noInventoryAnalytics: 'No active inventory items are recorded for this organization.',
+  noFinancialAnalytics: 'Income and expense trends will appear when transactions are available.',
+  noRecentActivity: 'No recent activity is available for the modules you can access.',
+  analyticsLoadError: 'Unable to load dashboard analytics. Please try again.',
+  noAuthorizedMetrics: 'There are no dashboard metrics assigned to your account.',
+  availableStock: 'Available stock', outOfStock: 'Out of stock', farmersCount: 'Farmers',
+});
+Object.assign(rw.dashboard, {
+  analyticsTitle: 'Incamake y’umuryango wawe', analyticsSubtitle: 'Imigendekere n’imimerere y’ibikorwa bishingiye ku makuru ahari.',
+  productionTrendTitle: 'Imigendekere y’umusaruro', farmerDistributionTitle: 'Abahinzi ku karere',
+  inventoryStatusTitle: 'Imimerere y’ububiko', financialOverviewTitle: 'Incamake y’imari', recentActivityTitle: 'Ibikorwa biheruka',
+  noProductionAnalytics: 'Imigendekere y’umusaruro izagaragara hamaze kuboneka inyandiko z’isarura.',
+  noFarmerAnalytics: 'Isaranganya ry’abahinzi rizagaragara hamaze kuboneka amakuru y’aho baherereye.',
+  noInventoryAnalytics: 'Nta bikoresho biri mu bubiko bikora byanditswe kuri uyu muryango.',
+  noFinancialAnalytics: 'Imigendekere y’amafaranga izagaragara hamaze kuboneka ibyinjira n’ibyasohotse.',
+  noRecentActivity: 'Nta gikorwa giheruka kiboneka mu bice wemerewe kugeraho.',
+  analyticsLoadError: 'Ntibyashobotse kubona isesengura ry’imbonerahamwe. Ongera ugerageze.',
+  noAuthorizedMetrics: 'Konti yawe nta bipimo by’imbonerahamwe ifite.',
+  availableStock: 'Ibikoresho bihari', outOfStock: 'Byashize', farmersCount: 'Abahinzi',
+});
+Object.assign(fr.dashboard, {
+  analyticsTitle: 'Votre organisation en un coup d’œil', analyticsSubtitle: 'Tendances récentes et état des activités selon les données disponibles.',
+  productionTrendTitle: 'Tendances de production', farmerDistributionTitle: 'Agriculteurs par district',
+  inventoryStatusTitle: 'État du stock', financialOverviewTitle: 'Aperçu financier', recentActivityTitle: 'Activité récente',
+  noProductionAnalytics: 'Les tendances apparaîtront lorsque des récoltes seront enregistrées.',
+  noFarmerAnalytics: 'La répartition apparaîtra lorsque les données de localisation seront disponibles.',
+  noInventoryAnalytics: 'Aucun article actif en stock n’est enregistré pour cette organisation.',
+  noFinancialAnalytics: 'Les tendances apparaîtront lorsque des revenus et des dépenses seront enregistrés.',
+  noRecentActivity: 'Aucune activité récente n’est disponible pour les modules auxquels vous avez accès.',
+  analyticsLoadError: 'Impossible de charger les analyses du tableau de bord. Veuillez réessayer.',
+  noAuthorizedMetrics: 'Aucune mesure du tableau de bord n’est attribuée à votre compte.',
+  availableStock: 'Stock disponible', outOfStock: 'Épuisé', farmersCount: 'Agriculteurs',
+});
+
+Object.assign(en.reports, {
+  dateRange: 'Reporting period', clearRange: 'Clear dates', invalidDateRange: 'The start date must be on or before the end date.',
+  centerDescription: 'Export current authorized records as CSV, Excel, PDF, or print.', noModules: 'No report modules are available for your account.',
+});
+Object.assign(rw.reports, {
+  dateRange: 'Igihe cya raporo', clearRange: 'Siba amatariki', invalidDateRange: 'Itariki yo gutangira igomba kungana cyangwa kubanziriza iyo kurangiza.',
+  centerDescription: 'Ohereza amakuru yemerewe muri CSV, Excel, PDF cyangwa uyacapishe.', noModules: 'Konti yawe nta bice bya raporo yemerewe.',
+});
+Object.assign(fr.reports, {
+  dateRange: 'Période du rapport', clearRange: 'Effacer les dates', invalidDateRange: 'La date de début doit précéder ou égaler la date de fin.',
+  centerDescription: 'Exporter les données autorisées en CSV, Excel, PDF ou à imprimer.', noModules: 'Aucun module de rapport n’est disponible pour votre compte.',
+});
 
 const savedLanguage = localStorage.getItem('scfmp_language') || 'en';
 

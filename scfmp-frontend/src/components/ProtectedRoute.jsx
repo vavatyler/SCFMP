@@ -2,8 +2,8 @@ import { Navigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useTranslation } from 'react-i18next';
 
-const ProtectedRoute = ({ children, permission }) => {
-  const { isAuthenticated, isLoading, can } = useAuth();
+const ProtectedRoute = ({ children, permission, roles }) => {
+  const { user, isAuthenticated, isLoading, can } = useAuth();
   const { t } = useTranslation();
 
   if (isLoading) {
@@ -18,7 +18,7 @@ const ProtectedRoute = ({ children, permission }) => {
     return <Navigate to="/login" replace />;
   }
 
-  if (permission && !can(permission)) {
+  if ((permission && !can(permission)) || (roles && !roles.includes(user?.role))) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-paper p-6">
         <div className="max-w-md rounded-xl bg-white p-8 text-center shadow-card">
