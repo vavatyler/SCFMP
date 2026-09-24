@@ -55,7 +55,6 @@ const serviceIcons = {
 const homepageSlides = [
   {
     image: '/brand/web1.jpeg',
-    alt: 'A connected digital workspace across several devices',
     eyebrow: 'Digital management',
     title: 'Bring your everyday work into focus.',
     description: 'Practical digital systems bring important records, people, and workflows together.',
@@ -64,7 +63,6 @@ const homepageSlides = [
   },
   {
     image: '/brand/web-dev.jpg',
-    alt: 'A laptop displaying a modern software development workspace',
     eyebrow: 'Software and web development',
     title: 'Build around the way your organization works.',
     description: 'Purpose-built software and websites shaped around real needs and useful outcomes.',
@@ -73,7 +71,6 @@ const homepageSlides = [
   },
   {
     image: '/brand/software-development-specialist.jpg',
-    alt: 'A vivid digital software workspace with connected interfaces and data',
     eyebrow: 'Technology and innovation',
     title: 'Turn complex ideas into clear tools.',
     description: 'Reliable digital products start with understanding what teams need to get done.',
@@ -82,7 +79,6 @@ const homepageSlides = [
   },
   {
     image: '/brand/App-and-Mobile.jpeg',
-    alt: 'Digital services connected across mobile devices and cloud systems',
     eyebrow: 'Connected digital solutions',
     title: 'Make information easier to reach.',
     description: 'Thoughtful digital experiences help teams connect their work and find what they need.',
@@ -91,7 +87,6 @@ const homepageSlides = [
   },
   {
     image: '/brand/web-hosting-01-1200x720.jpg',
-    alt: 'A digital network linking people, devices, and data',
     eyebrow: 'Digital transformation',
     title: 'Move forward with a clear digital foundation.',
     description: 'Take practical steps from disconnected processes toward more confident operations.',
@@ -169,7 +164,10 @@ const LandingPage = () => {
   const [teamState, setTeamState] = useState('loading');
   const [selectedMember, setSelectedMember] = useState(null);
   const [activeHeroSlide, setActiveHeroSlide] = useState(0);
-  const [heroAutoplay, setHeroAutoplay] = useState(false);
+  const [heroAutoplay, setHeroAutoplay] = useState(() => (
+    typeof window !== 'undefined'
+    && !window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches
+  ));
   const [heroHovered, setHeroHovered] = useState(false);
   const [heroFocused, setHeroFocused] = useState(false);
   const [heroTouchStart, setHeroTouchStart] = useState(null);
@@ -214,6 +212,7 @@ const LandingPage = () => {
   const moveHeroSlide = (direction) => {
     setActiveHeroSlide((current) => (current + direction + homepageSlides.length) % homepageSlides.length);
   };
+  const currentHeroSlide = homepageSlides[activeHeroSlide];
 
   const closeMenu = () => setMenuOpen(false);
 
@@ -272,9 +271,11 @@ const LandingPage = () => {
               onMouseLeave={() => setHeroHovered(false)}
               onTouchStart={(event) => setHeroTouchStart(event.changedTouches[0]?.clientX ?? null)}
               onTouchEnd={(event) => {
-                if (heroTouchStart === null) return;
-                const distance = heroTouchStart - event.changedTouches[0].clientX;
-                if (Math.abs(distance) > 45) moveHeroSlide(distance > 0 ? 1 : -1);
+                const touchEndX = event.changedTouches[0]?.clientX;
+                if (heroTouchStart !== null && typeof touchEndX === 'number') {
+                  const distance = heroTouchStart - touchEndX;
+                  if (Math.abs(distance) > 45) moveHeroSlide(distance > 0 ? 1 : -1);
+                }
                 setHeroTouchStart(null);
               }}
               onFocusCapture={() => setHeroFocused(true)}
@@ -284,72 +285,77 @@ const LandingPage = () => {
             >
               <div className="absolute -inset-7 rounded-[2rem] bg-sky-400/15 blur-3xl" aria-hidden="true" />
               <div className="relative overflow-hidden rounded-[1.65rem] border border-white/15 bg-slate-950/70 shadow-2xl shadow-black/30 backdrop-blur">
-                {homepageSlides.map((slide, index) => index === activeHeroSlide && (
-                  <div key={slide.image} role="group" aria-roledescription="slide" aria-label={`${index + 1} of ${homepageSlides.length}: ${slide.eyebrow}`} aria-live={heroAutoplay ? 'off' : 'polite'}>
-                    <div className="relative h-[250px] overflow-hidden sm:h-[320px] lg:h-[355px]">
+                <div className="relative h-[250px] overflow-hidden sm:h-[320px] lg:h-[355px]">
+                  {homepageSlides.map((slide, index) => (
+                    <div
+                      key={slide.image}
+                      aria-hidden="true"
+                      className={`absolute inset-0 transition-transform duration-[8000ms] ease-out motion-reduce:transition-none ${index === activeHeroSlide ? 'scale-100' : 'scale-[1.06]'}`}
+                    >
                       <img
                         src={slide.image}
-                        alt={slide.alt}
-                        loading={index === 0 ? 'eager' : 'lazy'}
-                        className="h-full w-full object-cover"
+                        alt=""
+                        className={`h-full w-full object-cover transition-opacity duration-1000 ease-in-out motion-reduce:transition-none ${index === activeHeroSlide ? 'opacity-100' : 'opacity-0'}`}
                       />
-                      <div className="absolute inset-0 bg-gradient-to-t from-[#07182d]/70 via-[#07182d]/5 to-[#07182d]/15" aria-hidden="true" />
-                      <div className="absolute left-5 top-5 inline-flex items-center gap-2 rounded-full border border-white/20 bg-[#07182d]/55 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[.16em] text-sky-100 backdrop-blur-md sm:left-7 sm:top-7">
-                        <span className="h-1.5 w-1.5 rounded-full bg-sky-300" /> SmartBridge Technologies
-                      </div>
-                      <div className="absolute bottom-5 left-5 text-xs font-medium text-white/80 sm:bottom-6 sm:left-7">
-                        {String(index + 1).padStart(2, '0')} <span className="mx-1 text-sky-200/60">/</span> {String(homepageSlides.length).padStart(2, '0')}
-                      </div>
                     </div>
-                    <div className="bg-gradient-to-br from-[#173c67] via-[#10446f] to-[#07577d] p-5 sm:p-7">
-                      <p className="text-[10px] font-bold uppercase tracking-[.19em] text-sky-200">{slide.eyebrow}</p>
-                      <div className="mt-2 grid gap-5 sm:grid-cols-[1fr_auto] sm:items-end">
-                        <div>
-                          <h2 className="max-w-md text-2xl font-semibold leading-tight tracking-[-.04em] text-white sm:text-[1.7rem]">{slide.title}</h2>
-                          <p className="mt-2 max-w-lg text-sm leading-6 text-blue-50/85">{slide.description}</p>
-                        </div>
-                        <a href={slide.href} className="focus-ring inline-flex min-h-10 w-fit shrink-0 items-center gap-2 rounded-lg border border-white/20 bg-white/10 px-3.5 py-2 text-xs font-semibold text-white transition hover:border-white/40 hover:bg-white/20">
-                          {slide.action}<ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
-                        </a>
+                  ))}
+                  <div className="absolute inset-0 bg-gradient-to-t from-[#07182d]/70 via-[#07182d]/5 to-[#07182d]/15" aria-hidden="true" />
+                  <div className="absolute left-5 top-5 inline-flex items-center gap-2 rounded-full border border-white/20 bg-[#07182d]/55 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[.16em] text-sky-100 backdrop-blur-md sm:left-7 sm:top-7">
+                    <span className="h-1.5 w-1.5 rounded-full bg-sky-300" /> SmartBridge Technologies
+                  </div>
+                  <div className="absolute bottom-5 left-5 text-xs font-medium text-white/80 sm:bottom-6 sm:left-7">
+                    {String(activeHeroSlide + 1).padStart(2, '0')} <span className="mx-1 text-sky-200/60">/</span> {String(homepageSlides.length).padStart(2, '0')}
+                  </div>
+                </div>
+                <div className="bg-gradient-to-br from-[#173c67] via-[#10446f] to-[#07577d] p-5 sm:p-7">
+                  <div aria-live={heroAutoplay ? 'off' : 'polite'} aria-atomic="true">
+                    <div key={activeHeroSlide} role="group" aria-roledescription="slide" aria-label={`${activeHeroSlide + 1} of ${homepageSlides.length}: ${currentHeroSlide.eyebrow}`} className="grid min-h-[150px] gap-5 sm:grid-cols-[1fr_auto] sm:items-end">
+                      <div>
+                        <p className="text-[10px] font-bold uppercase tracking-[.19em] text-sky-200">{currentHeroSlide.eyebrow}</p>
+                        <h2 className="mt-2 max-w-md text-2xl font-semibold leading-tight tracking-[-.04em] text-white sm:text-[1.7rem]">{currentHeroSlide.title}</h2>
+                        <p className="mt-2 max-w-lg text-sm leading-6 text-blue-50/85">{currentHeroSlide.description}</p>
                       </div>
-                      <div className="mt-6 flex items-center justify-between border-t border-white/15 pt-4">
-                        <div className="flex items-center gap-2" role="group" aria-label="Choose a slide">
-                          {homepageSlides.map((item, dotIndex) => (
-                            <button
-                              key={item.image}
-                              type="button"
-                              onClick={() => setActiveHeroSlide(dotIndex)}
-                              className={`focus-ring h-2.5 rounded-full transition-all ${dotIndex === activeHeroSlide ? 'w-7 bg-white' : 'w-2.5 bg-white/40 hover:bg-white/70'}`}
-                              aria-label={`Show slide ${dotIndex + 1}: ${item.eyebrow}`}
-                              aria-current={dotIndex === activeHeroSlide ? 'true' : undefined}
-                            />
-                          ))}
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <button type="button" onClick={() => moveHeroSlide(-1)} className="focus-ring grid h-9 w-9 place-items-center rounded-full border border-white/20 text-white transition hover:bg-white/15" aria-label="Previous slide">
-                            <ChevronLeft className="h-4 w-4" aria-hidden="true" />
-                          </button>
-                          <button type="button" onClick={() => moveHeroSlide(1)} className="focus-ring grid h-9 w-9 place-items-center rounded-full border border-white/20 text-white transition hover:bg-white/15" aria-label="Next slide">
-                            <ChevronRight className="h-4 w-4" aria-hidden="true" />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setHeroAutoplay((playing) => !playing);
-                              setHeroFocused(false);
-                            }}
-                            className="focus-ring grid h-9 w-9 place-items-center rounded-full border border-white/20 text-white transition hover:bg-white/15"
-                            aria-label={heroAutoplay ? 'Pause automatic slides' : 'Play automatic slides'}
-                            aria-pressed={heroAutoplay}
-                            title={heroAutoplay ? 'Pause slides' : 'Play slides'}
-                          >
-                            {heroAutoplay ? <Pause className="h-3.5 w-3.5" aria-hidden="true" /> : <Play className="h-3.5 w-3.5" aria-hidden="true" />}
-                          </button>
-                        </div>
-                      </div>
+                      <a href={currentHeroSlide.href} className="focus-ring inline-flex min-h-10 w-fit shrink-0 items-center gap-2 rounded-lg border border-white/20 bg-white/10 px-3.5 py-2 text-xs font-semibold text-white transition hover:border-white/40 hover:bg-white/20">
+                        {currentHeroSlide.action}<ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
+                      </a>
                     </div>
                   </div>
-                ))}
+                  <div className="mt-6 flex items-center justify-between border-t border-white/15 pt-4">
+                    <div className="flex items-center gap-2" role="group" aria-label="Choose a slide">
+                      {homepageSlides.map((slide, index) => (
+                        <button
+                          key={slide.image}
+                          type="button"
+                          onClick={() => setActiveHeroSlide(index)}
+                          className={`focus-ring h-2.5 rounded-full transition-all ${index === activeHeroSlide ? 'w-7 bg-white' : 'w-2.5 bg-white/40 hover:bg-white/70'}`}
+                          aria-label={`Show slide ${index + 1}: ${slide.eyebrow}`}
+                          aria-current={index === activeHeroSlide ? 'true' : undefined}
+                        />
+                      ))}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <button type="button" onClick={() => moveHeroSlide(-1)} className="focus-ring grid h-9 w-9 place-items-center rounded-full border border-white/20 text-white transition hover:bg-white/15" aria-label="Previous slide">
+                        <ChevronLeft className="h-4 w-4" aria-hidden="true" />
+                      </button>
+                      <button type="button" onClick={() => moveHeroSlide(1)} className="focus-ring grid h-9 w-9 place-items-center rounded-full border border-white/20 text-white transition hover:bg-white/15" aria-label="Next slide">
+                        <ChevronRight className="h-4 w-4" aria-hidden="true" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setHeroAutoplay((playing) => !playing);
+                          setHeroFocused(false);
+                        }}
+                        className="focus-ring grid h-9 w-9 place-items-center rounded-full border border-white/20 text-white transition hover:bg-white/15"
+                        aria-label={heroAutoplay ? 'Pause automatic slides' : 'Play automatic slides'}
+                        aria-pressed={heroAutoplay}
+                        title={heroAutoplay ? 'Pause slides' : 'Play slides'}
+                      >
+                        {heroAutoplay ? <Pause className="h-3.5 w-3.5" aria-hidden="true" /> : <Play className="h-3.5 w-3.5" aria-hidden="true" />}
+                      </button>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
