@@ -1,32 +1,36 @@
-import { Routes, Route, Navigate } from 'react-router-dom';
-import LoginPage from './pages/LoginPage';
-import ForgotPasswordPage from './pages/ForgotPasswordPage';
-import ResetPasswordPage from './pages/ResetPasswordPage';
-import DashboardPage from './pages/DashboardPage';
-import MembersPage from './pages/MembersPage';
-import MemberDetailPage from './pages/MemberDetailPage';
-import FarmersPage from './pages/FarmersPage';
-import ProductionPage from './pages/ProductionPage';
-import FinancePage from './pages/FinancePage';
-import InventoryPage from './pages/InventoryPage';
-import DocumentsPage from './pages/DocumentsPage';
-import CooperativesPage from './pages/CooperativesPage';
-import UsersPage from './pages/UsersPage';
-import TeamPage from './pages/TeamPage';
-import SubscriptionPage from './pages/SubscriptionPage';
-import FarmerGroupsPage from './pages/FarmerGroupsPage';
-import ReportsPage from './pages/ReportsPage';
-import SettingsPage from './pages/SettingsPage';
-import NotFoundPage from './pages/NotFoundPage';
-import ContactPage from './pages/ContactPage';
+import { lazy, Suspense } from 'react';
+import { Routes, Route } from 'react-router-dom';
+import LandingPage from './pages/LandingPage';
 import ProtectedRoute from './components/ProtectedRoute';
 import OrganizationRoute from './components/OrganizationRoute';
 import { PERMISSIONS } from './config/permissions';
 
+const LoginPage = lazy(() => import('./pages/LoginPage'));
+const ForgotPasswordPage = lazy(() => import('./pages/ForgotPasswordPage'));
+const ResetPasswordPage = lazy(() => import('./pages/ResetPasswordPage'));
+const DashboardPage = lazy(() => import('./pages/DashboardPage'));
+const MembersPage = lazy(() => import('./pages/MembersPage'));
+const MemberDetailPage = lazy(() => import('./pages/MemberDetailPage'));
+const FarmersPage = lazy(() => import('./pages/FarmersPage'));
+const ProductionPage = lazy(() => import('./pages/ProductionPage'));
+const FinancePage = lazy(() => import('./pages/FinancePage'));
+const InventoryPage = lazy(() => import('./pages/InventoryPage'));
+const DocumentsPage = lazy(() => import('./pages/DocumentsPage'));
+const CooperativesPage = lazy(() => import('./pages/CooperativesPage'));
+const UsersPage = lazy(() => import('./pages/UsersPage'));
+const TeamPage = lazy(() => import('./pages/TeamPage'));
+const SubscriptionPage = lazy(() => import('./pages/SubscriptionPage'));
+const FarmerGroupsPage = lazy(() => import('./pages/FarmerGroupsPage'));
+const ReportsPage = lazy(() => import('./pages/ReportsPage'));
+const SettingsPage = lazy(() => import('./pages/SettingsPage'));
+const NotFoundPage = lazy(() => import('./pages/NotFoundPage'));
+const ContactPage = lazy(() => import('./pages/ContactPage'));
+
 function App() {
   return (
+    <Suspense fallback={<div className="flex min-h-screen items-center justify-center bg-paper text-sm text-ink-soft">Loading…</div>}>
     <Routes>
-      <Route path="/" element={<Navigate to="/dashboard" replace />} />
+      <Route path="/" element={<LandingPage />} />
       <Route path="/login" element={<LoginPage />} />
       <Route path="/forgot-password" element={<ForgotPasswordPage />} />
       <Route path="/reset-password" element={<ResetPasswordPage />} />
@@ -129,6 +133,7 @@ function App() {
       <Route path="/settings" element={<ProtectedRoute permission={PERMISSIONS.SETTINGS_VIEW}><SettingsPage /></ProtectedRoute>} />
       <Route path="*" element={<NotFoundPage />} />
     </Routes>
+    </Suspense>
   );
 }
 

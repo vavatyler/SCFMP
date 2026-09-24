@@ -16,12 +16,12 @@ const {
   createCompanyContact,
 } = await import('../src/config/company.js');
 
-assert.equal(COMPANY_EMAIL, 'info@smartdigitalsolutions.com');
+assert.equal(COMPANY_EMAIL, 'smartbridgetechnologiesltd@gmail.com');
 assert.equal(COMPANY_PHONE, '+250 789 329 052');
 assert.deepEqual(COMPANY_CONTACT, {
-  email: 'info@smartdigitalsolutions.com',
+  email: 'smartbridgetechnologiesltd@gmail.com',
   phone: '+250 789 329 052',
-  emailUrl: 'mailto:info@smartdigitalsolutions.com',
+  emailUrl: 'mailto:smartbridgetechnologiesltd@gmail.com',
   phoneUrl: 'tel:+250789329052',
   whatsappUrl: 'https://wa.me/250789329052',
 });
@@ -72,7 +72,7 @@ assert.match(pageSource, /target=\{external \? ['"]_blank['"]/);
 assert.match(pageSource, /noopener noreferrer/);
 assert.match(pageSource, /grid-cols-1[\s\S]*?md:grid-cols-3/);
 assert.match(pageSource, /min-h-11/);
-assert.doesNotMatch(pageSource, /info@smartdigitalsolutions\.com|\+250 789 329 052/);
+assert.doesNotMatch(pageSource, /smartbridgetechnologiesltd@gmail\.com|\+250 789 329 052/);
 assert.doesNotMatch(pageSource, /<form\b|fetch\(|axios\.|XMLHttpRequest/);
 
 console.log('Contact email, phone, WhatsApp, normalization, route, and navigation checks passed.');

@@ -790,6 +790,10 @@ en.organizationStaff = { add: 'Add staff account', loading: 'Loading organizatio
 rw.organizationStaff = { add: 'Ongeraho konti y’umukozi', loading: 'Konti z’abakozi zirimo gutangizwa…', empty: 'Nta konti z’abakozi zirashyirwaho.', loadError: 'Ntibyashobotse kubona abakozi b’umuryango.', subtitle: 'Konti z’abakozi ba {{name}}.', organizationRole: 'Uruhare mu muryango' };
 fr.organizationStaff = { add: 'Ajouter un compte du personnel', loading: 'Chargement du personnel…', empty: 'Aucun compte du personnel.', loadError: 'Impossible de charger le personnel de l’organisation.', subtitle: 'Comptes du personnel de {{name}}.', organizationRole: 'Rôle dans l’organisation' };
 
+en.landing = { accessPlatform: 'Access AgriBridge', openPlatform: 'Open AgriBridge', getStarted: 'Get started with AgriBridge', nav: { home: 'Home', about: 'About', services: 'Services', agribridge: 'AgriBridge', team: 'Team', testimonials: 'Testimonials', contact: 'Contact' } };
+rw.landing = { accessPlatform: 'Injira muri AgriBridge', openPlatform: 'Fungura AgriBridge', getStarted: 'Tangira gukoresha AgriBridge', nav: { home: 'Ahabanza', about: 'Ibyerekeye', services: 'Serivisi', agribridge: 'AgriBridge', team: 'Itsinda', testimonials: 'Ubuhamya', contact: 'Twandikire' } };
+fr.landing = { accessPlatform: 'Accéder à AgriBridge', openPlatform: 'Ouvrir AgriBridge', getStarted: 'Commencer avec AgriBridge', nav: { home: 'Accueil', about: 'À propos', services: 'Services', agribridge: 'AgriBridge', team: 'Équipe', testimonials: 'Témoignages', contact: 'Contact' } };
+
 const savedLanguage = localStorage.getItem('scfmp_language') || 'en';
 
 i18n.use(initReactI18next).init({

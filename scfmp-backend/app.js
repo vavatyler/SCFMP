@@ -21,6 +21,7 @@ const locationRoutes = require('./routes/locationRoutes');
 const farmerGroupRoutes = require('./routes/farmerGroupRoutes');
 const teamMemberRoutes = require('./routes/teamMemberRoutes');
 const subscriptionRoutes = require('./routes/subscriptionRoutes');
+const publicTeamRoutes = require('./routes/publicTeamRoutes');
 const { UPLOAD_DIR } = require('./middleware/uploadMiddleware');
 
 const app = express();
@@ -49,6 +50,7 @@ app.get('/api/health', (req, res) => {
   res.status(200).json({ success: true, message: 'AgriBridge API is running' });
 });
 
+app.use('/api/public', publicTeamRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/cooperatives', cooperativeRoutes);
 app.use('/api/members', memberRoutes);

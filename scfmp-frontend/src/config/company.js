@@ -1,7 +1,19 @@
-export const COMPANY_EMAIL = 'info@smartdigitalsolutions.com';
+export const COMPANY_EMAIL = 'smartbridgetechnologiesltd@gmail.com';
 export const COMPANY_PHONE = '+250 789 329 052';
+export const COMPANY_SECONDARY_PHONE = '+250 786 339 597';
 export const COMPANY_NAME = 'SmartBridge Technologies Ltd';
 export const PRODUCT_NAME = 'AgriBridge';
+export const COMPANY_LOCATION = 'Cyanika Sector / Nyamagabe District';
+export const COMPANY_TAGLINE = 'Build digital solutions for smarter organizations.';
+
+export const COMPANY_SOCIAL_LINKS = Object.freeze({
+  x: { label: 'X', handle: '@smartbridgmfma', href: 'https://x.com/smartbridgmfma' },
+  instagram: {
+    label: 'Instagram',
+    handle: '@smartbridgetechnologiesltd',
+    href: 'https://instagram.com/smartbridgetechnologiesltd',
+  },
+});
 
 export const createCompanyContact = ({ email, phone }) => {
   const normalizedEmail = String(email).trim();
