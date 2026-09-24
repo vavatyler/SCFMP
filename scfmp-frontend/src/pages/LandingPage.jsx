@@ -5,6 +5,7 @@ import {
   ArrowRight,
   AtSign,
   BarChart3,
+  ChevronLeft,
   ChevronRight,
   CircleCheck,
   Code2,
@@ -21,6 +22,8 @@ import {
   Menu,
   Network,
   Phone,
+  Pause,
+  Play,
   ShieldCheck,
   Sprout,
   UsersRound,
@@ -48,6 +51,54 @@ const serviceIcons = {
   cpu: Cpu,
   sprout: Sprout,
 };
+
+const homepageSlides = [
+  {
+    image: '/brand/web1.jpeg',
+    alt: 'A connected digital workspace across several devices',
+    eyebrow: 'Digital management',
+    title: 'Bring your everyday work into focus.',
+    description: 'Practical digital systems bring important records, people, and workflows together.',
+    action: 'Explore AgriBridge',
+    href: '#agribridge',
+  },
+  {
+    image: '/brand/web-dev.jpg',
+    alt: 'A laptop displaying a modern software development workspace',
+    eyebrow: 'Software and web development',
+    title: 'Build around the way your organization works.',
+    description: 'Purpose-built software and websites shaped around real needs and useful outcomes.',
+    action: 'See our services',
+    href: '#services',
+  },
+  {
+    image: '/brand/software-development-specialist.jpg',
+    alt: 'A vivid digital software workspace with connected interfaces and data',
+    eyebrow: 'Technology and innovation',
+    title: 'Turn complex ideas into clear tools.',
+    description: 'Reliable digital products start with understanding what teams need to get done.',
+    action: 'Our story',
+    href: '#about',
+  },
+  {
+    image: '/brand/App-and-Mobile.jpeg',
+    alt: 'Digital services connected across mobile devices and cloud systems',
+    eyebrow: 'Connected digital solutions',
+    title: 'Make information easier to reach.',
+    description: 'Thoughtful digital experiences help teams connect their work and find what they need.',
+    action: 'Talk with SmartBridge',
+    href: '#contact',
+  },
+  {
+    image: '/brand/web-hosting-01-1200x720.jpg',
+    alt: 'A digital network linking people, devices, and data',
+    eyebrow: 'Digital transformation',
+    title: 'Move forward with a clear digital foundation.',
+    description: 'Take practical steps from disconnected processes toward more confident operations.',
+    action: 'Discover our approach',
+    href: '#about',
+  },
+];
 
 const BrandMark = ({ compact = false }) => {
   const [logoAvailable, setLogoAvailable] = useState(true);
@@ -117,6 +168,11 @@ const LandingPage = () => {
   const [team, setTeam] = useState([]);
   const [teamState, setTeamState] = useState('loading');
   const [selectedMember, setSelectedMember] = useState(null);
+  const [activeHeroSlide, setActiveHeroSlide] = useState(0);
+  const [heroAutoplay, setHeroAutoplay] = useState(false);
+  const [heroHovered, setHeroHovered] = useState(false);
+  const [heroFocused, setHeroFocused] = useState(false);
+  const [heroTouchStart, setHeroTouchStart] = useState(null);
 
   const platformDestination = isAuthenticated ? '/dashboard' : '/login';
   const platformLabel = isAuthenticated ? t('landing.openPlatform') : t('landing.accessPlatform');
@@ -146,6 +202,18 @@ const LandingPage = () => {
     };
     loadTeam();
   }, []);
+
+  useEffect(() => {
+    if (!heroAutoplay || heroHovered || heroFocused) return undefined;
+    const timer = window.setInterval(() => {
+      setActiveHeroSlide((current) => (current + 1) % homepageSlides.length);
+    }, 6500);
+    return () => window.clearInterval(timer);
+  }, [heroAutoplay, heroHovered, heroFocused]);
+
+  const moveHeroSlide = (direction) => {
+    setActiveHeroSlide((current) => (current + direction + homepageSlides.length) % homepageSlides.length);
+  };
 
   const closeMenu = () => setMenuOpen(false);
 
@@ -195,16 +263,94 @@ const LandingPage = () => {
               <div className="mt-9 flex flex-col gap-3 sm:flex-row"><a href="#agribridge" className="focus-ring inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-white/25 px-5 py-3 text-sm font-semibold text-white transition hover:border-white/60 hover:bg-white/10">Explore AgriBridge <ArrowDownRight className="h-4 w-4" /></a></div>
               <p className="mt-8 text-sm text-slate-300"><span className="font-semibold text-white">AgriBridge</span> is a digital platform of SmartBridge Technologies Ltd.</p>
             </div>
-            <div className="landing-float relative mx-auto w-full max-w-[530px]" aria-label="Illustrative AgriBridge interface preview">
-              <div className="absolute -inset-7 rounded-[2rem] bg-sky-400/10 blur-3xl" aria-hidden="true" />
-              <div className="relative overflow-hidden rounded-[1.5rem] border border-white/15 bg-slate-950/70 p-3 shadow-2xl shadow-black/30 backdrop-blur">
-                <div className="flex items-center gap-2 border-b border-white/10 px-2 pb-3"><span className="h-2.5 w-2.5 rounded-full bg-rose-400" /><span className="h-2.5 w-2.5 rounded-full bg-amber-300" /><span className="h-2.5 w-2.5 rounded-full bg-emerald-400" /><span className="ml-2 h-5 flex-1 rounded-md bg-white/5" /></div>
-                <div className="grid gap-3 p-2 sm:grid-cols-[.74fr_1.26fr]">
-                  <aside className="rounded-xl bg-white/[.055] p-3"><div className="flex items-center gap-2 text-xs font-semibold text-white"><span className="grid h-6 w-6 place-items-center rounded-md bg-blue-500"><Sprout className="h-3.5 w-3.5" /></span>AgriBridge</div><div className="mt-7 space-y-2">{['Overview', 'Organizations', 'Farmers', 'Production', 'Reports'].map((label, index) => <div key={label} className={`h-6 rounded-md px-2 py-1 text-[9px] ${index === 0 ? 'bg-blue-500/70 text-white' : 'text-slate-400'}`}>{label}</div>)}</div></aside>
-                  <div className="space-y-3"><div className="rounded-xl bg-gradient-to-br from-blue-600 to-cyan-500 p-4"><p className="text-[10px] text-blue-100">Organization workspace</p><p className="mt-1 text-base font-semibold text-white">Welcome back</p><div className="mt-4 h-1.5 w-3/4 rounded bg-white/35" /></div><div className="grid grid-cols-2 gap-3">{['Records', 'Production', 'Inventory', 'Reports'].map((label, index) => <div key={label} className="rounded-xl bg-white/[.07] p-3"><div className={`h-5 w-5 rounded-md ${['bg-sky-400', 'bg-emerald-400', 'bg-violet-400', 'bg-amber-300'][index]}`} /><p className="mt-3 text-[10px] font-medium text-slate-200">{label}</p><p className="mt-1 text-[9px] text-slate-500">Organized workflow</p></div>)}</div><div className="rounded-xl bg-white/[.07] p-3"><div className="flex items-end gap-2">{[35, 52, 42, 65, 53, 74, 69].map((height, index) => <span key={index} className="flex-1 rounded-t bg-gradient-to-t from-blue-600 to-sky-300" style={{ height: `${height / 2}px` }} />)}</div></div></div>
-                </div>
+            <div
+              className="relative mx-auto w-full max-w-[560px]"
+              role="region"
+              aria-roledescription="carousel"
+              aria-label="SmartBridge digital solutions"
+              onMouseEnter={() => setHeroHovered(true)}
+              onMouseLeave={() => setHeroHovered(false)}
+              onTouchStart={(event) => setHeroTouchStart(event.changedTouches[0]?.clientX ?? null)}
+              onTouchEnd={(event) => {
+                if (heroTouchStart === null) return;
+                const distance = heroTouchStart - event.changedTouches[0].clientX;
+                if (Math.abs(distance) > 45) moveHeroSlide(distance > 0 ? 1 : -1);
+                setHeroTouchStart(null);
+              }}
+              onFocusCapture={() => setHeroFocused(true)}
+              onBlurCapture={(event) => {
+                if (!event.currentTarget.contains(event.relatedTarget)) setHeroFocused(false);
+              }}
+            >
+              <div className="absolute -inset-7 rounded-[2rem] bg-sky-400/15 blur-3xl" aria-hidden="true" />
+              <div className="relative overflow-hidden rounded-[1.65rem] border border-white/15 bg-slate-950/70 shadow-2xl shadow-black/30 backdrop-blur">
+                {homepageSlides.map((slide, index) => index === activeHeroSlide && (
+                  <div key={slide.image} role="group" aria-roledescription="slide" aria-label={`${index + 1} of ${homepageSlides.length}: ${slide.eyebrow}`} aria-live={heroAutoplay ? 'off' : 'polite'}>
+                    <div className="relative h-[250px] overflow-hidden sm:h-[320px] lg:h-[355px]">
+                      <img
+                        src={slide.image}
+                        alt={slide.alt}
+                        loading={index === 0 ? 'eager' : 'lazy'}
+                        className="h-full w-full object-cover"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-[#07182d]/70 via-[#07182d]/5 to-[#07182d]/15" aria-hidden="true" />
+                      <div className="absolute left-5 top-5 inline-flex items-center gap-2 rounded-full border border-white/20 bg-[#07182d]/55 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[.16em] text-sky-100 backdrop-blur-md sm:left-7 sm:top-7">
+                        <span className="h-1.5 w-1.5 rounded-full bg-sky-300" /> SmartBridge Technologies
+                      </div>
+                      <div className="absolute bottom-5 left-5 text-xs font-medium text-white/80 sm:bottom-6 sm:left-7">
+                        {String(index + 1).padStart(2, '0')} <span className="mx-1 text-sky-200/60">/</span> {String(homepageSlides.length).padStart(2, '0')}
+                      </div>
+                    </div>
+                    <div className="bg-gradient-to-br from-[#173c67] via-[#10446f] to-[#07577d] p-5 sm:p-7">
+                      <p className="text-[10px] font-bold uppercase tracking-[.19em] text-sky-200">{slide.eyebrow}</p>
+                      <div className="mt-2 grid gap-5 sm:grid-cols-[1fr_auto] sm:items-end">
+                        <div>
+                          <h2 className="max-w-md text-2xl font-semibold leading-tight tracking-[-.04em] text-white sm:text-[1.7rem]">{slide.title}</h2>
+                          <p className="mt-2 max-w-lg text-sm leading-6 text-blue-50/85">{slide.description}</p>
+                        </div>
+                        <a href={slide.href} className="focus-ring inline-flex min-h-10 w-fit shrink-0 items-center gap-2 rounded-lg border border-white/20 bg-white/10 px-3.5 py-2 text-xs font-semibold text-white transition hover:border-white/40 hover:bg-white/20">
+                          {slide.action}<ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
+                        </a>
+                      </div>
+                      <div className="mt-6 flex items-center justify-between border-t border-white/15 pt-4">
+                        <div className="flex items-center gap-2" role="group" aria-label="Choose a slide">
+                          {homepageSlides.map((item, dotIndex) => (
+                            <button
+                              key={item.image}
+                              type="button"
+                              onClick={() => setActiveHeroSlide(dotIndex)}
+                              className={`focus-ring h-2.5 rounded-full transition-all ${dotIndex === activeHeroSlide ? 'w-7 bg-white' : 'w-2.5 bg-white/40 hover:bg-white/70'}`}
+                              aria-label={`Show slide ${dotIndex + 1}: ${item.eyebrow}`}
+                              aria-current={dotIndex === activeHeroSlide ? 'true' : undefined}
+                            />
+                          ))}
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <button type="button" onClick={() => moveHeroSlide(-1)} className="focus-ring grid h-9 w-9 place-items-center rounded-full border border-white/20 text-white transition hover:bg-white/15" aria-label="Previous slide">
+                            <ChevronLeft className="h-4 w-4" aria-hidden="true" />
+                          </button>
+                          <button type="button" onClick={() => moveHeroSlide(1)} className="focus-ring grid h-9 w-9 place-items-center rounded-full border border-white/20 text-white transition hover:bg-white/15" aria-label="Next slide">
+                            <ChevronRight className="h-4 w-4" aria-hidden="true" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setHeroAutoplay((playing) => !playing);
+                              setHeroFocused(false);
+                            }}
+                            className="focus-ring grid h-9 w-9 place-items-center rounded-full border border-white/20 text-white transition hover:bg-white/15"
+                            aria-label={heroAutoplay ? 'Pause automatic slides' : 'Play automatic slides'}
+                            aria-pressed={heroAutoplay}
+                            title={heroAutoplay ? 'Pause slides' : 'Play slides'}
+                          >
+                            {heroAutoplay ? <Pause className="h-3.5 w-3.5" aria-hidden="true" /> : <Play className="h-3.5 w-3.5" aria-hidden="true" />}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
-              <div className="absolute -bottom-6 -left-5 rounded-xl border border-white/10 bg-white/10 px-4 py-3 text-sm text-sky-100 shadow-lg backdrop-blur"><span className="mr-2 inline-block h-2 w-2 rounded-full bg-emerald-300" />Connected operations</div>
             </div>
           </div>
         </section>
@@ -238,7 +384,28 @@ const LandingPage = () => {
 
         <section className="bg-slate-50 py-20 sm:py-28"><div className="mx-auto grid max-w-7xl gap-12 px-5 sm:px-8 lg:grid-cols-[.92fr_1.08fr] lg:items-center"><div className="relative overflow-hidden rounded-[1.75rem] bg-gradient-to-br from-blue-700 via-blue-600 to-cyan-500 p-7 shadow-xl sm:p-10"><div className="absolute -right-16 -top-16 h-48 w-48 rounded-full border-[28px] border-white/10" /><p className="relative text-xs font-bold uppercase tracking-[.2em] text-sky-100">Platform preview</p><h2 className="relative mt-3 max-w-md text-3xl font-semibold tracking-[-.045em] text-white">One platform. Thoughtful workflows.</h2><div className="relative mt-10 grid grid-cols-2 gap-3"><div className="col-span-2 rounded-xl bg-white/15 p-4 backdrop-blur"><p className="text-[11px] text-sky-100">AgriBridge dashboard</p><div className="mt-3 grid grid-cols-3 gap-2">{['Organizations', 'Farmers', 'Reports'].map((item) => <div key={item} className="rounded-lg bg-white/10 p-3 text-xs font-medium text-white">{item}<div className="mt-4 h-1.5 rounded-full bg-white/30" /></div>)}</div></div><div className="rounded-xl bg-slate-950/25 p-4"><Sprout className="h-5 w-5 text-sky-100" /><p className="mt-5 text-xs font-semibold text-white">Production</p></div><div className="rounded-xl bg-slate-950/25 p-4"><FileText className="h-5 w-5 text-sky-100" /><p className="mt-5 text-xs font-semibold text-white">Digital records</p></div></div></div><div><SectionIntro eyebrow="Designed for useful visibility" title="See the work without exposing real data."><p>This preview is an illustrative interface, built from the kinds of modules available in AgriBridge. It contains no customer, farmer, financial, or production data.</p></SectionIntro><a href="#contact" className="focus-ring mt-8 inline-flex items-center gap-2 text-sm font-semibold text-blue-700 hover:text-blue-500">Talk with SmartBridge <ChevronRight className="h-4 w-4" /></a></div></div></section>
 
-        <section className="py-20 sm:py-28"><div className="mx-auto max-w-7xl px-5 sm:px-8"><div className="grid gap-12 lg:grid-cols-2"><SectionIntro eyebrow="Our story" title="Technology as a bridge to better opportunities."><p>SmartBridge Technologies Ltd was founded to use technology as a bridge between people, organizations, businesses, and better opportunities.</p><p className="mt-4">The company develops practical digital solutions that improve operations, communication, information management, and service delivery while responding to real-world needs.</p></SectionIntro><div className="relative border-l border-blue-200 pl-8"><div className="absolute -left-1.5 top-1 h-3 w-3 rounded-full bg-blue-600" /><p className="text-sm font-semibold text-blue-700">Purpose</p><p className="mt-2 text-lg font-semibold text-slate-950">Connect people, organizations, and useful technology.</p><div className="mt-10 absolute -left-1.5 h-3 w-3 rounded-full bg-sky-400" /><p className="text-sm font-semibold text-blue-700">Approach</p><p className="mt-2 text-lg font-semibold text-slate-950">Build practical solutions around real needs and real work.</p><div className="mt-10 absolute -left-1.5 h-3 w-3 rounded-full bg-slate-300" /><p className="text-sm font-semibold text-blue-700">Direction</p><p className="mt-2 text-lg font-semibold text-slate-950">Help organizations work with clarity, confidence, and room to grow.</p></div></div><div className="mt-16 grid gap-5 md:grid-cols-2"><article className="rounded-2xl bg-blue-50 p-7"><p className="text-xs font-bold uppercase tracking-[.18em] text-blue-700">Our vision</p><p className="mt-4 text-xl font-semibold leading-8 tracking-[-.035em] text-slate-950">To become a trusted African technology company recognized for developing innovative digital solutions that empower organizations, businesses, and communities to grow, improve efficiency, and succeed in an increasingly connected future.</p></article><article className="rounded-2xl bg-slate-950 p-7"><p className="text-xs font-bold uppercase tracking-[.18em] text-sky-300">Our mission</p><p className="mt-4 text-xl font-semibold leading-8 tracking-[-.035em] text-white">To develop reliable and accessible technology solutions that help organizations and businesses improve their operations, embrace digital transformation, solve practical challenges, and achieve sustainable growth through technology.</p></article></div></div></section>
+        <section className="py-20 sm:py-28"><div className="mx-auto max-w-7xl px-5 sm:px-8"><div className="grid gap-12 lg:grid-cols-2"><SectionIntro eyebrow="Our story" title="Technology as a bridge to better opportunities."><p>SmartBridge Technologies Ltd was founded to use technology as a bridge between people, organizations, businesses, and better opportunities.</p><p className="mt-4">The company develops practical digital solutions that improve operations, communication, information management, and service delivery while responding to real-world needs.</p></SectionIntro><div className="relative border-l border-blue-200 pl-8"><div className="absolute -left-1.5 top-1 h-3 w-3 rounded-full bg-blue-600" /><p className="text-sm font-semibold text-blue-700">Purpose</p><p className="mt-2 text-lg font-semibold text-slate-950">Connect people, organizations, and useful technology.</p><div className="mt-10 absolute -left-1.5 h-3 w-3 rounded-full bg-sky-400" /><p className="text-sm font-semibold text-blue-700">Approach</p><p className="mt-2 text-lg font-semibold text-slate-950">Build practical solutions around real needs and real work.</p><div className="mt-10 absolute -left-1.5 h-3 w-3 rounded-full bg-slate-300" /><p className="text-sm font-semibold text-blue-700">Direction</p><p className="mt-2 text-lg font-semibold text-slate-950">Help organizations work with clarity, confidence, and room to grow.</p></div></div><div className="mt-16 grid gap-5 md:grid-cols-2">
+              <article className="group relative isolate flex min-h-[420px] overflow-hidden rounded-[1.6rem] border border-slate-200 bg-slate-950 shadow-lg transition duration-300 hover:-translate-y-1 hover:shadow-2xl">
+                <img src="/brand/our_vision.avif" alt="" aria-hidden="true" loading="lazy" className="absolute inset-0 -z-10 h-full w-full object-cover transition duration-700 group-hover:scale-[1.04]" />
+                <div className="absolute inset-0 -z-0 bg-gradient-to-t from-[#06162b] via-[#071a30]/80 to-[#0a2440]/10" aria-hidden="true" />
+                <div className="relative z-10 mt-auto p-7 sm:p-8">
+                  <p className="inline-flex items-center gap-2 rounded-full border border-sky-200/25 bg-sky-100/10 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[.18em] text-sky-100 backdrop-blur"><Lightbulb className="h-3.5 w-3.5" aria-hidden="true" /> Our vision</p>
+                  <h3 className="mt-5 text-2xl font-semibold tracking-[-.04em] text-white sm:text-3xl">A brighter digital future for Africa.</h3>
+                  <p className="mt-3 max-w-xl text-sm leading-6 text-slate-100/90">To become a trusted African technology company recognized for developing innovative digital solutions that empower organizations, businesses, and communities to grow, improve efficiency, and succeed in an increasingly connected future.</p>
+                  <a href="#services" className="focus-ring mt-6 inline-flex items-center gap-2 rounded-lg text-sm font-semibold text-white transition hover:text-sky-200">Explore what we do <ArrowRight className="h-4 w-4" aria-hidden="true" /></a>
+                </div>
+              </article>
+              <article className="group relative isolate flex min-h-[420px] overflow-hidden rounded-[1.6rem] border border-slate-200 bg-slate-950 shadow-lg transition duration-300 hover:-translate-y-1 hover:shadow-2xl">
+                <img src="/brand/our_mission.avif" alt="" aria-hidden="true" loading="lazy" className="absolute inset-0 -z-10 h-full w-full object-cover transition duration-700 group-hover:scale-[1.04]" />
+                <div className="absolute inset-0 -z-0 bg-gradient-to-t from-[#06162b] via-[#071a30]/80 to-[#0a2440]/10" aria-hidden="true" />
+                <div className="relative z-10 mt-auto p-7 sm:p-8">
+                  <p className="inline-flex items-center gap-2 rounded-full border border-cyan-200/25 bg-cyan-100/10 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[.18em] text-cyan-100 backdrop-blur"><Network className="h-3.5 w-3.5" aria-hidden="true" /> Our mission</p>
+                  <h3 className="mt-5 text-2xl font-semibold tracking-[-.04em] text-white sm:text-3xl">Useful technology, built around real needs.</h3>
+                  <p className="mt-3 max-w-xl text-sm leading-6 text-slate-100/90">To develop reliable and accessible technology solutions that help organizations and businesses improve their operations, embrace digital transformation, solve practical challenges, and achieve sustainable growth through technology.</p>
+                  <a href="#contact" className="focus-ring mt-6 inline-flex items-center gap-2 rounded-lg text-sm font-semibold text-white transition hover:text-cyan-200">Work with our team <ArrowRight className="h-4 w-4" aria-hidden="true" /></a>
+                </div>
+              </article>
+            </div></div></section>
 
         <section id="team" className="bg-paper py-20 sm:py-28"><div className="mx-auto max-w-7xl px-5 sm:px-8"><SectionIntro eyebrow="Meet our team" title="The people behind SmartBridge and AgriBridge."><p>Profiles are arranged by official role, with the Co-Founder & IT Lead first. Platform permissions, account details, and internal access information remain private.</p></SectionIntro>{teamState === 'loading' ? <div className="mt-10 grid gap-5 md:grid-cols-3">{[1, 2, 3].map((item) => <div key={item} className="animate-pulse overflow-hidden rounded-2xl border border-sand bg-white"><div className="min-h-72 bg-sand" /><div className="space-y-3 p-6"><div className="h-4 w-2/3 rounded bg-sand" /><div className="h-3 w-1/2 rounded bg-paper" /></div></div>)}</div> : team.length > 0 ? <div className="mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">{team.map((member, index) => <article key={`${member.full_name}-${member.position}`} className="group overflow-hidden rounded-2xl border border-sand bg-white shadow-card transition duration-300 hover:-translate-y-1 hover:shadow-xl"><PublicProfileImage member={member} priority={index < 2} /><div className="p-6"><p className="text-xs font-bold uppercase tracking-[.15em] text-[#1687D4]">{member.position}</p><h3 className="mt-2 text-xl font-semibold text-ink">{member.full_name}</h3>{member.biography && <p className="mt-3 line-clamp-3 text-sm leading-6 text-ink-soft">{member.biography}</p>}<button onClick={() => setSelectedMember(member)} className="focus-ring mt-5 inline-flex items-center gap-2 text-sm font-semibold text-[#1687D4] hover:text-[#0D6FAE]">View profile <ArrowRight className="h-4 w-4" /></button></div></article>)}</div> : <div className="mt-10 rounded-2xl border border-dashed border-sand bg-white p-8 text-center"><UsersRound className="mx-auto h-9 w-9 text-[#1687D4]" /><h3 className="mt-4 text-lg font-semibold text-ink">Approved team profiles will appear here.</h3><p className="mx-auto mt-2 max-w-xl text-sm leading-6 text-ink-soft">SmartBridge can publish profiles from the existing Team module when members approve their public visibility.</p></div>}{teamState === 'unavailable' && <p className="mt-5 text-sm text-ink-soft">Team profiles are temporarily unavailable. Please check back soon.</p>}</div></section>
 
