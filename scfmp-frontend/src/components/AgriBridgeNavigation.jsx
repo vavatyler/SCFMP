@@ -71,24 +71,35 @@ const makeSections = (can, t, user) => {
   ].filter((item) => item.links.length > 0);
 };
 
-const AppLink = ({ item, onNavigate, compact = false }) => (
+const AppLink = ({ item, onNavigate, compact = false, dark = false }) => (
   <NavLink
     to={item.to}
     end={item.to === '/production' || item.to === '/documents'}
     onClick={onNavigate}
     role={compact ? 'menuitem' : undefined}
-    className={({ isActive }) => `focus-ring flex min-h-10 items-center whitespace-nowrap rounded-lg px-3 text-sm font-medium transition-colors ${
-      isActive ? 'bg-forest/10 text-forest' : 'text-ink-soft hover:bg-sand/50 hover:text-ink'
+    className={({ isActive }) => `${dark ? 'nav-focus-ring' : 'focus-ring'} flex min-h-10 items-center whitespace-nowrap rounded-lg px-3 text-sm font-medium transition-all duration-200 ${
+      dark
+        ? isActive
+          ? 'bg-gradient-to-r from-gold-dark via-gold to-gold-light text-forest-dark shadow-sm hover:from-gold hover:via-gold-light hover:to-[#f3d994]'
+          : 'text-paper/85 hover:bg-gradient-to-r hover:from-[#284A35] hover:via-[#386346] hover:to-[#896722] hover:text-white hover:shadow-md'
+        : isActive ? 'bg-forest/10 text-forest' : 'text-ink-soft hover:bg-sand/50 hover:text-ink'
     }`}
   >
     {item.label}
   </NavLink>
 );
 
-const DropdownSection = ({ item, open, onToggle, onNavigate, mobile = false, active }) => {
+const DropdownSection = ({ item, open, onToggle, onNavigate, mobile = false, active, dark = false }) => {
   const Icon = item.icon;
   const triggerRef = useRef(null);
   const menuRef = useRef(null);
+  const triggerStyles = dark
+    ? active || open
+      ? 'bg-gradient-to-r from-gold-dark via-gold to-gold-light text-forest-dark shadow-sm hover:from-gold hover:via-gold-light hover:to-[#f3d994]'
+      : 'text-paper/85 hover:bg-gradient-to-r hover:from-[#284A35] hover:via-[#386346] hover:to-[#896722] hover:text-white hover:shadow-md'
+    : active || open
+      ? 'bg-forest/10 text-forest'
+      : 'text-ink-soft hover:bg-sand/50 hover:text-ink';
 
   const handleTriggerKeyDown = (event) => {
     if (event.key === 'ArrowDown') {
@@ -129,9 +140,7 @@ const DropdownSection = ({ item, open, onToggle, onNavigate, mobile = false, act
         onKeyDown={handleTriggerKeyDown}
         aria-haspopup="menu"
         aria-expanded={open}
-        className={`focus-ring flex min-h-10 items-center gap-1.5 whitespace-nowrap rounded-lg px-2.5 text-sm font-medium transition-colors ${
-          active || open ? 'bg-forest/10 text-forest' : 'text-ink-soft hover:bg-sand/50 hover:text-ink'
-        } ${mobile ? 'w-full justify-between px-3 text-left' : ''}`}
+        className={`${dark ? 'nav-focus-ring' : 'focus-ring'} flex min-h-10 items-center gap-1.5 whitespace-nowrap rounded-lg px-2.5 text-sm font-medium transition-all duration-200 ${triggerStyles} ${mobile ? 'w-full justify-between px-3 text-left' : ''}`}
       >
         <span className="flex items-center gap-2">{mobile && <Icon className="h-4 w-4" />}{item.label}</span>
         <ChevronDown className={`h-3.5 w-3.5 transition-transform ${open ? 'rotate-180' : ''}`} />
@@ -315,57 +324,73 @@ const AgriBridgeNavigation = ({ onChangePassword }) => {
   const brandTarget = dashboardLink?.to || '/profile';
 
   return (
-    <div className="mx-auto w-full max-w-screen-2xl px-3 py-2.5 sm:px-5 lg:px-7" ref={menuRef}>
-      <div className="flex min-w-0 items-center justify-between gap-2">
-        <Link to={brandTarget} className="focus-ring flex min-w-0 shrink-0 items-center gap-2 rounded-lg" aria-label={`${PRODUCT_NAME} by ${COMPANY_NAME}`}>
-          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-forest text-gold"><Sprout className="h-5 w-5" strokeWidth={1.8} /></span>
-          <span className="min-w-0 max-[380px]:hidden"><span className="block truncate font-display text-base font-semibold leading-5 text-forest">{PRODUCT_NAME}</span><span className="hidden max-w-40 truncate text-[10px] text-ink-soft 2xl:block">{COMPANY_NAME}</span></span>
-        </Link>
+    <div className="w-full" ref={menuRef}>
+      <div className="mx-auto w-full max-w-screen-2xl px-3 py-2.5 sm:px-5 lg:px-7">
+        <div className="flex min-w-0 items-center justify-between gap-2">
+          <Link to={brandTarget} className="focus-ring flex min-w-0 shrink-0 items-center gap-2 rounded-lg" aria-label={`${PRODUCT_NAME} by ${COMPANY_NAME}`}>
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-forest text-gold"><Sprout className="h-5 w-5" strokeWidth={1.8} /></span>
+            <span className="min-w-0 max-[380px]:hidden"><span className="block truncate font-display text-base font-semibold leading-5 text-forest">{PRODUCT_NAME}</span><span className="hidden max-w-40 truncate text-[10px] text-ink-soft 2xl:block">{COMPANY_NAME}</span></span>
+          </Link>
 
-        <div className="flex shrink-0 items-center gap-1 sm:gap-2">
-          <span className="shrink-0"><LanguageSwitcher compact /></span>
-          <NotificationBell />
-          <ProfileMenu user={user} organizationName={activeCooperative?.name} can={can} onChangePassword={onChangePassword} logout={logout} />
+          <div className="flex shrink-0 items-center gap-1 sm:gap-2">
+            <span className="shrink-0"><LanguageSwitcher compact /></span>
+            <NotificationBell />
+            <ProfileMenu user={user} organizationName={activeCooperative?.name} can={can} onChangePassword={onChangePassword} logout={logout} />
+          </div>
         </div>
       </div>
 
-      <div className="mt-2 border-t border-sand/70 pt-2">
-        <nav className="hidden min-w-0 flex-wrap items-center gap-1 md:flex xl:hidden" aria-label={t('navigation.primary')}>
-          {dashboardLink && <AppLink item={dashboardLink} onNavigate={closeMenus} />}
-          {primarySections.map((item) => <DropdownSection key={item.id} item={item} open={openMenu === item.id} onToggle={() => toggleMenu(item.id)} onNavigate={closeMenus} active={item.links.some((link) => pathIsActive(location.pathname, link.to))} />)}
-          <DropdownSection
-            item={{ id: 'more', label: t('common.more'), icon: MoreHorizontal, links: [...secondarySections.flatMap((item) => item.links), ...moreLinks] }}
-            open={openMenu === 'tablet-more'}
-            onToggle={() => toggleMenu('tablet-more')}
-            onNavigate={closeMenus}
-            active={isMoreActive}
-          />
-        </nav>
+      <div className="relative z-10 isolate bg-forest-dark text-paper">
+        <div className="landing-grid pointer-events-none absolute inset-0 opacity-40" aria-hidden="true" />
+        <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden="true">
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_82%_50%,rgba(201,154,61,.16),transparent_20rem),radial-gradient(circle_at_12%_100%,rgba(47,82,64,.55),transparent_25rem)]" />
+          <div className="absolute -right-20 -top-10 h-40 w-40 rounded-full border border-white/10" />
+          <div className="absolute right-8 top-1/2 hidden -translate-y-1/2 sm:block">
+            <div className="landing-orbit relative h-24 w-24 rounded-full border border-dashed border-gold-light/40">
+              <span className="absolute -left-1 top-1/2 h-3 w-3 -translate-y-1/2 rounded-full bg-gold-light shadow-[0_0_22px_6px_rgba(224,188,111,.42)]" />
+            </div>
+          </div>
+        </div>
 
-        <nav className="hidden min-w-0 flex-wrap items-center gap-1 xl:flex" aria-label={t('navigation.primary')}>
-          {dashboardLink && <AppLink item={dashboardLink} onNavigate={closeMenus} />}
-          {sections.map((item) => <DropdownSection key={item.id} item={item} open={openMenu === item.id} onToggle={() => toggleMenu(item.id)} onNavigate={closeMenus} active={item.links.some((link) => pathIsActive(location.pathname, link.to))} />)}
-          {moreLinks.length > 0 && <DropdownSection item={{ id: 'more', label: t('common.more'), icon: MoreHorizontal, links: moreLinks }} open={openMenu === 'more'} onToggle={() => toggleMenu('more')} onNavigate={closeMenus} active={isMoreActive} />}
-        </nav>
+        <div className="relative z-10 mx-auto w-full max-w-screen-2xl px-3 py-2 sm:px-5 lg:px-7">
+          <nav className="hidden min-w-0 flex-wrap items-center gap-1 md:flex xl:hidden" aria-label={t('navigation.primary')}>
+            {dashboardLink && <AppLink item={dashboardLink} onNavigate={closeMenus} dark />}
+            {primarySections.map((item) => <DropdownSection key={item.id} item={item} open={openMenu === item.id} onToggle={() => toggleMenu(item.id)} onNavigate={closeMenus} active={item.links.some((link) => pathIsActive(location.pathname, link.to))} dark />)}
+            <DropdownSection
+              item={{ id: 'more', label: t('common.more'), icon: MoreHorizontal, links: [...secondarySections.flatMap((item) => item.links), ...moreLinks] }}
+              open={openMenu === 'tablet-more'}
+              onToggle={() => toggleMenu('tablet-more')}
+              onNavigate={closeMenus}
+              active={isMoreActive}
+              dark
+            />
+          </nav>
 
-        <div className="flex min-h-10 items-center justify-between gap-2 md:hidden">
-          <button
-            ref={mobileTriggerRef}
-            type="button"
-            onClick={() => setMobileOpen(true)}
-            className="focus-ring flex min-h-10 items-center gap-2 rounded-lg border border-sand bg-white px-3 text-sm font-medium text-ink transition-colors hover:bg-sand/40"
-            aria-label={t('common.menu')}
-            aria-expanded={mobileOpen}
-          >
-            <Menu className="h-4 w-4" />
-            {t('common.menu')}
-          </button>
-          <span className="min-w-0 truncate text-xs font-medium text-ink-soft">{currentMobileLink?.label || t('common.dashboard')}</span>
+          <nav className="hidden min-w-0 flex-wrap items-center gap-1 xl:flex" aria-label={t('navigation.primary')}>
+            {dashboardLink && <AppLink item={dashboardLink} onNavigate={closeMenus} dark />}
+            {sections.map((item) => <DropdownSection key={item.id} item={item} open={openMenu === item.id} onToggle={() => toggleMenu(item.id)} onNavigate={closeMenus} active={item.links.some((link) => pathIsActive(location.pathname, link.to))} dark />)}
+            {moreLinks.length > 0 && <DropdownSection item={{ id: 'more', label: t('common.more'), icon: MoreHorizontal, links: moreLinks }} open={openMenu === 'more'} onToggle={() => toggleMenu('more')} onNavigate={closeMenus} active={isMoreActive} dark />}
+          </nav>
+
+          <div className="flex min-h-10 items-center justify-between gap-2 md:hidden">
+            <button
+              ref={mobileTriggerRef}
+              type="button"
+              onClick={() => setMobileOpen(true)}
+              className="nav-focus-ring flex min-h-10 items-center gap-2 rounded-lg border border-white/15 bg-white/5 px-3 text-sm font-medium text-paper/90 transition-all duration-200 hover:bg-gradient-to-r hover:from-[#284A35] hover:via-[#386346] hover:to-[#896722] hover:text-white hover:shadow-md"
+              aria-label={t('common.menu')}
+              aria-expanded={mobileOpen}
+            >
+              <Menu className="h-4 w-4" />
+              {t('common.menu')}
+            </button>
+            <span className="min-w-0 truncate text-xs font-medium text-paper/65">{currentMobileLink?.label || t('common.dashboard')}</span>
+          </div>
         </div>
       </div>
 
       {user?.role === 'super_admin' && (
-        <div className="mt-2 border-t border-sand/70 pt-2 md:pl-12 xl:pl-0">
+        <div className="mx-auto mt-2 w-full max-w-screen-2xl border-b border-sand/70 px-3 pb-2 sm:px-5 lg:px-7">
           <CooperativeSwitcher />
         </div>
       )}
