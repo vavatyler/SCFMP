@@ -87,11 +87,46 @@ const AppLink = ({ item, onNavigate, compact = false }) => (
 
 const DropdownSection = ({ item, open, onToggle, onNavigate, mobile = false, active }) => {
   const Icon = item.icon;
+  const triggerRef = useRef(null);
+  const menuRef = useRef(null);
+
+  const handleTriggerKeyDown = (event) => {
+    if (event.key === 'ArrowDown') {
+      event.preventDefault();
+      if (!open) onToggle();
+      requestAnimationFrame(() => menuRef.current?.querySelector('[role="menuitem"]')?.focus());
+    }
+  };
+
+  const handleMenuKeyDown = (event) => {
+    const menuItems = [...(menuRef.current?.querySelectorAll('[role="menuitem"]') || [])];
+    const currentIndex = menuItems.indexOf(document.activeElement);
+    let nextIndex;
+
+    if (event.key === 'ArrowDown') nextIndex = (currentIndex + 1) % menuItems.length;
+    else if (event.key === 'ArrowUp') nextIndex = (currentIndex - 1 + menuItems.length) % menuItems.length;
+    else if (event.key === 'Home') nextIndex = 0;
+    else if (event.key === 'End') nextIndex = menuItems.length - 1;
+    else if (event.key === 'Escape') {
+      event.preventDefault();
+      onToggle();
+      triggerRef.current?.focus();
+      return;
+    } else return;
+
+    if (menuItems.length) {
+      event.preventDefault();
+      menuItems[nextIndex].focus();
+    }
+  };
+
   return (
     <div className={mobile ? 'border-b border-sand/80 py-2 last:border-0' : 'relative'}>
       <button
+        ref={triggerRef}
         type="button"
         onClick={onToggle}
+        onKeyDown={handleTriggerKeyDown}
         aria-haspopup="menu"
         aria-expanded={open}
         className={`focus-ring flex min-h-10 items-center gap-1.5 whitespace-nowrap rounded-lg px-2.5 text-sm font-medium transition-colors ${
@@ -103,7 +138,9 @@ const DropdownSection = ({ item, open, onToggle, onNavigate, mobile = false, act
       </button>
       {open && (
         <div
+          ref={menuRef}
           role="menu"
+          onKeyDown={handleMenuKeyDown}
           className={mobile
             ? 'mt-1 grid gap-1 pl-6'
             : 'absolute left-0 top-full z-50 mt-2 min-w-52 rounded-xl border border-sand bg-white p-1.5 shadow-xl'}
@@ -193,6 +230,8 @@ const AgriBridgeNavigation = ({ onChangePassword }) => {
   const [openMenu, setOpenMenu] = useState('');
   const [mobileOpen, setMobileOpen] = useState(false);
   const menuRef = useRef(null);
+  const mobileTriggerRef = useRef(null);
+  const mobileDialogRef = useRef(null);
   const sections = useMemo(() => makeSections(can, t, user), [can, t, user]);
   const dashboardLink = can(PERMISSIONS.DASHBOARD_VIEW)
     ? { to: '/dashboard', label: t('common.dashboard') }
@@ -212,6 +251,12 @@ const AgriBridgeNavigation = ({ onChangePassword }) => {
   const secondarySections = sections.filter((item) => !['organizations', 'farmers'].includes(item.id));
   const isMoreActive = [...moreLinks, ...secondarySections.flatMap((item) => item.links)]
     .some((item) => pathIsActive(location.pathname, item.to));
+  const currentMobileLink = [
+    ...(dashboardLink ? [dashboardLink] : []),
+    ...sections.flatMap((item) => item.links),
+    ...moreLinks,
+  ].sort((first, second) => second.to.length - first.to.length)
+    .find((item) => pathIsActive(location.pathname, item.to));
 
   useEffect(() => {
     setOpenMenu('');
@@ -236,25 +281,56 @@ const AgriBridgeNavigation = ({ onChangePassword }) => {
     };
   }, []);
 
+  useEffect(() => {
+    if (!mobileOpen) return undefined;
+
+    const focusableSelector = 'a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])';
+    const focusableItems = () => [...(mobileDialogRef.current?.querySelectorAll(focusableSelector) || [])];
+    focusableItems()[0]?.focus();
+
+    const keepFocusInDialog = (event) => {
+      if (event.key !== 'Tab') return;
+      const items = focusableItems();
+      if (!items.length) return;
+      const first = items[0];
+      const last = items[items.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+
+    document.addEventListener('keydown', keepFocusInDialog);
+    return () => {
+      document.removeEventListener('keydown', keepFocusInDialog);
+      mobileTriggerRef.current?.focus();
+    };
+  }, [mobileOpen]);
+
   const toggleMenu = (id) => setOpenMenu((current) => current === id ? '' : id);
   const closeMenus = () => setOpenMenu('');
   const brandTarget = dashboardLink?.to || '/profile';
 
   return (
     <div className="mx-auto w-full max-w-screen-2xl px-3 py-2.5 sm:px-5 lg:px-7" ref={menuRef}>
-      <div className="flex min-w-0 items-center justify-between gap-2 xl:gap-4">
+      <div className="flex min-w-0 items-center justify-between gap-2">
         <Link to={brandTarget} className="focus-ring flex min-w-0 shrink-0 items-center gap-2 rounded-lg" aria-label={`${PRODUCT_NAME} by ${COMPANY_NAME}`}>
           <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-forest text-gold"><Sprout className="h-5 w-5" strokeWidth={1.8} /></span>
-          <span className="min-w-0"><span className="block truncate font-display text-base font-semibold leading-5 text-forest">{PRODUCT_NAME}</span><span className="hidden max-w-40 truncate text-[10px] text-ink-soft 2xl:block">{COMPANY_NAME}</span></span>
+          <span className="min-w-0 max-[380px]:hidden"><span className="block truncate font-display text-base font-semibold leading-5 text-forest">{PRODUCT_NAME}</span><span className="hidden max-w-40 truncate text-[10px] text-ink-soft 2xl:block">{COMPANY_NAME}</span></span>
         </Link>
 
-        <nav className="hidden min-w-0 flex-1 items-center justify-center gap-0.5 xl:flex" aria-label={t('navigation.primary')}>
-          {dashboardLink && <AppLink item={dashboardLink} onNavigate={closeMenus} />}
-          {sections.map((item) => <DropdownSection key={item.id} item={item} open={openMenu === item.id} onToggle={() => toggleMenu(item.id)} onNavigate={closeMenus} active={item.links.some((link) => pathIsActive(location.pathname, link.to))} />)}
-          {moreLinks.length > 0 && <DropdownSection item={{ id: 'more', label: t('common.more'), icon: MoreHorizontal, links: moreLinks }} open={openMenu === 'more'} onToggle={() => toggleMenu('more')} onNavigate={closeMenus} active={isMoreActive} />}
-        </nav>
+        <div className="flex shrink-0 items-center gap-1 sm:gap-2">
+          <span className="shrink-0"><LanguageSwitcher compact /></span>
+          <NotificationBell />
+          <ProfileMenu user={user} organizationName={activeCooperative?.name} can={can} onChangePassword={onChangePassword} logout={logout} />
+        </div>
+      </div>
 
-        <nav className="hidden min-w-0 flex-1 items-center justify-center gap-0.5 md:flex xl:hidden" aria-label={t('navigation.primary')}>
+      <div className="mt-2 border-t border-sand/70 pt-2">
+        <nav className="hidden min-w-0 flex-wrap items-center gap-1 md:flex xl:hidden" aria-label={t('navigation.primary')}>
           {dashboardLink && <AppLink item={dashboardLink} onNavigate={closeMenus} />}
           {primarySections.map((item) => <DropdownSection key={item.id} item={item} open={openMenu === item.id} onToggle={() => toggleMenu(item.id)} onNavigate={closeMenus} active={item.links.some((link) => pathIsActive(location.pathname, link.to))} />)}
           <DropdownSection
@@ -266,13 +342,25 @@ const AgriBridgeNavigation = ({ onChangePassword }) => {
           />
         </nav>
 
-        <div className="flex shrink-0 items-center gap-1 sm:gap-2">
-          <span className="hidden sm:block"><LanguageSwitcher compact /></span>
-          <NotificationBell />
-          <ProfileMenu user={user} organizationName={activeCooperative?.name} can={can} onChangePassword={onChangePassword} logout={logout} />
-          <button type="button" onClick={() => setMobileOpen(true)} className="focus-ring flex h-10 w-10 items-center justify-center rounded-lg border border-sand bg-white text-ink md:hidden" aria-label={t('common.menu')} aria-expanded={mobileOpen}>
-            <Menu className="h-5 w-5" />
+        <nav className="hidden min-w-0 flex-wrap items-center gap-1 xl:flex" aria-label={t('navigation.primary')}>
+          {dashboardLink && <AppLink item={dashboardLink} onNavigate={closeMenus} />}
+          {sections.map((item) => <DropdownSection key={item.id} item={item} open={openMenu === item.id} onToggle={() => toggleMenu(item.id)} onNavigate={closeMenus} active={item.links.some((link) => pathIsActive(location.pathname, link.to))} />)}
+          {moreLinks.length > 0 && <DropdownSection item={{ id: 'more', label: t('common.more'), icon: MoreHorizontal, links: moreLinks }} open={openMenu === 'more'} onToggle={() => toggleMenu('more')} onNavigate={closeMenus} active={isMoreActive} />}
+        </nav>
+
+        <div className="flex min-h-10 items-center justify-between gap-2 md:hidden">
+          <button
+            ref={mobileTriggerRef}
+            type="button"
+            onClick={() => setMobileOpen(true)}
+            className="focus-ring flex min-h-10 items-center gap-2 rounded-lg border border-sand bg-white px-3 text-sm font-medium text-ink transition-colors hover:bg-sand/40"
+            aria-label={t('common.menu')}
+            aria-expanded={mobileOpen}
+          >
+            <Menu className="h-4 w-4" />
+            {t('common.menu')}
           </button>
+          <span className="min-w-0 truncate text-xs font-medium text-ink-soft">{currentMobileLink?.label || t('common.dashboard')}</span>
         </div>
       </div>
 
@@ -285,7 +373,7 @@ const AgriBridgeNavigation = ({ onChangePassword }) => {
       {mobileOpen && (
         <div className="fixed inset-0 z-[60] md:hidden" role="dialog" aria-modal="true" aria-label={t('navigation.mobileMenu')}>
           <button type="button" className="absolute inset-0 h-full w-full bg-ink/45" onClick={() => setMobileOpen(false)} aria-label={t('common.close')} />
-          <div className="absolute inset-y-0 left-0 flex w-[min(21rem,calc(100vw-2.5rem))] flex-col bg-paper shadow-2xl">
+          <div id="agribridge-mobile-navigation" ref={mobileDialogRef} className="absolute inset-y-0 left-0 flex w-[min(21rem,calc(100vw-2.5rem))] flex-col bg-paper shadow-2xl">
             <div className="flex items-center justify-between border-b border-sand px-4 py-4">
               <div className="flex items-center gap-2"><span className="flex h-9 w-9 items-center justify-center rounded-xl bg-forest text-gold"><Sprout className="h-5 w-5" /></span><div><p className="font-display text-base font-semibold text-forest">{PRODUCT_NAME}</p><p className="text-[11px] text-ink-soft">{COMPANY_NAME}</p></div></div>
               <button type="button" onClick={() => setMobileOpen(false)} className="focus-ring flex h-10 w-10 items-center justify-center rounded-lg border border-sand bg-white text-ink" aria-label={t('common.close')}><X className="h-5 w-5" /></button>
@@ -297,7 +385,6 @@ const AgriBridgeNavigation = ({ onChangePassword }) => {
               ))}
             </nav>
             <div className="border-t border-sand p-3">
-              <div className="mb-2 px-3"><LanguageSwitcher /></div>
               <Link to="/profile" onClick={() => setMobileOpen(false)} className="focus-ring flex min-h-11 items-center gap-3 rounded-lg px-3 text-sm font-medium text-ink-soft hover:bg-sand/50"><UserRound className="h-4 w-4" />{t('common.myProfile')}</Link>
               <button type="button" onClick={() => { setMobileOpen(false); onChangePassword(); }} className="focus-ring flex min-h-11 w-full items-center gap-3 rounded-lg px-3 text-left text-sm font-medium text-ink-soft hover:bg-sand/50"><KeyRound className="h-4 w-4" />{t('common.changePassword')}</button>
               <button type="button" onClick={logout} className="focus-ring flex min-h-11 w-full items-center gap-3 rounded-lg px-3 text-left text-sm font-medium text-clay hover:bg-clay/5"><LogOut className="h-4 w-4" />{t('common.logout')}</button>
