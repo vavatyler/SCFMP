@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Link, NavLink, useLocation } from 'react-router-dom';
 import {
   BarChart3,
@@ -274,7 +275,7 @@ const AgriBridgeNavigation = ({ onChangePassword }) => {
 
   useEffect(() => {
     const closeOutside = (event) => {
-      if (!menuRef.current?.contains(event.target)) setOpenMenu('');
+      if (!menuRef.current?.contains(event.target) && !mobileDialogRef.current?.contains(event.target)) setOpenMenu('');
     };
     const closeOnEscape = (event) => {
       if (event.key === 'Escape') {
@@ -293,6 +294,8 @@ const AgriBridgeNavigation = ({ onChangePassword }) => {
   useEffect(() => {
     if (!mobileOpen) return undefined;
 
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
     const focusableSelector = 'a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])';
     const focusableItems = () => [...(mobileDialogRef.current?.querySelectorAll(focusableSelector) || [])];
     focusableItems()[0]?.focus();
@@ -311,11 +314,17 @@ const AgriBridgeNavigation = ({ onChangePassword }) => {
         first.focus();
       }
     };
+    const closeOnDesktopResize = () => {
+      if (window.matchMedia('(min-width: 768px)').matches) setMobileOpen(false);
+    };
 
     document.addEventListener('keydown', keepFocusInDialog);
+    window.addEventListener('resize', closeOnDesktopResize);
     return () => {
       document.removeEventListener('keydown', keepFocusInDialog);
-      mobileTriggerRef.current?.focus();
+      window.removeEventListener('resize', closeOnDesktopResize);
+      document.body.style.overflow = previousOverflow;
+      if (!window.matchMedia('(min-width: 768px)').matches) mobileTriggerRef.current?.focus();
     };
   }, [mobileOpen]);
 
@@ -395,10 +404,10 @@ const AgriBridgeNavigation = ({ onChangePassword }) => {
         </div>
       )}
 
-      {mobileOpen && (
+      {mobileOpen && createPortal(
         <div className="fixed inset-0 z-[60] md:hidden" role="dialog" aria-modal="true" aria-label={t('navigation.mobileMenu')}>
           <button type="button" className="absolute inset-0 h-full w-full bg-ink/45" onClick={() => setMobileOpen(false)} aria-label={t('common.close')} />
-          <div id="agribridge-mobile-navigation" ref={mobileDialogRef} className="absolute inset-y-0 left-0 flex w-[min(21rem,calc(100vw-2.5rem))] flex-col bg-paper shadow-2xl">
+          <div id="agribridge-mobile-navigation" ref={mobileDialogRef} className="absolute inset-y-0 left-0 flex w-[min(21rem,calc(100vw-2.5rem))] flex-col overscroll-contain bg-paper shadow-2xl">
             <div className="flex items-center justify-between border-b border-sand px-4 py-4">
               <div className="flex items-center gap-2"><span className="flex h-9 w-9 items-center justify-center rounded-xl bg-forest text-gold"><Sprout className="h-5 w-5" /></span><div><p className="font-display text-base font-semibold text-forest">{PRODUCT_NAME}</p><p className="text-[11px] text-ink-soft">{COMPANY_NAME}</p></div></div>
               <button type="button" onClick={() => setMobileOpen(false)} className="focus-ring flex h-10 w-10 items-center justify-center rounded-lg border border-sand bg-white text-ink" aria-label={t('common.close')}><X className="h-5 w-5" /></button>
@@ -415,7 +424,8 @@ const AgriBridgeNavigation = ({ onChangePassword }) => {
               <button type="button" onClick={logout} className="focus-ring flex min-h-11 w-full items-center gap-3 rounded-lg px-3 text-left text-sm font-medium text-clay hover:bg-clay/5"><LogOut className="h-4 w-4" />{t('common.logout')}</button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body,
       )}
     </div>
   );
