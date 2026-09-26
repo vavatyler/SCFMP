@@ -48,6 +48,35 @@
     animation: landing-reveal 700ms ease-out both;
   }
 
+  .landing-team-track {
+    display: flex;
+    gap: 1.25rem;
+    overflow-x: auto;
+    scroll-behavior: smooth;
+    scroll-snap-type: x mandatory;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    overscroll-behavior-x: contain;
+  }
+
+  .landing-team-track::-webkit-scrollbar {
+    display: none;
+  }
+
+  .landing-team-card {
+    flex: 0 0 100%;
+    scroll-snap-align: start;
+    scroll-snap-stop: always;
+  }
+
+  .landing-team-track--2 .landing-team-card {
+    flex-basis: calc((100% - 1.25rem) / 2);
+  }
+
+  .landing-team-track--3 .landing-team-card {
+    flex-basis: calc((100% - 2.5rem) / 3);
+  }
+
   .dashboard-recommendation-track {
     scroll-behavior: smooth;
     scroll-snap-type: x mandatory;
@@ -112,6 +141,7 @@
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
   .dashboard-recommendation-track { scroll-behavior: auto; }
+  .landing-team-track { scroll-behavior: auto; }
   .dashboard-recommendation-card { transition-duration: 0.01ms !important; }
   .landing-orbit,
   .landing-float,

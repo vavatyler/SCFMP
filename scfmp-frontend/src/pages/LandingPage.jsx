@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   ArrowDownRight,
@@ -133,13 +133,13 @@ const Cta = ({ to, children, light = false, className = '' }) => (
   </Link>
 );
 
-const PublicProfileImage = ({ member, priority = false }) => {
+const PublicProfileImage = ({ member, priority = false, className, fallbackClassName }) => {
   const [failed, setFailed] = useState(false);
   const source = publicMediaUrl(member.photo_url);
 
   if (!source || failed) {
     return (
-      <div className="grid min-h-72 place-items-center bg-paper text-forest">
+      <div className={fallbackClassName || 'grid min-h-72 place-items-center bg-paper text-forest'}>
         <UsersRound className="h-12 w-12" aria-hidden="true" />
       </div>
     );
@@ -151,7 +151,7 @@ const PublicProfileImage = ({ member, priority = false }) => {
       alt={`Portrait of ${member.full_name}`}
       loading={priority ? 'eager' : 'lazy'}
       onError={() => setFailed(true)}
-      className="min-h-72 w-full bg-paper p-2 object-contain"
+      className={className || 'min-h-72 w-full bg-paper p-2 object-contain'}
     />
   );
 };
@@ -163,6 +163,16 @@ const LandingPage = () => {
   const [team, setTeam] = useState([]);
   const [teamState, setTeamState] = useState('loading');
   const [selectedMember, setSelectedMember] = useState(null);
+  const [teamCardsVisible, setTeamCardsVisible] = useState(1);
+  const [activeTeamIndex, setActiveTeamIndex] = useState(0);
+  const [activeTeamCopy, setActiveTeamCopy] = useState(1);
+  const [teamAutoplay, setTeamAutoplay] = useState(() => (
+    typeof window !== 'undefined'
+    && !window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches
+  ));
+  const [teamHovered, setTeamHovered] = useState(false);
+  const [teamFocused, setTeamFocused] = useState(false);
+  const [teamInView, setTeamInView] = useState(false);
   const [activeHeroSlide, setActiveHeroSlide] = useState(0);
   const [heroAutoplay, setHeroAutoplay] = useState(() => (
     typeof window !== 'undefined'
@@ -171,6 +181,9 @@ const LandingPage = () => {
   const [heroHovered, setHeroHovered] = useState(false);
   const [heroFocused, setHeroFocused] = useState(false);
   const [heroTouchStart, setHeroTouchStart] = useState(null);
+  const teamSectionRef = useRef(null);
+  const teamTrackRef = useRef(null);
+  const teamScrollTimerRef = useRef(null);
 
   const platformDestination = isAuthenticated ? '/dashboard' : '/login';
   const platformLabel = isAuthenticated ? t('landing.openPlatform') : t('landing.accessPlatform');
@@ -202,12 +215,100 @@ const LandingPage = () => {
   }, []);
 
   useEffect(() => {
+    const updateVisibleCards = () => {
+      setTeamCardsVisible(window.innerWidth >= 1024 ? 3 : window.innerWidth >= 640 ? 2 : 1);
+    };
+    updateVisibleCards();
+    window.addEventListener('resize', updateVisibleCards);
+    return () => window.removeEventListener('resize', updateVisibleCards);
+  }, []);
+
+  const visibleTeamCards = Math.min(teamCardsVisible, team.length || 1);
+  const canSlideTeam = team.length > 1;
+
+  const scrollToTeamIndex = useCallback((index, behavior = 'smooth', copy = 1) => {
+    const track = teamTrackRef.current;
+    const firstCard = track?.querySelector('.landing-team-card');
+    if (!track || !firstCard || !team.length) return;
+    const gap = Number.parseFloat(window.getComputedStyle(track).columnGap) || 0;
+    const absoluteIndex = copy * team.length + index;
+    const prefersReducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches;
+    const scrollBehavior = prefersReducedMotion && behavior === 'smooth' ? 'auto' : behavior;
+    track.scrollTo({ left: absoluteIndex * (firstCard.getBoundingClientRect().width + gap), behavior: scrollBehavior });
+  }, [team.length]);
+
+  const moveTeamSlide = useCallback((direction) => {
+    const slideCount = team.length;
+    if (slideCount <= 1) return;
+    const nextIndex = (activeTeamIndex + direction + slideCount) % slideCount;
+    let nextCopy = activeTeamCopy;
+    if (direction > 0 && activeTeamIndex === slideCount - 1) nextCopy = 2;
+    if (direction < 0 && activeTeamIndex === 0) nextCopy = 0;
+    setActiveTeamIndex(nextIndex);
+    setActiveTeamCopy(nextCopy);
+    scrollToTeamIndex(nextIndex, 'smooth', nextCopy);
+  }, [activeTeamCopy, activeTeamIndex, scrollToTeamIndex, team.length]);
+
+  useEffect(() => {
+    setActiveTeamIndex(0);
+    setActiveTeamCopy(1);
+    const frame = window.requestAnimationFrame(() => scrollToTeamIndex(0, 'auto', 1));
+    return () => window.cancelAnimationFrame(frame);
+  }, [scrollToTeamIndex, team.length, visibleTeamCards]);
+
+  useEffect(() => {
+    if (!teamSectionRef.current || !('IntersectionObserver' in window)) {
+      setTeamInView(true);
+      return undefined;
+    }
+    const observer = new IntersectionObserver(([entry]) => setTeamInView(entry.isIntersecting), { threshold: 0.15 });
+    observer.observe(teamSectionRef.current);
+    return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => () => {
+    if (teamScrollTimerRef.current) window.clearTimeout(teamScrollTimerRef.current);
+  }, []);
+
+  const handleTeamScroll = useCallback(() => {
+    if (teamScrollTimerRef.current) window.clearTimeout(teamScrollTimerRef.current);
+    teamScrollTimerRef.current = window.setTimeout(() => {
+      const track = teamTrackRef.current;
+      const firstCard = track?.querySelector('.landing-team-card');
+      if (!track || !firstCard) return;
+      const gap = Number.parseFloat(window.getComputedStyle(track).columnGap) || 0;
+      const step = firstCard.getBoundingClientRect().width + gap;
+      if (step <= 0 || !team.length) return;
+      const maxStart = Math.max(0, team.length * 3 - visibleTeamCards);
+      const absoluteStart = Math.min(maxStart, Math.max(0, Math.round(track.scrollLeft / step)));
+      const copy = Math.floor(absoluteStart / team.length);
+      const index = absoluteStart % team.length;
+      setActiveTeamIndex(index);
+      setActiveTeamCopy(copy);
+      if (copy !== 1) {
+        track.style.scrollBehavior = 'auto';
+        track.scrollLeft = (team.length + index) * step;
+        window.requestAnimationFrame(() => {
+          track.style.scrollBehavior = '';
+          setActiveTeamCopy(1);
+        });
+      }
+    }, 120);
+  }, [team.length, visibleTeamCards]);
+
+  useEffect(() => {
     if (!heroAutoplay || heroHovered || heroFocused) return undefined;
     const timer = window.setInterval(() => {
       setActiveHeroSlide((current) => (current + 1) % homepageSlides.length);
     }, 6500);
     return () => window.clearInterval(timer);
   }, [heroAutoplay, heroHovered, heroFocused]);
+
+  useEffect(() => {
+    if (!teamAutoplay || !canSlideTeam || !teamInView || teamHovered || teamFocused || selectedMember) return undefined;
+    const timer = window.setInterval(() => moveTeamSlide(1), 5600);
+    return () => window.clearInterval(timer);
+  }, [teamAutoplay, canSlideTeam, teamInView, teamHovered, teamFocused, selectedMember, moveTeamSlide]);
 
   const moveHeroSlide = (direction) => {
     setActiveHeroSlide((current) => (current + direction + homepageSlides.length) % homepageSlides.length);
@@ -413,7 +514,154 @@ const LandingPage = () => {
               </article>
             </div></div></section>
 
-        <section id="team" className="bg-paper py-20 sm:py-28"><div className="mx-auto max-w-7xl px-5 sm:px-8"><SectionIntro eyebrow="Meet our team" title="The people behind SmartBridge and AgriBridge."><p>Profiles are arranged by official role, with the Co-Founder & IT Lead first. Platform permissions, account details, and internal access information remain private.</p></SectionIntro>{teamState === 'loading' ? <div className="mt-10 grid gap-5 md:grid-cols-3">{[1, 2, 3].map((item) => <div key={item} className="animate-pulse overflow-hidden rounded-2xl border border-sand bg-white"><div className="min-h-72 bg-sand" /><div className="space-y-3 p-6"><div className="h-4 w-2/3 rounded bg-sand" /><div className="h-3 w-1/2 rounded bg-paper" /></div></div>)}</div> : team.length > 0 ? <div className="mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">{team.map((member, index) => <article key={`${member.full_name}-${member.position}`} className="group overflow-hidden rounded-2xl border border-sand bg-white shadow-card transition duration-300 hover:-translate-y-1 hover:shadow-xl"><PublicProfileImage member={member} priority={index < 2} /><div className="p-6"><p className="text-xs font-bold uppercase tracking-[.15em] text-[#1687D4]">{member.position}</p><h3 className="mt-2 text-xl font-semibold text-ink">{member.full_name}</h3>{member.biography && <p className="mt-3 line-clamp-3 text-sm leading-6 text-ink-soft">{member.biography}</p>}<button onClick={() => setSelectedMember(member)} className="focus-ring mt-5 inline-flex items-center gap-2 text-sm font-semibold text-[#1687D4] hover:text-[#0D6FAE]">View profile <ArrowRight className="h-4 w-4" /></button></div></article>)}</div> : <div className="mt-10 rounded-2xl border border-dashed border-sand bg-white p-8 text-center"><UsersRound className="mx-auto h-9 w-9 text-[#1687D4]" /><h3 className="mt-4 text-lg font-semibold text-ink">Approved team profiles will appear here.</h3><p className="mx-auto mt-2 max-w-xl text-sm leading-6 text-ink-soft">SmartBridge can publish profiles from the existing Team module when members approve their public visibility.</p></div>}{teamState === 'unavailable' && <p className="mt-5 text-sm text-ink-soft">Team profiles are temporarily unavailable. Please check back soon.</p>}</div></section>
+        <section
+          id="team"
+          ref={teamSectionRef}
+          className="bg-paper py-20 sm:py-28"
+        >
+          <div className="mx-auto max-w-7xl px-5 sm:px-8">
+            <SectionIntro eyebrow="Meet our team" title="The people behind SmartBridge and AgriBridge.">
+              <p>Profiles are arranged by official role, with the Co-Founder &amp; IT Lead first. Platform permissions, account details, and internal access information remain private.</p>
+            </SectionIntro>
+            {teamState === 'loading' ? (
+              <div className="mt-10 grid gap-5 md:grid-cols-3">
+                {[1, 2, 3].map((item) => (
+                  <div key={item} className="animate-pulse overflow-hidden rounded-2xl border border-sand bg-white">
+                    <div className="aspect-square bg-sand" />
+                    <div className="space-y-3 p-6">
+                      <div className="h-4 w-2/3 rounded bg-sand" />
+                      <div className="h-3 w-1/2 rounded bg-paper" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : team.length > 0 ? (
+              <div
+                className="mt-10"
+                onMouseEnter={() => setTeamHovered(true)}
+                onMouseLeave={() => setTeamHovered(false)}
+                onFocusCapture={() => setTeamFocused(true)}
+                onBlurCapture={(event) => {
+                  if (!event.currentTarget.contains(event.relatedTarget)) setTeamFocused(false);
+                }}
+                onKeyDown={(event) => {
+                  if (event.target !== teamTrackRef.current) return;
+                  if (event.key === 'ArrowLeft') {
+                    event.preventDefault();
+                    moveTeamSlide(-1);
+                  } else if (event.key === 'ArrowRight') {
+                    event.preventDefault();
+                    moveTeamSlide(1);
+                  }
+                }}
+              >
+                <div
+                  ref={teamTrackRef}
+                  className={`landing-team-track landing-team-track--${visibleTeamCards}`}
+                  role="region"
+                  aria-label="SmartBridge team profiles"
+                  aria-roledescription="carousel"
+                  aria-live={teamAutoplay && !teamHovered && !teamFocused ? 'off' : 'polite'}
+                  tabIndex={0}
+                  onScroll={handleTeamScroll}
+                >
+                  {[0, 1, 2].flatMap((copy) => team.map((member, index) => {
+                    const absoluteIndex = copy * team.length + index;
+                    const visibleStart = activeTeamCopy * team.length + activeTeamIndex;
+                    const isVisible = absoluteIndex >= visibleStart && absoluteIndex < visibleStart + visibleTeamCards;
+                    return (
+                      <article
+                        key={`${copy}-${member.full_name}-${member.position}`}
+                        className="landing-team-card group flex min-w-0 flex-col overflow-hidden rounded-2xl border border-sand bg-white shadow-card transition duration-300 hover:-translate-y-1 hover:shadow-xl"
+                        role="group"
+                        aria-hidden={!isVisible}
+                        aria-roledescription="slide"
+                        aria-label={`${index + 1} of ${team.length}: ${member.full_name}`}
+                      >
+                        <div className="aspect-square w-full overflow-hidden bg-paper">
+                          <PublicProfileImage
+                            member={member}
+                            priority={isVisible}
+                            className="h-full w-full bg-paper p-2 object-contain"
+                            fallbackClassName="grid h-full w-full place-items-center bg-paper text-forest"
+                          />
+                        </div>
+                        <div className="flex flex-1 flex-col p-6">
+                          <p className="text-xs font-bold uppercase tracking-[.15em] text-[#1687D4]">{member.position}</p>
+                          <h3 className="mt-2 text-xl font-semibold text-ink">{member.full_name}</h3>
+                          {member.biography && <p className="mt-3 line-clamp-3 text-sm leading-6 text-ink-soft">{member.biography}</p>}
+                          <button
+                            type="button"
+                            tabIndex={isVisible ? 0 : -1}
+                            onClick={() => setSelectedMember(member)}
+                            className="focus-ring mt-auto inline-flex min-h-11 items-center gap-2 pt-5 text-left text-sm font-semibold text-[#1687D4] hover:text-[#0D6FAE]"
+                          >
+                            View profile <ArrowRight className="h-4 w-4" aria-hidden="true" />
+                          </button>
+                        </div>
+                      </article>
+                    );
+                  }))}
+                </div>
+                {canSlideTeam && (
+                  <div className="mt-6 flex flex-wrap items-center justify-between gap-4">
+                    <div className="flex items-center gap-2" aria-label="Choose a team slide">
+                      {team.map((member, index) => (
+                        <button
+                          key={`${member.full_name}-${member.position}`}
+                          type="button"
+                          onClick={() => {
+                            setActiveTeamIndex(index);
+                            setActiveTeamCopy(1);
+                            scrollToTeamIndex(index, 'smooth', 1);
+                          }}
+                          className={`focus-ring h-3 rounded-full transition-all ${activeTeamIndex === index ? 'w-8 bg-[#1687D4]' : 'w-3 bg-slate-300 hover:bg-slate-400'}`}
+                          aria-label={`Show team profiles starting with ${member.full_name}`}
+                          aria-current={activeTeamIndex === index ? 'true' : undefined}
+                        />
+                      ))}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => moveTeamSlide(-1)}
+                        className="focus-ring grid h-11 w-11 place-items-center rounded-full border border-slate-200 bg-white text-slate-700 transition hover:border-blue-300 hover:text-[#1687D4]"
+                        aria-label="Previous team profiles"
+                      >
+                        <ChevronLeft className="h-5 w-5" aria-hidden="true" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => moveTeamSlide(1)}
+                        className="focus-ring grid h-11 w-11 place-items-center rounded-full border border-slate-200 bg-white text-slate-700 transition hover:border-blue-300 hover:text-[#1687D4]"
+                        aria-label="Next team profiles"
+                      >
+                        <ChevronRight className="h-5 w-5" aria-hidden="true" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setTeamAutoplay((playing) => !playing)}
+                        className="focus-ring inline-flex h-11 items-center gap-2 rounded-full border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:border-blue-300 hover:text-[#1687D4]"
+                        aria-pressed={teamAutoplay}
+                        aria-label={teamAutoplay ? 'Pause automatic team slides' : 'Play automatic team slides'}
+                      >
+                        {teamAutoplay ? <Pause className="h-4 w-4" aria-hidden="true" /> : <Play className="h-4 w-4" aria-hidden="true" />}
+                        <span>{teamAutoplay ? 'Pause' : 'Play'}</span>
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="mt-10 rounded-2xl border border-dashed border-sand bg-white p-8 text-center">
+                <UsersRound className="mx-auto h-9 w-9 text-[#1687D4]" />
+                <h3 className="mt-4 text-lg font-semibold text-ink">Approved team profiles will appear here.</h3>
+                <p className="mx-auto mt-2 max-w-xl text-sm leading-6 text-ink-soft">SmartBridge can publish profiles from the existing Team module when members approve their public visibility.</p>
+              </div>
+            )}
+            {teamState === 'unavailable' && <p className="mt-5 text-sm text-ink-soft">Team profiles are temporarily unavailable. Please check back soon.</p>}
+          </div>
+        </section>
 
         <section className="py-20 sm:py-28"><div className="mx-auto max-w-7xl px-5 sm:px-8"><SectionIntro centered eyebrow="Built for organizations" title="Support for the organization types already served by the platform."><p>These categories reflect the organization types available in AgriBridge; they do not represent endorsements or partner logos.</p></SectionIntro><div className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{supportedOrganizationTypes.map((organization) => <article key={organization.title} className="rounded-2xl border border-slate-200 p-6 transition hover:border-blue-200 hover:bg-blue-50/40"><UsersRound className="h-6 w-6 text-blue-600" /><h3 className="mt-7 text-lg font-semibold text-slate-950">{organization.title}</h3><p className="mt-2 text-sm leading-6 text-slate-600">{organization.description}</p></article>)}</div></div></section>
 
